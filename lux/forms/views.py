@@ -10,6 +10,11 @@ def get_form(request, form):
     """Get a form class from registry
     """
     registry = request.app.forms
+    if (hasattr(form, '__call__') and
+            not isinstance(form, Layout) and
+            not isinstance(form, type(Form))):
+        form = form(request)
+
     if form in registry:
         return registry[form]
     elif isinstance(form, str):

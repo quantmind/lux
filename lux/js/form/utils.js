@@ -1,4 +1,5 @@
 import _ from '../ng';
+import reverseMerge from '../core/reversemerge';
 
 
 export function defaultPlaceholder (field) {
@@ -36,4 +37,41 @@ export function parseOptions (field, items, objParser) {
             opt = {value: opt, label: ''+opt};
         return opt;
     });
+}
+
+
+export function mergeOptions(field, defaults, $scope) {
+    var cfg = field.$cfg;
+    if (_.isFunction(defaults)) defaults = defaults(field, $scope);
+    reverseMerge(field, defaults);
+    if (field.$luxform && field.$luxform !== field)
+        _.forEach(cfg.inheritAttributes, (attr) => {
+            if (_.isUndefined(field[attr]))
+                field[attr] = field.$luxform[attr];
+        });
+    if (field.type === 'hidden')
+        field.labelSrOnly = true;
+}
+
+// sort-of stateless util functions
+export function asHtml(el) {
+    const wrapper = _.element('<a></a>');
+    return wrapper.append(el).html();
+}
+
+export function compile(lazy, html, scope) {
+    lazy.$compile(html)(scope);
+}
+
+
+export function asFunction (value) {
+    return function () {
+        return value;
+    };
+}
+
+export function extractValue (value) {
+    if (_.isFunction(value))
+        value = value();
+    return value;
 }

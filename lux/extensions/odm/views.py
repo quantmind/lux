@@ -10,6 +10,9 @@ from lux.forms import get_form_class
 from .models import RestModel
 
 
+GET_HEAD = frozenset(('GET', 'HEAD'))
+
+
 class RestRouter(rest.RestRouter):
     '''A REST Router based on database models
     '''
@@ -70,7 +73,7 @@ class CRUD(RestRouter):
 
     # Additional Routes
 
-    @route(method=('get', 'options'))
+    @route(method=('get', 'head', 'options'))
     def metadata(self, request):
         '''Model metadata
         '''
@@ -97,13 +100,9 @@ class CRUD(RestRouter):
         with odm.begin() as session:
             instance = self.get_instance(request, session=session)
 
-            if request.method == 'GET':
+            if request.method in GET_HEAD:
                 self.check_model_permission(request, 'read')
                 data = model.serialise(request, instance)
-
-            elif request.method == 'HEAD':
-                self.check_model_permission(request, 'read')
-                return request.response
 
             elif request.method in ('POST', 'PUT'):
                 form_class = get_form_class(request, model.updateform)

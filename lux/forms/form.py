@@ -68,6 +68,8 @@ def get_form_meta_data(bases, attrs):
     for base in bases[::-1]:
         if hasattr(base, 'base_fields'):
             fields = list(base.base_fields.items()) + fields
+        if hasattr(base, 'inlines'):
+            inlines = list(base.inlines.items()) + inlines
 
     return OrderedDict(fields), OrderedDict(inlines)
 

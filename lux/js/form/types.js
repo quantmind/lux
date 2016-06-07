@@ -1,6 +1,6 @@
 import {compileUiSelect} from './remote';
 import {defaultPlaceholder, selectOptions} from './utils';
-
+import {FormElement, Form, Field, Formset} from './objects';
 
 // Set default types
 export default function (ngModule) {
@@ -10,11 +10,18 @@ export default function (ngModule) {
     function addTypes(luxFormConfigProvider) {
         var p = luxFormConfigProvider;
 
+        p.setType({
+            name: 'form',
+            template: formTemplate,
+            class: Form
+        });
+
         // Inputs
         p.setType({
             name: 'input',
             template: inputTpl,
             wrapper: ['bootstrapLabel', 'bootstrapStatus'],
+            class: Field,
             defaultOptions: function (field) {
                 return {
                     title: field.name,
@@ -28,14 +35,16 @@ export default function (ngModule) {
         // Checkbox
         p.setType({
             name: 'checkbox',
-            template: checkboxTpl
+            template: checkboxTpl,
+            class: Field
         });
 
         // Radio
         p.setType({
             name: 'radio',
             template: radioTpl,
-            wrapper: ['bootstrapLabel', 'bootstrapStatus']
+            wrapper: ['bootstrapLabel', 'bootstrapStatus'],
+            class: Field
         });
 
         // Select
@@ -43,6 +52,7 @@ export default function (ngModule) {
             name: 'select',
             template: selectTpl,
             wrapper: ['bootstrapLabel', 'bootstrapStatus'],
+            class: Field,
             defaultOptions: function (field) {
                 return {
                     placeholder: defaultPlaceholder(field),
@@ -56,6 +66,7 @@ export default function (ngModule) {
             name: 'ui-select',
             template: uiSelectTpl,
             wrapper: ['bootstrapLabel', 'bootstrapStatus'],
+            class: Field,
             defaultOptions: function (field) {
                 return {
                     placeholder: defaultPlaceholder(field),
@@ -70,6 +81,7 @@ export default function (ngModule) {
             name: 'textarea',
             template: textareaTpl,
             wrapper: ['bootstrapLabel', 'bootstrapStatus'],
+            class: Field,
             defaultOptions: function (field) {
                 return {
                     placeholder: defaultPlaceholder(field),
@@ -82,6 +94,7 @@ export default function (ngModule) {
         p.setType({
             name: 'button',
             template: buttonTpl,
+            class: Field,
             defaultOptions: function (field) {
                 return {
                     label: field.name,
@@ -91,17 +104,31 @@ export default function (ngModule) {
             }
         });
 
+        // Anchor
+        p.setType({
+            name: 'a',
+            template: anchorTpl,
+            class: FormElement
+        });
+
         // Fieldset
         p.setType({
             name: 'fieldset',
-            template: fieldsetTpl,
-            group: true
+            class: FormElement,
+            template: fieldsetTpl
         });
 
         // Div
         p.setType({
             name: 'div',
-            group: true
+            class: FormElement
+        });
+
+        // formset
+        p.setType({
+            name: 'formset',
+            class: Formset,
+            template: formsetTemplate
         });
     }
 }
@@ -184,7 +211,7 @@ const radioTpl = `
 function fieldsetTpl (field) {
     var legend = field.legend || ``;
     if (legend) legend = `<legend>${legend}</legend>`;
-    return `<fieldset>${legend}</fieldset>`
+    return `<fieldset>${legend}</fieldset>`;
 }
 
 
@@ -194,7 +221,19 @@ class="btn btn-default"
 ng-disabled="${field.disabled}"
 type="${field.type}"
 ng-click="field.$click($event)"
->${field.label}</button>`
+>${field.label}</button>`;
+}
+
+
+function anchorTpl (field) {
+    var icon = '',
+        theme = field.theme || 'default';
+    if (field.icon) icon = `<i aria-hidden="true" class="${field.icon}"></i>`;
+
+    return `<a class="btn btn-${theme}"
+href="#"
+ng-click="field.click"
+>${icon}</a>`;
 }
 
 
@@ -215,4 +254,19 @@ ng-disabled="${field.disabled}"
   <small ng-if="item.description" ng-bind-html="item.description | highlight: $select.search"></small>
 </ui-select-choices>
 </ui-select>`
+}
+
+
+function formTemplate (form) {
+    return `<${form.tag} name="${form.name}" role="form" class="${form.classes}" novalidate>
+</${form.tag}>`;
+}
+
+
+function formsetTemplate () {
+    return `<lux-formset ng-repeat="model in formset.value"
+field="field"
+model="model"
+formset="formset">
+</lux-formset>`;
 }

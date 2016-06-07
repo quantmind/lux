@@ -13,7 +13,7 @@ from collections import OrderedDict
 from importlib import import_module
 
 import pulsar
-from pulsar import ImproperlyConfigured, HttpException
+from pulsar import ImproperlyConfigured
 from pulsar.apps.wsgi import (WsgiHandler, HtmlDocument, test_wsgi_environ,
                               LazyWsgi, wait_for_body_middleware,
                               middleware_in_executor, wsgi_request)
@@ -44,7 +44,7 @@ LUX_CORE = os.path.dirname(__file__)
 
 def execute_from_config(config_file, services=None,
                         description=None, argv=None,
-                        **params):     # pragma    nocover
+                        cmdparams=None, **params):     # pragma    nocover
     """Create and run an :class:`.Application` from a ``config_file``.
 
     This is the function to use when creating the script which runs your
@@ -69,8 +69,9 @@ def execute_from_config(config_file, services=None,
         if opts.service and description:
             description = '%s - %s' % (description, opts.service)
 
+    cmdparams = cmdparams or {}
     return execute_app(App(config_file, argv=argv, **params),
-                       description=description)
+                       description=description, **cmdparams)
 
 
 def execute_app(app, argv=None, description=None,
@@ -664,31 +665,29 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
             template filenames
         :param context: optional context dictionary
         """
-        if 'text/html' in request.content_types:
-            request.response.content_type = 'text/html'
-            doc = request.html_document
-            if jscontext:
-                doc.jscontext.update(jscontext)
-            head = doc.head
-            if title:
-                head.title = title
-            if status_code:
-                request.response.status_code = status_code
-            context = self.context(request, context)
-            if not request.config['MINIFIED_MEDIA']:
-                doc.head.embedded_js.insert(
-                    0, 'window.minifiedMedia = false;')
+        request.response.content_type = 'text/html'
+        doc = request.html_document
+        if jscontext:
+            doc.jscontext.update(jscontext)
+        head = doc.head
+        if title:
+            head.title = title
+        if status_code:
+            request.response.status_code = status_code
+        context = self.context(request, context)
+        if not request.config['MINIFIED_MEDIA']:
+            doc.head.embedded_js.insert(
+                0, 'window.minifiedMedia = false;')
 
-            if doc.jscontext:
-                encoded = encode_json(doc.jscontext, self.config['SECRET_KEY'])
-                doc.head.embedded_js.insert(
-                    0, 'var lux = "%s";\n' % encoded)
+        if doc.jscontext:
+            encoded = encode_json(doc.jscontext, self.config['SECRET_KEY'])
+            doc.head.embedded_js.insert(
+                0, 'var lux = "%s";\n' % encoded)
 
-            page = self.cms.as_page(page)
-            body = self.cms.render_body(request, page, context)
-            doc.body.append(body)
-            return doc.http_response(request)
-        raise HttpException(status=415)
+        page = self.cms.as_page(page)
+        body = self.cms.render_body(request, page, context)
+        doc.body.append(body)
+        return doc.http_response(request)
 
     def site_url(self, path=None):
         """Build the site url from an optional ``path``
@@ -889,7 +888,9 @@ def _build_config(self):
 
 def _build_handler(self):
     engine = self.template_engine('python')
+    parameters = self.config.pop('_parameters')
     self.config = render_data(self, self.config, engine, self.config)
+    self.config['_parameters'] = parameters
     self.channels = Channels(self)
 
     if not self.cms:

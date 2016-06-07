@@ -6,7 +6,7 @@ from pulsar.apps import wsgi
 from pulsar.apps.wsgi import (Json, RouterParam, Router, Route, Html,
                               cached_property, render_error_debug)
 from pulsar.apps.wsgi.utils import error_messages
-from pulsar.utils.httpurl import JSON_CONTENT_TYPES
+from pulsar.utils.httpurl import JSON_CONTENT_TYPES, CacheControl
 from pulsar.utils.structures import mapping_iterator
 
 from lux.utils.data import unique_tuple
@@ -111,12 +111,19 @@ class RedirectRouter(Router):
 
 class JsonRouter(Router):
     model = RouterParam()
+    cache_control = CacheControl()
     response_content_types = ['application/json']
+
+    def head(self, request):
+        if hasattr(self, 'get'):
+            return self.get(request)
 
     def json_response(self, request, data):
         """Return a response as application/json
         """
-        return Json(data).http_response(request)
+        response = Json(data).http_response(request)
+        self.cache_control(response)
+        return response
 
     def get_model(self, request, model=None):
         model = request.app.models.get(model or self.model)
@@ -148,9 +155,12 @@ class HtmlRouter(JsonRouter):
         # This request is for the inner template only
         if request.url_data.get('template') == 'ui':
             request.response.content = page.render_inner(request)
-            return request.response
+            response = request.response
+        else:
+            response = app.html_response(request, page, self.context(request))
 
-        return app.html_response(request, page, self.context(request))
+        self.cache_control(response)
+        return response
 
     def get_inner_template(self, request, inner_template=None):
         return inner_template or self.template

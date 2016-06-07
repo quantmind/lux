@@ -64,6 +64,10 @@ class Submit(FormElement):
         self.attrs['tag'] = tag or self.tag
         self.attrs['type'] = type or self.type
 
+    def __repr__(self):
+        return '%s.%s' % (self.tag, self.type)
+    __str__ = __repr__
+
     def as_dict(self, form=None):
         return dict(attributes(form, self.attrs))
 
@@ -78,20 +82,30 @@ class Fieldset(FormElement):
         self.children = children
         self.attrs = attrs
         self.all = attrs.pop('all', self.all)
-        if not self.attrs.get('type'):
+        if not self.attrs.get('type') and self.type:
             self.attrs['type'] = self.type
-        self.type = self.attrs['type']
+        self.type = self.attrs.get('type')
 
     def __repr__(self):
-        return '%s %s' % (self.type, self.children)
+        if self.type:
+            return '%s %s' % (self.type, self.children)
+        else:
+            return repr(self.children)
     __str__ = __repr__
 
     def as_dict(self, form=None):
-        field = dict(attributes(form, self.attrs))
         if self.children:
-            field['children'] = [as_serialised_field(c, form)
-                                 for c in self.children]
-        return field
+            field = dict(attributes(form, self.attrs))
+            children = []
+            for child in self.children:
+                child = as_serialised_field(child, form)
+                if isinstance(child, list):
+                    children.extend(child)
+                elif child:
+                    children.append(child)
+
+            field['children'] = children
+            return field
 
     def setup(self, form_class, missings):
         children = self.children
@@ -100,6 +114,28 @@ class Fieldset(FormElement):
             children = missings[:]
         for field in serialised_fields(form_class, children, missings):
             self.children.append(field)
+
+
+class Formsets(Fieldset):
+    type = None
+
+    def as_dict(self, form=None):
+        return [as_serialised_field(c, form) for c in self.children]
+
+    def setup(self, form_class, missings):
+        children = self.children
+        self.children = []
+        if self.all:
+            children = list(form_class.inlines)
+        for name in children:
+            inline = form_class.inlines.get(name)
+            if inline:
+                inline = Layout(inline.form_class,
+                                name=name,
+                                type='formset',
+                                labelSrOnly=True,
+                                default_element=None)
+                self.children.append(inline)
 
 
 class Row(Fieldset):
@@ -117,6 +153,8 @@ class Layout(Fieldset):
     all = True
 
     def __init__(self, form, *children, **attrs):
+        if 'default_element' in attrs:
+            self.default_element = attrs.pop('default_element')
         super().__init__(*children, **attrs)
         self.setup(form)
 
@@ -132,16 +170,14 @@ class Layout(Fieldset):
         for field in serialised_fields(self.form_class, children, missings):
             self.children.append(field)
         if missings and self.all:
-            field = self.default_element(*missings)
-            field.setup(self.form_class, missings)
-            self.children.append(field)
-
-        for name, inline in self.form_class.inlines.items():
-            inline = Layout(inline.form_class,
-                            style='inline',
-                            prefix=name,
-                            type='ng-form')
-            self.children.append(inline)
+            if self.default_element:
+                field = self.default_element(*missings)
+                field.setup(self.form_class, missings)
+                self.children.append(field)
+            else:
+                for field in serialised_fields(self.form_class, missings[:],
+                                               missings):
+                    self.children.append(field)
 
 
 class SerialisedForm(object):

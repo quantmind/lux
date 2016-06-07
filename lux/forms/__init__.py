@@ -51,7 +51,8 @@ from .fields import (Field, CharField, TextField, BooleanField, JsonField,
 from .errors import FormError, FieldError, ValidationError
 from .formsets import FormSet
 from .form import FormType, Form, BoundField, FieldList, create_form
-from .serialise import Fieldset, Submit, Layout, Row, Col, as_serialised_field
+from .serialise import (Fieldset, Submit, Layout, Row, Col, Formsets,
+                        as_serialised_field)
 from .options import Options, OptionGroup
 from .views import WebFormRouter, get_form, get_form_layout, get_form_class
 from ..core.wrappers import formreg
@@ -85,6 +86,7 @@ __all__ = [
     'create_form',
     #
     'Fieldset',
+    'Formsets',
     'Submit',
     'Layout',
     'Row',
