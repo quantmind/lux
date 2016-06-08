@@ -69,6 +69,7 @@ export function sidebar ($window, $compile, $timeout, luxSidebarTemplate, luxSid
             navbar = _.extend({}, scope.navbar, sidebar.navbar);
 
         navbar.top = true;
+        navbar.fixed = true;
         navbar.fluid = true;
         scope.navbar = navbar;
         delete scope.sidebar;

@@ -14,7 +14,8 @@ export const luxDropdownTemplate = `<li class="dropdown" uib-dropdown>
 {{ link.label || link.name || link.title }}<span class="caret"></span></a>
 <ul class="dropdown-menu" uib-dropdown-menu aria-labelledby="{{ link.id }}">
 <li ng-repeat="item in link.items" ng-class="{'divider': !item}" ng-attr-role="{'separator': !item}">
-<a ng-if="item" href="{{ item.href }}">{{ item.label || item.name || item.title }}</a>
+<a ng-if="item" href="{{ item.href }}" ng-click="links.click($event, item)"
+><i ng-if="item.icon" class="{{ item.icon }}"></i> {{ item.label || item.name || item.title }}</a>
 </li>
 </ul>
 </li>`;

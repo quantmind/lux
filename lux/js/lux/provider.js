@@ -54,9 +54,22 @@ export default function ($controllerProvider, $provide, $compileProvider, $filte
 
 
     function moduleLoaded (name) {
-        return moduleCache[name] || false;
+        try {
+            _.module(name);
+            return true;
+        } catch (err) {
+            return false;
+        }
     }
 
+    function unknownModules (modules) {
+        var unknowns = [];
+        if (!_.isArray(modules)) modules = [modules];
+        _.forEach(modules, (name) => {
+            if (!moduleLoaded(name)) unknowns.push(name);
+        });
+        return unknowns.length ? unknowns : null;
+    }
 
     function _require(libNames, modules, onLoad) {
         var $lux = this;
@@ -73,6 +86,9 @@ export default function ($controllerProvider, $provide, $compileProvider, $filte
             });
 
         if (!_.isArray(libNames)) libNames = [libNames];
+
+        if (modules)
+            modules = unknownModules(modules);
 
         $lux.$require(libNames, execute);
 
@@ -94,7 +110,6 @@ export default function ($controllerProvider, $provide, $compileProvider, $filte
         }
 
         function loadModule(modules) {
-            if (!_.isArray(modules)) modules = [modules];
             let moduleFunctions = [];
 
             const runBlocks = collectModules(modules, moduleCache, moduleFunctions, []);
