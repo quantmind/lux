@@ -5,9 +5,19 @@ export const linkTemplate = `<a ng-href="{{link.href}}" title="{{link.title}}" n
 ng-attr-target="{{link.target}}" ng-class="link.klass" bs-tooltip="tooltip">
 <span ng-if="link.left" class="left-divider"></span>
 <i ng-if="link.icon" class="{{link.icon}}"></i>
-<span>{{link.label || link.name}}</span>
+<span>{{link.label || link.name || link.title}}</span>
 <span ng-if="link.right" class="right-divider"></span></a>`;
 
+
+export const luxDropdownTemplate = `<li class="dropdown" uib-dropdown>
+<a id="{{ link.id }}" href="#" class="dropdown-toggle" uib-dropdown-toggle>
+{{ link.label || link.name || link.title }}<span class="caret"></span></a>
+<ul class="dropdown-menu" uib-dropdown-menu aria-labelledby="{{ link.id }}">
+<li ng-repeat="item in link.items" ng-class="{'divider': !item}" ng-attr-role="{'separator': !item}">
+<a ng-if="item" href="{{ item.href }}">{{ item.label || item.name || item.title }}</a>
+</li>
+</ul>
+</li>`;
 
 export const navbarTemplate = `<nav ng-attr-id="{{navbar.id}}" class="navbar navbar-{{navbar.theme}}"
 ng-class="{'navbar-fixed-top':navbar.fixed, 'navbar-static-top':navbar.top}"

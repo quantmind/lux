@@ -11,6 +11,7 @@ luxNavModule.constant('luxNavbarTemplate', constants.navbarTemplate);
 luxNavModule.constant('luxSidebarTemplate', constants.sidebarTemplate);
 luxNavModule.constant('luxNavBarDefaults', constants.navbarDefaults);
 luxNavModule.constant('luxSidebarDefaults', constants.sidebarDefaults);
+luxNavModule.constant('luxDropdownTemplate', constants.luxDropdownTemplate);
 
 
 // Factories

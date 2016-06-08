@@ -249,12 +249,13 @@ class CacheObject:
 
     def cache_key(self, arg):
         key = self.key or ''
-        app = arg.app
-        if isinstance(app, WsgiRequest):
+        if isinstance(arg, WsgiRequest):
             if not key:
-                key = app.path
+                key = arg.path
             if self.user:
-                key = '%s-%s' % (key, app.cache.user)
+                key = '%s-%s' % (key, arg.cache.user)
+
+        app = arg.app
 
         base = self.callable.__name__
         if self.instance:
@@ -284,14 +285,14 @@ class CacheObject:
                              'parameter nor from bound instance. '
                              'Cannot use cache.')
 
-        if self.instance:
-            args = (self.instance,) + args
-
         if arg:
             key = self.cache_key(arg)
             result = arg.app.cache_server.get_json(key)
             if result is not None:
                 return result
+
+        if self.instance:
+            args = (self.instance,) + args
 
         result = self.callable(*args, **kw)
 

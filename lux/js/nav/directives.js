@@ -4,15 +4,27 @@ import _ from '../ng';
 
 
 // @ngInject
-export function link (luxLinkTemplate, luxLink) {
+export function link ($lux, luxLinkTemplate, luxDropdownTemplate, luxLink) {
     return {
-        template: luxLinkTemplate,
         restrict: 'A',
-        link: link
+        link: linkLink
     };
 
-    function link (scope) {
-        scope.links = luxLink;
+    function linkLink ($scope, $element) {
+        var link = $scope.link || {},
+            template;
+
+        $scope.links = luxLink;
+
+        if (link.items) {
+            link.id = link.id || $lux.id();
+            template = luxDropdownTemplate;
+            $element.replaceWith($lux.$compile(template)($scope));
+        }
+        else {
+            template = luxLinkTemplate;
+            $element.append($lux.$compile(template)($scope));
+        }
     }
 }
 
