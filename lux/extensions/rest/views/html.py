@@ -60,11 +60,3 @@ formreg['password-recovery'] = Layout(
     showLabels=False,
     resultHandler='passwordRecovery'
 )
-
-
-formreg['mailing-list'] = Layout(
-    forms.EmailForm,
-    Fieldset(all=True),
-    Submit('Get notified'),
-    showLabels=False
-)

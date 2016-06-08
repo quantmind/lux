@@ -70,7 +70,7 @@ export class FormElement extends LuxComponent {
         //var compileHtml = fieldType.compile || compile;
         //compileHtml(this.$lux, $el, $scope);
         this.$timeout(() => {
-            field.$postCompile();
+            field.$postCompile($element);
         });
     }
 
@@ -144,8 +144,8 @@ export class Form extends FormElement {
         super.addMessages(formMessage, level);
     }
 
-    $postCompile () {
-        // if (this.$formset)
+    $postCompile ($element) {
+        this.$htmlElement = $element[0];
 
         var form = this.$form,
             action = this.action,

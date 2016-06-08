@@ -8,9 +8,9 @@ how to write authentication backends and models in lux.
 from lux.core import Parameter, LuxExtension
 
 from .backends import TokenBackend, SessionBackend
-from .views import (Authorization, ComingSoon, UserRest, UserCRUD,
-                    GroupCRUD, PermissionCRUD, RegistrationCRUD,
-                    MailingListCRUD, TokenCRUD)
+from .rest import (UserRest, UserCRUD, GroupCRUD, PermissionCRUD,
+                   RegistrationCRUD, MailingListCRUD, TokenCRUD)
+from .mail import Authorization, ComingSoon
 from .forms import UserModel
 
 

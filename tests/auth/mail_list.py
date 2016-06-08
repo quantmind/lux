@@ -1,4 +1,4 @@
-url = '/authorizations/mailing-list'
+url = '/authorizations/join-mailing-list'
 
 
 class MailListMixin:

@@ -22,12 +22,12 @@ from pulsar.apps.wsgi import wsgi_request
 
 from lux.core import Parameter
 
-from .auth import AuthBackend, auth_backend, MultiAuthBackend, AppRequest
+from .auth import AuthBackend, MultiAuthBackend, AppRequest, backend_action
 from .models import RestModel, RestColumn, ModelMixin, is_rel_column
 from .client import ApiClient
 from .views.actions import (AuthenticationError, check_username, login,
                             logout, user_permissions)
-from .views.api import RestRoot, RestRouter
+from .views.rest import RestRoot, RestRouter, MetadataMixin
 from .views.auth import Authorization
 from .pagination import Pagination, GithubPagination
 from .forms import RelationshipField, UniqueField
@@ -39,10 +39,15 @@ __all__ = ['RestModel',
            'RestColumn',
            'is_rel_column',
            'ModelMixin',
-           'AuthBackend',
-           'auth_backend',
+           #
            'Authorization',
+           #
+           'AuthBackend',
+           'backend_action',
+           #
            'RestRouter',
+           'MetadataMixin',
+           #
            'Pagination',
            'GithubPagination',
            'AuthenticationError',

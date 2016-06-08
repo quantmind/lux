@@ -3,62 +3,58 @@
 import uuid
 from urllib.parse import urlencode
 
-from pulsar import (ImproperlyConfigured, HttpException, Http401,
-                    PermissionDenied, Http404, HttpRedirect)
+from pulsar import Http401, PermissionDenied, Http404, HttpRedirect
+from pulsar.utils.slugify import slugify
 
-from .mixins import jwt, SessionBackendMixin
+from lux.utils.token import decode
+
+from .mixins import SessionBackendMixin
 from .registration import RegistrationMixin
 from .. import (AuthenticationError, AuthBackend, session_backend,
                 User, Session, ModelMixin)
-from ..views import browser
+from ..auth import ProxyBackend
+from ..views.browser import Login, Logout, SignUp, ForgotPassword
 
 
 NotAuthorised = (Http401, PermissionDenied)
 
 
-class BrowserBackend(RegistrationMixin,
-                     AuthBackend):
+class BrowserBackend(RegistrationMixin, AuthBackend):
     """Authentication backend for rendering Forms in the Browser
 
     It can be used by web servers delegating authentication to a backend API
     or handling authentication on the same site.
     """
-    LoginRouter = browser.Login
-    LogoutRouter = browser.Logout
-    SignUpRouter = browser.SignUp
-    ForgotPasswordRouter = browser.ForgotPassword
-
     def middleware(self, app):
-        middleware = []
         cfg = app.config
 
         if cfg['LOGIN_URL']:
-            middleware.append(self.LoginRouter(cfg['LOGIN_URL']))
+            yield Login(cfg['LOGIN_URL'])
 
         if cfg['LOGOUT_URL']:
-            middleware.append(self.LogoutRouter(cfg['LOGOUT_URL']))
+            yield Logout(cfg['LOGOUT_URL'])
 
         if cfg['REGISTER_URL']:
-            middleware.append(self.SignUpRouter(cfg['REGISTER_URL']))
+            yield SignUp(cfg['REGISTER_URL'])
 
         if cfg['RESET_PASSWORD_URL']:
-            middleware.append(
-                self.ForgotPasswordRouter(cfg['RESET_PASSWORD_URL']))
-
-        return middleware
+            yield ForgotPassword(cfg['RESET_PASSWORD_URL'])
 
 
-class ApiSessionBackend(SessionBackendMixin,
+class ApiSessionBackend(ProxyBackend,
+                        SessionBackendMixin,
                         ModelMixin,
                         BrowserBackend):
-    """Authenticating against a RESTful HTTP API.
+    """A browser backend which is a proxy for a RESTful HTTP API backend.
 
     This backend requires a real cache backend, it cannot work with dummy
     cache and will raise an error.
 
+    All requests are passed to the Rest API ``authorizations`` endpoints
+
     The workflow for authentication is the following:
 
-    * Redirect the authentication to the Rest API
+    * send request to Rest API for authentication
     * If successful obtain the ``token`` from the response
     * Create the user from decoding the JWT payload
     * Create the session with same id as the token id and set the user as
@@ -79,43 +75,26 @@ class ApiSessionBackend(SessionBackendMixin,
     """
     users_url = 'users'
 
-    def authenticate(self, request, **data):
-        if not jwt:
-            raise ImproperlyConfigured('JWT library not available')
-        api = request.app.api(request)
-        try:
-            response = api.post('authorizations', data=data)
-            token = response.json().get('token')
-            payload = jwt.decode(token, verify=False)
-            user = User(payload)
-            user.encoded = token
-            return user
+    def _execute_backend_method(self, method, request, *args, **data):
+        method = slugify(method)
+        if args:
+            request.logger.error('Positional arguments not accepted by '
+                                 '%s.%s' % (type(self).__name__, method))
+        response = request.api.post('authorizations/%s' % method, json=data)
+        return response.json()
 
-        except (AuthenticationError, HttpException):
-            raise
-        except Exception:
-            if data.get('username'):
-                raise AuthenticationError('Invalid username or password')
-            elif data.get('email'):
-                raise AuthenticationError('Invalid email or password')
-            else:
-                raise AuthenticationError('Invalid credentials')
+    def authenticate(self, request, **data):
+        response = request.api.post('authorizations', json=data)
+        token = response.json().get('token')
+        payload = decode(token, verify=False)
+        user = User(payload)
+        user.encoded = token
+        return user
 
     def signup(self, request, **data):
         """Create a new user from the api
         """
-        api = request.app.api(request)
-        try:
-            response = api.post(self.signup_url, data=data)
-            if response.status_code == 201:
-                return response.json()
-        except Exception:
-            if data.get('username'):
-                raise AuthenticationError('Invalid username or password')
-            elif data.get('email'):
-                raise AuthenticationError('Invalid email or password')
-            else:
-                raise AuthenticationError('Invalid credentials')
+        return request.api.post('authorizations/signup', json=data).json()
 
     def signup_confirm(self, request, key):
         api = request.app.api(request)

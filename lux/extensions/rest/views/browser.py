@@ -90,10 +90,6 @@ class ForgotPassword(WebFormRouter):
             return actions.reset_password(request, key)
 
 
-class ComingSoon(WebFormRouter):
-    form = 'mailing-list'
-
-
 class MultiWebFormRouter(HtmlRouter):
     default_action = None
     templates_path = ''

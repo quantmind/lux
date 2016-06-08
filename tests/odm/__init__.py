@@ -10,7 +10,6 @@ from lux.core import LuxExtension
 from lux.extensions import odm
 from lux.extensions.odm import RestModel, RestColumn, CRUD
 from lux.extensions.rest import RelationshipField, UniqueField
-from lux.extensions.auth.views import PermissionCRUD, GroupCRUD, UserCRUD
 
 from odm.types import ChoiceType
 
@@ -35,10 +34,7 @@ class Extension(LuxExtension):
 
     def api_sections(self, app):
         return [CRUDTask(),
-                CRUDPerson(),
-                UserCRUD(),
-                PermissionCRUD(),
-                GroupCRUD()]
+                CRUDPerson()]
 
     def on_loaded(self, app):
         app.forms['task'] = Layout(

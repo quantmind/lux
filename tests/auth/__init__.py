@@ -24,7 +24,7 @@ DEFAULT_PERMISSION_LEVELS = {
     'objective:deadline': ('read', 'update'),
     'objective:outcome': 'read'
 }
-
+COMING_SOON_URL = 'coming-soon'
 
 Model = odm.model_base('odmtest')
 

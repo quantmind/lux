@@ -11,7 +11,6 @@ class FormSet:
         specifies the related model.
     '''
     creation_counter = 0
-    NUMBER_OF_FORMS_CODE = 'num_forms'
 
     def __init__(self,
                  form_class,

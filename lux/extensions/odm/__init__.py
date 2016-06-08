@@ -15,7 +15,7 @@ from lux.core import Parameter, LuxExtension
 from lux.extensions.rest import AppRequest
 
 from .mapper import Mapper, model_base
-from .views import CRUD, RestRouter
+from .rest import CRUD, RestRouter
 from .models import RestModel, RestColumn, odm_models
 from .ws import WsModelRpc
 

@@ -14,6 +14,7 @@ from datetime import date
 
 
 encode = jwt.encode
+decode = jwt.decode
 
 
 def encode_json(payload, secret, **kw):

@@ -14,7 +14,8 @@ from lux.core import route, JsonRouter
 from lux.forms import get_form_class
 
 from ..models import RestModel
-from . import actions, api
+from .rest import RestRouter
+from . import actions
 
 
 class SignUp(JsonRouter):
@@ -61,7 +62,7 @@ class ResetPassword(JsonRouter):
         return actions.reset_password(request, key)
 
 
-class Authorization(api.RestRouter):
+class Authorization(RestRouter):
     """Authentication views for Restful APIs
     """
     model = RestModel('authorization')

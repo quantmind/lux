@@ -4,9 +4,9 @@ import _ from '../ng';
 // @ngInject
 export default function ($window, $document, luxFormConfig) {
 
-    luxFormConfig.onSuccess('redirect', function (response, form) {
+    luxFormConfig.onSuccess('redirect', (response, form) => {
         $window.location.href = form.redirectTo || '/';
-    }).onSuccess('reload', function () {
+    }).onSuccess('reload', () => {
         $window.location.reload();
     }).onSuccess('replace', replace);
 
@@ -14,9 +14,9 @@ export default function ($window, $document, luxFormConfig) {
     function replace(response, form) {
         var message = response.data.message;
         var el = _.element($document[0].createElement('div')).addClass('center-text');
-        var height = form.$scope.$element[0].offsetHeight;
+        var height = form.$htmlElement.offsetHeight;
         el.css('height', `${height}px`).html(messageTpl(message));
-        form.$scope.$element.replaceWith(el);
+        _.element(form.$htmlElement).replaceWith(el);
     }
 
 }

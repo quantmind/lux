@@ -25,10 +25,10 @@ class AuthTest(web.WebsiteTest):
         request = await self.webclient.post('/auth/signup', json=data)
         self.json(request.response, 403)
 
-    async def test_signup_error_api(self):
+    async def test_signup_error_form(self):
         data = {'username': 'djkhvbdf'}
         request = await self.client.post('/authorizations/signup', json=data)
-        self.assertValidationError(request.response)
+        self.assertValidationError(request.response, 'password')
 
     async def test_signup_confirmation(self):
         data = await self._signup()

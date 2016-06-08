@@ -10,10 +10,10 @@ from lux.utils.auth import normalise_email
 from lux.extensions.rest import PasswordMixin, backends, AuthenticationError
 from lux.extensions.rest.policy import has_permission
 
-from .views import Authorization
+from .mail import MalingListBackendMixin, Authorization
 
 
-class AuthMixin(PasswordMixin):
+class AuthMixin(PasswordMixin, MalingListBackendMixin):
     """Mixin to implement authentication backend based on
     SQLAlchemy models
     """
