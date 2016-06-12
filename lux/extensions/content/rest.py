@@ -1,6 +1,5 @@
 import logging
 
-from pulsar import Http404
 from pulsar.apps.wsgi import route
 
 from lux.core import GET_HEAD
@@ -13,43 +12,37 @@ logger = logging.getLogger('lux.extensions.content')
 def check_permission_dict(group, action):
     return {
         'action': action,
-        'args': ('group', group)
+        'args': (group,)
     }
 
 
 class ContentCRUD(CRUD):
     """REST API view for content
     """
-    def query(self, request, *args, check_permission=None, **kwargs):
-        group = request.urlargs.get('group')
-        if group:
-            if check_permission and not isinstance(check_permission, dict):
-                check_permission = check_permission_dict(group,
-                                                         check_permission)
-            kwargs['group'] = group
-        return super().query(request, *args,
-                             check_permission=check_permission,
-                             **kwargs)
+    def __init__(self, model):
+        self.model = model
+        super().__init__('%s/<group>' % model.identifier)
 
-    def collection_data(self, request, *filters, **params):
+    def filters_params(self, request, *filters, **params):
+        """Enhance permission check for groups
+        """
+        group = request.urlargs['group']
+        check_permission = params.get('check_permission')
+        if check_permission and not isinstance(check_permission, dict):
+            params['check_permission'] = check_permission_dict(
+                group, check_permission)
+        return super().filters_params(request, *filters, **params)
+
+    def get_list(self, request, *filters, **params):
         params['priority:gt'] = 0
-        if not group:
-            raise Http404
-        filters = content_filters(group, 'read')
-
-        data = self.model.collection_data(
-            request,
-            load_only=('title', 'description', 'slug', 'url'),
-            sortby=['title:asc', 'order:desc'],
-            **content_filters(group, 'read', True)
-        )
+        return super().get_list(request, *filters, **params)
 
     @route('_links', method=('get', 'head', 'options'), position=-1)
     def _links(self, request):
         if request.method == 'OPTIONS':
             request.app.fire('on_preflight', request, methods=GET_HEAD)
             return request.response
-        data = self.model.collection_data(
+        data = self.get_list(
             request,
             load_only=('title', 'description', 'slug', 'url'),
             sortby=['title:asc', 'order:desc'],

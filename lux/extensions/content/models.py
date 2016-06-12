@@ -30,21 +30,7 @@ OPERATORS = {
 }
 
 
-class ContentModelMixin:
-
-    def query(self, request, *args, check_permission=None, **kwargs):
-        group = request.urlargs.get('group')
-        if group:
-            if check_permission and not isinstance(check_permission, dict):
-                check_permission = check_permission_dict(group,
-                                                         check_permission)
-            kwargs['group'] = group
-        return super().query(request, *args,
-                             check_permission=check_permission,
-                             **kwargs)
-
-
-class ContentModel(ContentModelMixin, RestModel):
+class ContentModel(RestModel):
     '''A Content model with file-system backend
 
     This model provide read-only operations

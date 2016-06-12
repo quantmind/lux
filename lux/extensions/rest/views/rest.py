@@ -1,10 +1,10 @@
-from pulsar import BadRequest, MethodNotAllowed
+from pulsar import MethodNotAllowed
 from pulsar.apps.wsgi import route
 
 from lux.core import JsonRouter, GET_HEAD, POST_PUT
 from lux.forms import get_form_class
 
-from ..models import ModelMixin, RestModel
+from ..models import RestModel
 
 
 REST_CONTENT_TYPES = ['application/json']
@@ -56,26 +56,18 @@ class RestRouter(JsonRouter):
         assert url is not None, "Model %s has no valid url" % self.model
         super().__init__(url, *args, **kwargs)
 
-    def json_data_files(self, request):
-        content_type, _ = request.content_type_options
-        try:
-            assert content_type == 'application/json'
-            return request.data_and_files()
-        except AssertionError:
-            raise BadRequest('Expected application/json content type')
-        except ValueError:
-            raise BadRequest('Problems parsing JSON')
-
-    def urlargs(self, request):
-        return request.urlargs
+    def filters_params(self, request, *filters, **params):
+        """Change to add positional filters and key-valued parameters
+        for both the :meth:`.get_instance` and :meth:`.get_list`
+        mtehods
+        """
+        params.update(request.urlargs)
+        return filters, params
 
     # RestView implementation
-    def get_instance(self, request, session=None, check_permission=None,
-                     **args):
-        args = args or self.urlargs(request)
-        return self.model.get_instance(request, session=session,
-                                       check_permission=check_permission,
-                                       **args)
+    def get_instance(self, request, *filters, **params):
+        filters, params = self.filters_params(request, *filters, **params)
+        return self.model.get_instance(request, *filters, **params)
 
     def get_list(self, request, *filters, check_permission=None, **params):
         """Return a list of models satisfying user queries
@@ -93,6 +85,7 @@ class RestRouter(JsonRouter):
         params['offset'] = params.pop(cfg['API_OFFSET_KEY'], None)
         params['search'] = params.pop(cfg['API_SEARCH_KEY'], None)
         params['check_permission'] = check_permission
+        filters, params = self.filters_params(request, *filters, **params)
         return self.model.query_data(request, *filters, **params)
 
     def options(self, request):

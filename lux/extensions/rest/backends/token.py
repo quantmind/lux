@@ -78,4 +78,6 @@ class TokenBackend(TokenBackendMixin, RegistrationMixin, AuthBackend):
         response[CORS] = origin
         if headers:
             response['Access-Control-Allow-Headers'] = headers
+        if not isinstance(methods, (str, list)):
+            methods = list(methods)
         response['Access-Control-Allow-Methods'] = methods

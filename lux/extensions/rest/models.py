@@ -300,12 +300,16 @@ class RestModel(LuxModel, RestClient):
         served by this router
         """
         fields = self.fields()
-        field_names = self.fields_with_permission(request, 'read')
+
+        if check_permission:
+            fnames = self.fields_with_permission(request, check_permission)
+        else:
+            fnames = tuple(fields)
         #
         # Don't include fields which are excluded from meta
         exclude = self._fields.exclude(exclude)
         if exclude:
-            field_names = [c for c in field_names if c not in exclude]
+            fnames = [c for c in fnames if c not in exclude]
 
         backend = request.cache.auth_backend
         permissions = backend.get_permissions(request, self.name)
@@ -319,7 +323,7 @@ class RestModel(LuxModel, RestClient):
                 'url': self.api_url(request),
                 'id': self.id_field,
                 'repr': self.repr_field,
-                'columns': [fields[name].tojson(self) for name in field_names],
+                'columns': [fields[name].tojson(self) for name in fnames],
                 'default-limit': request.config['API_LIMIT_DEFAULT']}
         if permissions:
             meta['permissions'] = permissions

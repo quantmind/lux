@@ -2,7 +2,8 @@ from lux import forms
 from lux.core import LuxExtension
 
 from lux.extensions.admin import register, CRUDAdmin
-from lux.extensions.odm import CRUD, RestModel
+from lux.extensions.rest import CRUD
+from lux.extensions.odm import RestModel
 
 
 from tests.config import *  # noqa

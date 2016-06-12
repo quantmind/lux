@@ -155,7 +155,7 @@ class LuxModel:
         the model, raising PermissionDenied if not
 
         :param request:     request object
-        :param level:       access level
+        :param action:      action to check permission for
         :param args:        additional namespaces for resource
         :raise:             PermissionDenied
         """
@@ -338,10 +338,10 @@ class Query:
         for key, value in params.items():
             bits = key.split(':')
             field = bits[0]
-            if field in fields.values():
+            if field in fields:
                 op = bits[1] if len(bits) == 2 else 'eq'
-                field = field.field
-                if field:
+                field = fields[field].field
+                if isinstance(field, str):
                     self.filter_field(field, op, value)
 
         if search:

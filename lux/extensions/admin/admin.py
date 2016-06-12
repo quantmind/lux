@@ -151,8 +151,7 @@ class AdminModel(AdminRouter):
         '''Information for admin navigation
         '''
         model = self.get_model(request)
-        url = model.url
-        name = nicename(url)
+        name = nicename(model.identifier)
         info = {'title': name,
                 'name': name,
                 'href': self.full_route.path,

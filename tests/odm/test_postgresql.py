@@ -108,7 +108,7 @@ class TestPostgreSql(TestPostgreSqlBase):
                          self.app.models.register(CRUDPerson().model))
 
         self.assertEqual(model.name, 'person')
-        self.assertEqual(model.url, 'people')
+        self.assertEqual(model.identifier, 'people')
         self.assertEqual(model.api_name, 'people_url')
         fields = model.fields()
         self.assertTrue(fields)

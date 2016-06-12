@@ -6,15 +6,13 @@ class PermissionsMixin:
         token = await self._token()
         payload = {'name': 'abc'}
         request = await self.client.post('/groups',
-                                         body=payload,
-                                         content_type='application/json',
+                                         json=payload,
                                          token=token)
         data = self.json(request.response, 201)
         gid = data['id']
         payload['name'] = 'abcd'
         request = await self.client.post('/groups/{}'.format(gid),
-                                         body=payload,
-                                         content_type='application/json',
+                                         json=payload,
                                          token=token)
 
         data = self.json(request.response, 200)
@@ -23,8 +21,7 @@ class PermissionsMixin:
 
         payload['name'] = 'ABCd'
         request = await self.client.post('/groups',
-                                         body=payload,
-                                         content_type='application/json',
+                                         json=payload,
                                          token=token)
 
         self.assertValidationError(request.response, 'name',
@@ -40,40 +37,35 @@ class PermissionsMixin:
         #
         data = dict(name='blabla', policy='{')
         request = await self.client.post('/permissions',
-                                         body=data,
-                                         content_type='application/json',
+                                         json=data,
                                          token=token)
         self.assertValidationError(request.response, 'policy',
                                    'not a valid JSON string')
         #
         data = dict(name='blabla', description='hgv hh', policy='[]')
         request = await self.client.post('/permissions',
-                                         body=data,
-                                         content_type='application/json',
+                                         json=data,
                                          token=token)
         self.assertValidationError(request.response, '',
                                    text='Policy empty')
         #
         data = dict(name='blabla', description='hgv hh', policy='67')
         request = await self.client.post('/permissions',
-                                         body=data,
-                                         content_type='application/json',
+                                         json=data,
                                          token=token)
         self.assertValidationError(request.response, '',
                                    text='Policy should be a list or an object')
         #
         data = dict(name='blabla', description='hgv hh', policy='[45]')
         request = await self.client.post('/permissions',
-                                         body=data,
-                                         content_type='application/json',
+                                         json=data,
                                          token=token)
         self.assertValidationError(request.response, '',
                                    text='Policy should be a list or an object')
         #
         data = dict(name='blabla', description='hgv hh', policy='{}')
         request = await self.client.post('/permissions',
-                                         body=data,
-                                         content_type='application/json',
+                                         json=data,
                                          token=token)
         self.assertValidationError(request.response, '',
                                    text='"resource" must be defined')
