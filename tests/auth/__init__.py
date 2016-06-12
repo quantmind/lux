@@ -4,6 +4,7 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime
 
 from lux import forms
 from lux.core import LuxExtension
+from lux.extensions.rest import CRUD
 from lux.extensions import odm
 
 from tests.config import *  # noqa
@@ -62,9 +63,9 @@ class SecretForm(forms.Form):
     value = forms.CharField(required=False)
 
 
-class ObjectiveCRUD(odm.CRUD):
+class ObjectiveCRUD(CRUD):
     model = odm.RestModel('objective', ObjectiveForm, ObjectiveForm)
 
 
-class SecretCRUD(odm.CRUD):
+class SecretCRUD(CRUD):
     model = odm.RestModel('secret', SecretForm, SecretForm)

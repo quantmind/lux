@@ -1,7 +1,9 @@
+from pulsar import Http404
+
 from lux.utils import test
 from lux.extensions.content.github import github_signature
 
-from tests.content import remove_repo, create_content
+from tests.content import remove_repo, create_content, CONTENT_REPO
 
 
 class TestContentViews(test.AppTestCase):
@@ -17,6 +19,12 @@ class TestContentViews(test.AppTestCase):
     def tearDownClass(cls):
         remove_repo()
         return super().tearDownClass()
+
+    def test_initialization(self):
+        model = self.app.models.get('contents')
+        self.assertEqual(model.directory, CONTENT_REPO)
+        self.assertEqual(model.name, 'content')
+        self.assertEqual(model.identifier, 'contents')
 
     async def test_404(self):
         request = await self.client.get('/blog/bla')

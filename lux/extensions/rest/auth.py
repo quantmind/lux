@@ -3,20 +3,11 @@ from functools import partial
 from pulsar.utils.importer import module_attribute
 from pulsar.utils.structures import AttributeDictionary
 
-from lux.core import LuxExtension
+from lux.core import AuthBase, backend_action, auth_backend_actions
 from lux.forms import ValidationError
 
 from .user import UserMixin
 from .views.actions import AuthenticationError
-
-
-auth_backend_actions = set()
-
-
-def backend_action(fun):
-    name = fun.__name__
-    auth_backend_actions.add(name)
-    return fun
 
 
 class Anonymous(UserMixin):
@@ -34,13 +25,8 @@ class Anonymous(UserMixin):
         return 0
 
 
-class AuthBase(LuxExtension):
+class AuthBackendBase(AuthBase):
     abstract = True
-
-    def request(self, request):  # pragma    nocover
-        '''Request middleware. Most backends implement this method
-        '''
-        pass
 
     def anonymous(self):
         '''Anonymous User
@@ -73,7 +59,7 @@ class ProxyBackend:
         return None
 
 
-class MultiAuthBackend(AuthBase, ProxyBackend):
+class MultiAuthBackend(AuthBackendBase, ProxyBackend):
     '''Aggregate several Authentication backends
     '''
     abstract = True
@@ -90,6 +76,10 @@ class MultiAuthBackend(AuthBase, ProxyBackend):
         has = self._execute_backend_method('has_permission',
                                            request, resource, action)
         return True if has is None else has
+
+    def get_permissions(self, request, resource, actions=None):
+        return self._execute_backend_method('get_permissions',
+                                            request, resource, actions)
 
     def __iter__(self):
         return iter(self.backends or ())
@@ -198,7 +188,7 @@ class AuthenticationKeyMixin:
         pass
 
 
-class AuthBackend(AuthBase,
+class AuthBackend(AuthBackendBase,
                   AuthUserMixin,
                   AuthenticationResponses,
                   AuthenticationKeyMixin):
@@ -213,37 +203,3 @@ class AuthBackend(AuthBase,
     def set_password(self, request, password, **kwargs):
         '''Set a new password for user'''
         pass
-
-    @backend_action
-    def has_permission(self, request, resource, action):  # pragma    nocover
-        '''Check if the given request has permission over ``resource``
-        element with permission ``action``
-        '''
-        pass
-
-    @backend_action
-    def get_permissions(self, request, resource,
-                        actions=None):  # pragma    nocover
-        '''Get a dictionary of permissions for the given resource
-        '''
-        pass
-
-
-class SimpleBackend(AuthBackend):
-
-    def has_permission(self, request, resource, action):
-        return True
-
-
-class AppRequest:
-
-    def __init__(self, app, **kw):
-        self.cache = AttributeDictionary(app=app, **kw)
-        self.cache.auth_backend = SimpleBackend()
-
-    @property
-    def app(self):
-        return self.cache.app
-
-    def __getattr__(self, name):
-        return getattr(self.app, name)

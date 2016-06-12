@@ -105,10 +105,8 @@ class Admin(AdminRouter):
         backend = request.cache.auth_backend
         sections = {}
         sitemap = []
-
-        if backend:
-            permissions = backend.get_permissions(request, resources, 'read')
-            infos = self._permission_filter(permissions, infos)
+        permissions = backend.get_permissions(request, resources, 'read')
+        infos = self._permission_filter(permissions, infos)
 
         for resource, section, info in infos:
             if section not in sections:

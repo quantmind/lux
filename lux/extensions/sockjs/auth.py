@@ -65,7 +65,7 @@ class WsModelRpc:
             raise rpc.InvalidParams('bad authToken') from exc
         args = {model.id_field: getattr(wsgi.cache.user, model.id_field)}
         user = model.get_instance(wsgi, **args)
-        user_info = model.serialise(wsgi, user)
+        user_info = model.tojson(wsgi, user)
         wsrequest.cache.user_info = user_info
         return user_info
 

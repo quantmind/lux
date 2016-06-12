@@ -50,17 +50,17 @@ function FieldController ($scope, $lux, luxFormConfig) {
     $scope.$lux = $lux;
     var field = $scope.field || $scope.json || {},
         tag = field.tag || luxFormConfig.getTag(field.type),
-        $log = $lux.$log;
-    if (!tag) {
-        $scope.field = null;
-        return $log.error('Could not find a tag for ' + field.type);
-    }
+        $log = $lux.$log,
+        type;
 
-    var type = luxFormConfig.getType(tag);
+    if (!tag)
+        type = luxFormConfig.getType(field.type);
+    else
+        type = luxFormConfig.getType(tag);
 
     if (!type) {
         $scope.field = null;
-        return $log.error(`No field type for ${tag}`);
+        return $log.error(`No field type for ${tag || field.type}`);
     }
 
     $scope.field = new type.class($scope, $lux, luxFormConfig, field, type, tag);

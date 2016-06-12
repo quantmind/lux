@@ -4,21 +4,20 @@ from tests.auth.user import UserMixin
 from tests.auth.password import PasswordMixin
 from tests.auth.odm import OdmMixin
 from tests.auth.permissions import PermissionsMixin
-from tests.auth.commands import AuthCommands
+from tests.auth.commands import AuthCommandsMixin
 from tests.auth.utils import AuthUtils
 from tests.auth.registration import RegistrationMixin
 from tests.auth.mail_list import MailListMixin
 
 
-class TestSqlite(test.AppTestCase,
-                 AuthCommands,
+class TestSqlite(test.AppTestCase, AuthUtils,
+                 AuthCommandsMixin,
                  UserMixin,
                  OdmMixin,
                  PasswordMixin,
                  PermissionsMixin,
                  RegistrationMixin,
-                 MailListMixin,
-                 AuthUtils):
+                 MailListMixin):
     config_file = 'tests.auth'
     config_params = {'DATASTORE': 'sqlite://'}
 

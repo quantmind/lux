@@ -104,17 +104,13 @@ class PermissionsMixin:
 
         request = await self.client.get(
             '/objectives/{}'.format(objective['id']), token=su_token)
-        response = request.response
-        self.assertEqual(response.status_code, 200)
-        data = self.json(response)
+        data = self.json(request.response, 200)
         self.assertTrue('id' in data)
         self.assertTrue('subject' in data)
 
         request = await self.client.get(
             '/objectives', token=su_token)
-        response = request.response
-        self.assertEqual(response.status_code, 200)
-        data = self.json(response)
+        data = self.json(request.response, 200)
         self.assertTrue('result' in data)
         for item in data['result']:
             self.assertTrue('id' in item)
@@ -123,9 +119,7 @@ class PermissionsMixin:
 
         request = await self.client.get(
             '/objectives/metadata', token=su_token)
-        response = request.response
-        self.assertEqual(response.status_code, 200)
-        data = self.json(response)
+        data = self.json(request.response, 200)
         self.assertTrue(
             any(field['name'] == 'subject' for field in data['columns']))
 

@@ -500,34 +500,7 @@ class AppTestCase(unittest.TestCase, TestMixin):
 
     @classmethod
     def populatedb(cls):
-        fixtures = os.path.join(cls.app.meta.path, 'fixtures')
-        if os.path.isdir(fixtures):
-            odm = cls.app.odm()
-            for filename in os.listdir(fixtures):
-                if not filename.endswith(('.json')):
-                    continue
-
-                with open(os.path.join(fixtures, filename), 'r') as fp:
-                    data = _json.load(fp)
-                with odm.begin() as session:
-                    for model, entries in data.items():
-                        create = getattr(cls,
-                                         'db_create_%s' % model,
-                                         cls.db_create_model)
-                        for entry in entries:
-                            create(odm, session, model, entry)
-
-    @classmethod
-    def db_create_model(cls, odm, session, model, entry):
-        session.add(odm[model](**entry))
-
-    @classmethod
-    def db_create_user(cls, odm, session, model, entry):
-        backend = cls.app.auth_backend
-        entry['odm_session'] = session
-        if 'password' not in entry:
-            entry['password'] = entry['username']
-        backend.create_user(cls.app, **entry)
+        load_fixtures(cls.app)
 
     @classmethod
     def api_url(cls, path):

@@ -37,6 +37,7 @@ from .models import ModelContainer
 from .cache import create_cache
 from .exceptions import ShellError
 from .channels import Channels
+from .auth import SimpleBackend
 
 
 LUX_CORE = os.path.dirname(__file__)
@@ -434,6 +435,7 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
                 self.cfg = pulsar.Config(debug=self.debug)
             environ['pulsar.cfg'] = self.cfg
         request.cache.app = self
+        request.cache.auth_backend = SimpleBackend()
         return request
 
     def html_document(self, request):

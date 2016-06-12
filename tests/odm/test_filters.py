@@ -81,6 +81,30 @@ class TestFiltersPsql(postgresql.TestPostgreSqlBase):
         self.assertTrue(len(result) == 1)
         self.assertEqual(result[0]['id'], self.pippo.id)
 
+    async def test_load_only(self):
+        request = await self.client.get(
+            '/tasks?load_only=id&load_only=subject')
+        data = self.json(request.response, 200)
+        result = data['result']
+        self.assertIsInstance(result, list)
+        self.assertEqual(len(result), 3)
+        for entry in result:
+            self.assertEqual(len(entry), 2)
+            self.assertTrue(entry['id'])
+            self.assertTrue(entry['subject'])
+
+    async def test_load_only_with_url(self):
+        request = await self.client.get(
+            '/tasks?load_only=api_url&load_only=subject')
+        data = self.json(request.response, 200)
+        result = data['result']
+        self.assertIsInstance(result, list)
+        self.assertEqual(len(result), 3)
+        for entry in result:
+            self.assertEqual(len(entry), 2)
+            self.assertTrue(entry['api_url'])
+            self.assertTrue(entry['subject'])
+
 
 class TestFiltersSqlite(TestSqliteMixin, TestFiltersPsql):
 

@@ -22,12 +22,12 @@ from pulsar.apps.wsgi import wsgi_request
 
 from lux.core import Parameter
 
-from .auth import AuthBackend, MultiAuthBackend, AppRequest, backend_action
-from .models import RestModel, RestColumn, ModelMixin, is_rel_column
+from .auth import AuthBackend, MultiAuthBackend, backend_action
+from .models import RestModel, RestField, ModelMixin, is_rel_field
 from .client import ApiClient
 from .views.actions import (AuthenticationError, check_username, login,
                             logout, user_permissions)
-from .views.rest import RestRoot, RestRouter, MetadataMixin
+from .views.rest import RestRoot, RestRouter, MetadataMixin, CRUD
 from .views.auth import Authorization
 from .pagination import Pagination, GithubPagination
 from .forms import RelationshipField, UniqueField
@@ -36,8 +36,8 @@ from .user import (MessageMixin, UserMixin, SessionMixin, PasswordMixin,
 
 
 __all__ = ['RestModel',
-           'RestColumn',
-           'is_rel_column',
+           'RestField',
+           'is_rel_field',
            'ModelMixin',
            #
            'Authorization',
@@ -69,9 +69,7 @@ __all__ = ['RestModel',
            'login',
            'logout',
            'user_permissions',
-           'check_username',
-           #
-           'AppRequest']
+           'check_username']
 
 
 def website_url(request, location=None):
@@ -251,7 +249,7 @@ class Extension(MultiAuthBackend):
 
         # Allow router override
         for router in routes.values():
-            if isinstance(router, ModelMixin):
+            if isinstance(router, RestRouter):
                 # Register model
                 router.model = app.models.register(router.model)
             # Add router to API root-router

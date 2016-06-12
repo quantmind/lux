@@ -12,20 +12,16 @@ _ ..pulsar-odm: https://github.com/quantmind/pulsar-odm
 from odm import declared_attr
 
 from lux.core import Parameter, LuxExtension
-from lux.extensions.rest import AppRequest
 
 from .mapper import Mapper, model_base
-from .rest import CRUD, RestRouter
-from .models import RestModel, RestColumn, odm_models
+from .models import RestModel, RestField, odm_models
 from .ws import WsModelRpc
 
 
 __all__ = ['model_base',
            'declared_attr',
-           'CRUD',
-           'RestRouter',
            'RestModel',
-           'RestColumn']
+           'RestField']
 
 
 sql_to_broadcast = {'insert': 'create'}
@@ -61,7 +57,9 @@ class Extension(LuxExtension, WsModelRpc):
         :param session:     SQLAlchemy session
         :param changes:     dict of model changes
         """
-        request = AppRequest(app)
+        request = session.request
+        if not request:
+            return
         for instance, event in changes.values():
             name = instance.__class__.__name__.lower()
             model = odm_models(app).get(name)

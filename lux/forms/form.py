@@ -217,10 +217,14 @@ class Form(metaclass=FormType):
             messages = []
             data = {'errors': messages}
             for name, msg in self.errors.items():
-                msg = {'message': '\n'.join(msg)}
-                field = self.dfields.get(name)
-                if field:
-                    msg['field'] = field.name
+                formset = self.form_sets.get(name)
+                if formset:
+                    msg = formset.tojson()
+                else:
+                    msg = {'message': '\n'.join(msg)}
+                    field = self.dfields.get(name)
+                    if field:
+                        msg['field'] = field.name
                 messages.append(msg)
             return data
 

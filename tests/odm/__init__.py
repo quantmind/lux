@@ -8,8 +8,8 @@ from lux import forms
 from lux.forms import Layout, Fieldset, Submit
 from lux.core import LuxExtension
 from lux.extensions import odm
-from lux.extensions.odm import RestModel, RestColumn, CRUD
-from lux.extensions.rest import RelationshipField, UniqueField
+from lux.extensions.odm import RestModel
+from lux.extensions.rest import RelationshipField, UniqueField, RestField, CRUD
 
 from odm.types import ChoiceType
 
@@ -34,7 +34,8 @@ class Extension(LuxExtension):
 
     def api_sections(self, app):
         return [CRUDTask(),
-                CRUDPerson()]
+                CRUDPerson(),
+                CRUDContent()]
 
     def on_loaded(self, app):
         app.forms['task'] = Layout(
@@ -77,6 +78,16 @@ class Task(Model):
         return relationship('Person', backref='tasks')
 
 
+class Content(Model):
+    id = Column(Integer, primary_key=True)
+    group = Column(String(30), nullable=False)
+    name = Column(String(60), nullable=False)
+
+    @property
+    def path(self):
+        return '%s/%s' % (self.group, self.name)
+
+
 class TaskForm(forms.Form):
     model = 'tasks'
     subject = forms.CharField()
@@ -94,10 +105,14 @@ class PersonForm(forms.Form):
 
 class CRUDTask(CRUD):
     model = RestModel('task', 'task', 'task',
-                      columns=[RestColumn('assigned',
-                                          model='people',
-                                          field='assigned_id')])
+                      fields=[RestField('assigned',
+                                        model='people',
+                                        field='assigned_id')])
 
 
 class CRUDPerson(CRUD):
     model = RestModel('person', 'person', 'person', url='people')
+
+
+class CRUDContent(CRUD):
+    model = RestModel('content', id_field='path')

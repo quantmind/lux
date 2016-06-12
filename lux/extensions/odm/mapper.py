@@ -39,6 +39,10 @@ class Mapper(odm.Mapper):
 
 class LuxSession(odm.OdmSession):
 
+    def __init__(self, mapper, request=None, **options):
+        super().__init__(mapper, **options)
+        self.request = request
+
     @property
     def app(self):
         return self.mapper.app

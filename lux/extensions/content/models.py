@@ -5,19 +5,19 @@ from pulsar import Http404
 from pulsar.utils.httpurl import remove_double_slash
 from pulsar.utils.slugify import slugify
 
-from lux.core import cached
-from lux.extensions.rest import RestModel, RestColumn
+from lux.core import cached, models
+from lux.extensions.rest import RestModel, RestField
 from lux.utils.files import skipfile
 
 from .contents import get_reader
 
 
-COLUMNS = [
-    RestColumn('priority', sortable=True, type='int'),
-    RestColumn('order', sortable=True, type='int'),
-    RestColumn('slug', sortable=True),
-    RestColumn('path', sortable=True),
-    RestColumn('title')]
+FIELDS = [
+    RestField('priority', sortable=True, type='int'),
+    RestField('order', sortable=True, type='int'),
+    RestField('slug', sortable=True),
+    RestField('path', sortable=True),
+    RestField('title')]
 
 
 OPERATORS = {
@@ -30,85 +30,48 @@ OPERATORS = {
 }
 
 
-class ContentModel(RestModel):
+class ContentModelMixin:
+
+    def query(self, request, *args, check_permission=None, **kwargs):
+        group = request.urlargs.get('group')
+        if group:
+            if check_permission and not isinstance(check_permission, dict):
+                check_permission = check_permission_dict(group,
+                                                         check_permission)
+            kwargs['group'] = group
+        return super().query(request, *args,
+                             check_permission=check_permission,
+                             **kwargs)
+
+
+class ContentModel(ContentModelMixin, RestModel):
     '''A Content model with file-system backend
 
     This model provide read-only operations
     '''
-    def __init__(self, location, name='content', columns=None, ext='md', **kw):
+    def __init__(self, location, name='content', fields=None, ext='md', **kw):
         if not os.path.isdir(location):
             os.makedirs(location)
         self.directory = location
         self.ext = ext
-        columns = columns or COLUMNS[:]
+        fields = fields or FIELDS[:]
         kw['id_field'] = 'path'
-        super().__init__(name, columns=columns, **kw)
+        super().__init__(name, fields=fields, **kw)
 
-    def get_instance(self, request, path):
-        return self.serialise_model(request, self.read(request, path))
+    def session(self, request, session=None):
+        return QuerySession(self, request)
 
-    def session(self, request):
-        return Query(request, self)
-
-    def query(self, request, session, *filters):
-        if filters:
-            request.logger.warning('Cannot use positional filters in %s',
-                                   request.path)
+    def get_query(self, session):
         return session
 
     def tojson(self, request, content, in_list=False, **kw):
-        if not isinstance(content, dict):
-            content = content.json(request.app)
-            path = content.get('path')
-            if path is not None:
-                content['slug'] = slugify(path) or 'index'
+        content = content.json(request.app)
+        path = content.get('path')
+        if path is not None:
+            content['slug'] = slugify(path) or 'index'
         if in_list:
             content.pop('body', None)
         return content
-
-    def get_target(self, request, **extra_data):
-        '''Get a target for a form
-
-        Used by HTML Router to get information about the LUX REST API
-        of this Rest Model
-        '''
-        target = {'url': self.url}
-        target.update(**extra_data)
-        return target
-
-    def read(self, request, path):
-        '''Read content from file in the repository
-        '''
-        src = os.path.join(self.directory, path)
-        if os.path.isdir(src):
-            src = os.path.join(src, 'index')
-
-        # Don't serve path with a suffix
-        content_type, _ = mimetypes.guess_type(src)
-        if content_type:
-            raise Http404
-
-        # Add extension
-        ext = '.%s' % self.ext
-        src = '%s%s' % (src, ext)
-        if not os.path.isfile(src):
-            raise Http404
-
-        path = os.path.relpath(src, self.directory)
-        #
-        # Add html_url if available
-        if self.html_url:
-            path = '%s/%s' % (self.html_url, path)
-        #
-        # Remove extension
-        path = path[:-len(ext)]
-        if path.endswith('index'):
-            path = path[:-5]
-        if path.endswith('/'):
-            path = path[:-1]
-        path = '/%s' % path
-        meta = dict(path=path)
-        return get_reader(request.app, src).read(src, meta)
 
     def asset(self, filename):
         if self.html_url:
@@ -118,7 +81,8 @@ class ContentModel(RestModel):
         src = os.path.join(self.directory, filename)
         return dict(src=src, path=path)
 
-    def all(self, request, force=False):
+    @cached
+    def all(self, request):
         """Generator of contents in this model
 
         :param force: if true all content is yielded, otherwise only content
@@ -137,10 +101,7 @@ class ContentModel(RestModel):
                 path = os.path.relpath(dirpath, self.directory)
                 filename = os.path.join(path, filename)
 
-                if not filename.endswith(ext):
-                    if force:
-                        yield self.asset(filename)
-                else:
+                if filename.endswith(ext):
                     filename = filename[:-len(ext)]
                     yield self.read(request, filename)
 
@@ -154,24 +115,16 @@ class ContentModel(RestModel):
         body = data['body']
         return body
 
-    def _do_sortby(self, request, query, field, direction):
-        return query.sortby(field, direction)
 
-    def _do_filter(self, request, query, field, op, value):
-        return query.filter(field, op, value)
-
-
-class Query:
+class QuerySession(models.Query):
     _data = None
     _limit = None
     _offset = None
+    _paths = None
 
-    def __init__(self, request, model):
+    def __init__(self, model, request):
+        super().__init__(model)
         self.request = request
-        self.model = model
-
-    def __enter__(self):
-        return self
 
     def __repr__(self):
         if self._data is None:
@@ -180,8 +133,25 @@ class Query:
             return repr(self._data)
     __str__ = __repr__
 
+    # Session methods
+    def __enter__(self):
+        return self
+
     def __exit__(self, type, value, traceback):
         pass
+
+    def add(self, instance):
+        pass
+
+    def flush(self):
+        pass
+
+    # Query methods
+    def one(self):
+        if self._paths:
+            return self.read(self._paths[0])
+        else:
+            raise Http404
 
     def limit(self, v):
         self._limit = v
@@ -194,7 +164,10 @@ class Query:
     def count(self):
         return len(self._get_data())
 
-    def sortby(self, field, direction):
+    def filter_args(self, args):
+        self._paths = args
+
+    def sortby_field(self, field, direction):
         data = self._get_data()
         if direction == 'desc':
             data = [desc(d, field) for d in data]
@@ -203,7 +176,7 @@ class Query:
         self._data = [s.d for s in sorted(data)]
         return self
 
-    def filter(self, field, op, value):
+    def filter_field(self, field, op, value):
         data = []
         op = OPERATORS.get(op)
         if op:
@@ -218,7 +191,7 @@ class Query:
         return self
 
     def all(self):
-        data = self._get_data()
+        data = self.self.model.all(self.request)
         if self._offset:
             data = data[self._offset:]
         if self._limit:
@@ -226,23 +199,40 @@ class Query:
         return data
 
     #  INTERNALS
-    def _get_data(self):
-        if self._data is None:
-            self._data = self.read_files(self.request)
-        return self._data
-
     def _sort(self, c):
         if self._sort_field in c:
             return
 
-    @cached
-    def read_files(self, request):
-        data = []
-        instances = self.model.all(request)
-        for d in self.model.serialise(request, instances):
-            if d.get('priority', 1):
-                data.append(d)
-        return data
+    def read(self, path):
+        '''Read content from file in the repository
+        '''
+        model = self.model
+        src = os.path.join(model.directory, path)
+        if os.path.isdir(src):
+            src = os.path.join(src, 'index')
+
+        # Don't serve path with a suffix
+        content_type, _ = mimetypes.guess_type(src)
+        if content_type:
+            raise Http404
+
+        # Add extension
+        ext = '.%s' % model.ext
+        src = '%s%s' % (src, ext)
+        if not os.path.isfile(src):
+            raise Http404
+
+        path = os.path.relpath(src, model.directory)
+        #
+        # Remove extension
+        path = path[:-len(ext)]
+        if path.endswith('index'):
+            path = path[:-5]
+        if path.endswith('/'):
+            path = path[:-1]
+        path = '/%s' % path
+        meta = dict(path=path)
+        return get_reader(self.app, src).read(src, meta)
 
 
 class asc:

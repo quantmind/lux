@@ -34,7 +34,7 @@ class WsModelRpc:
             with odm.begin() as session:
                 instance = model.create_model(request, filtered_data,
                                               session=session)
-                return model.serialise(request, instance)
+                return model.tojson(request, instance)
         else:
             data = form.tojson()
             raise rpc.InvalidParams(data=data)

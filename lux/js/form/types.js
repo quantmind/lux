@@ -125,8 +125,18 @@ export default function (ngModule) {
 
         // Div
         p.setType({
-            name: 'div',
-            class: FormElement
+            name: 'row',
+            class: FormElement,
+            template: rowTpl
+        });
+
+        p.setType({
+            name: 'col',
+            class: FormElement,
+            template: colTpl,
+            defaultOptions: {
+                size: 12
+            }
         });
 
         // formset
@@ -148,9 +158,9 @@ title="${field.title}"
 placeholder="${field.placeholder}"
 ${field.directives}
 ng-model="field.value"
-ng-required="field.required"
-ng-readonly="field.readonly"
-ng-disabled="field.disabled"
+ng-required="${field.required}"
+ng-readonly="${field.readonly}"
+ng-disabled="${field.disabled}"
 ng-minlength="field.minlength"
 ng-maxlength="field.maxlength"
 >`
@@ -163,8 +173,8 @@ name="${field.name}"
 ${field.directives}
 ng-model="field.value"
 ng-options="option.label for option in field.options track by option.value"
-ng-required="field.required"
-ng-readonly="field.readonly"
+ng-required="${field.required}"
+ng-readonly="${field.readonly}"
 ng-disabled="${field.disabled}"
 >
 </select>`
@@ -178,9 +188,9 @@ placeholder="${field.placeholder}"
 rows="${field.rows}"
 ${field.directives}
 ng-model="field.value"
-ng-required="field.required"
-ng-readonly="field.readonly"
-ng-disabled="field.disabled">
+ng-required="${field.required}"
+ng-readonly="${field.readonly}"
+ng-disabled="${field.disabled}">
 "${field.value}"
 </textarea>`;
 }
@@ -219,6 +229,13 @@ function fieldsetTpl (field) {
     return `<fieldset>${legend}</fieldset>`;
 }
 
+const rowTpl = `<div class="row"></div>`;
+
+
+function colTpl(field) {
+    return `<div class="col-sm-${field.size}"></div>`
+}
+
 
 function buttonTpl(field) {
     return `<button name="${field.name}"
@@ -251,9 +268,9 @@ name="${field.name}"
 ${field.directives}
 theme="bootstrap"
 ng-model="field.value"
-ng-required="field.required"
-ng-readonly="field.readonly"
-ng-disabled="field.disabled"
+ng-required="${field.required}"
+ng-readonly="${field.readonly}"
+ng-disabled="${field.disabled}"
 >
 <ui-select-match placeholder="${field.placeholder}">{{$select.selected.label}}</ui-select-match>
 <ui-select-choices repeat="item.value as item in field.options | filter: $select.search">

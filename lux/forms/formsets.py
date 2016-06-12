@@ -15,13 +15,15 @@ class FormSet:
     def __init__(self,
                  form_class,
                  related_name=None,
-                 model=None):
+                 model=None,
+                 label=None):
         self.name = None
         self.form_class = form_class
         self.related_name = related_name
         self.creation_counter = FormSet.creation_counter
         self.related_form = None
         self.model = model
+        self.label = label
         FormSet.creation_counter += 1
 
     def __call__(self, related_form):
@@ -36,6 +38,10 @@ class FormSet:
     def is_valid(self, exclude_missing=False):
         self._unwind()
         return bool(self._errors)
+
+    def tojson(self):
+        self.is_valid()
+        return self._errors
 
     def _unwind(self):
         if hasattr(self, '_forms'):

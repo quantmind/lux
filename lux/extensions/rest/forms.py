@@ -103,7 +103,7 @@ class UniqueField:
         except Http404:
             pass
         else:
-            if not model.same_instance(instance, previous_state):
+            if instance != previous_state:
                 raise forms.ValidationError(
                     self.validation_error.format(value))
 

@@ -1,7 +1,7 @@
 from lux.core import CommandError
 
 
-class AuthCommands:
+class AuthCommandsMixin:
 
     async def test_create_token(self):
         command = self.app.get_command('create_token')

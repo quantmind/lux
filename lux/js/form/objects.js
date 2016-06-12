@@ -62,13 +62,16 @@ export class FormElement extends LuxComponent {
             else $log.error(`Could not locate lux-form wrapper "${wrapper}" in "${field.name}" field`);
         });
 
-        $element.html(asHtml(template));
-        var compileHtml = fieldType.compile || compile;
-        compileHtml($scope.$lux, $element.contents(), $scope);
-        //var $el = _.element(template);
-        //$element.replaceWith($el);
+        //$element.html(asHtml(template));
         //var compileHtml = fieldType.compile || compile;
-        //compileHtml(this.$lux, $el, $scope);
+        //var $el = $element.contents();
+
+        var $el = _.element(template);
+        $element.replaceWith($el);
+        $element = $el;
+
+        var compileHtml = fieldType.compile || compile;
+        compileHtml(this.$lux, $el, $scope);
         this.$timeout(() => {
             field.$postCompile($element);
         });

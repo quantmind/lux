@@ -94,14 +94,14 @@ class TestPostgreSql(TestPostgreSqlBase):
         tables = await self.app.odm.tables()
         self.assertTrue(tables)
         self.assertEqual(len(tables), 1)
-        self.assertEqual(len(tables[0][1]), 10)
+        self.assertEqual(len(tables[0][1]), 11)
 
     def test_rest_model(self):
         from tests.odm import CRUDTask, CRUDPerson
         model = self.app.models.register(CRUDTask().model)
         self.assertEqual(model.name, 'task')
-        columns = model.columns()
-        self.assertTrue(columns)
+        fields = model.fields()
+        self.assertTrue(fields)
 
         model = self.app.models.register(CRUDPerson().model)
         self.assertEqual(model,
@@ -110,8 +110,8 @@ class TestPostgreSql(TestPostgreSqlBase):
         self.assertEqual(model.name, 'person')
         self.assertEqual(model.url, 'people')
         self.assertEqual(model.api_name, 'people_url')
-        columns = model.columns()
-        self.assertTrue(columns)
+        fields = model.fields()
+        self.assertTrue(fields)
 
     @test.green
     def test_simple_session(self):
@@ -274,11 +274,11 @@ class TestPostgreSql(TestPostgreSqlBase):
         """
         token = await self._token()
         await self._create_person(token, 'spiderfail1', 'luca')
-        data = await self._create_person(token, 'spiderfail2', 'luca')
+        data = await self._create_person(token, 'spiderfail2', 'pippo')
 
         request = await self.client.post(
             '/people/{}'.format(data['id']),
-            json={'username': 'spiderfail1', 'name': 'luca'},
+            json={'username': 'spiderfail1', 'name': 'pluto'},
             token=token)
         response = request.response
         self.assertValidationError(response, 'username',

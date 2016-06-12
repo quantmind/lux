@@ -141,11 +141,14 @@ class Formsets(Fieldset):
 
 
 class Row(Fieldset):
-    type = 'div.row'
+    type = 'row'
 
 
 class Col(Fieldset):
-    type = 'div.col-sm-12'
+    type = 'col'
+
+    def __init__(self, field, size):
+        super().__init__(field, size=size)
 
 
 class Layout(Fieldset):
