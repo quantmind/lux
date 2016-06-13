@@ -29,8 +29,6 @@ class TokenBackendMixin:
         return jwt.encode_json(token, request.config['SECRET_KEY'])
 
     def decode_token(self, request, token):
-        if not jwt:     # pragma    nocover
-            raise ImproperlyConfigured('JWT library not available')
         try:
             return jwt.decode(token, request.config['SECRET_KEY'])
         except jwt.ExpiredSignature:

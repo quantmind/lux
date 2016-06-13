@@ -16,6 +16,10 @@ EFFECTS = {'allow': True,
 
 def has_permission(request, permissions, resource, action):
     '''Check for permission to perform an ``action`` on a ``resource``
+
+    :param permissions: dictionary or permissions
+    :param resource: resource string, colon separated
+    :param action: action to check permission for
     '''
     while resource:
         permission = _check_policies(permissions, resource, action)
@@ -113,3 +117,4 @@ def _has_permission(policy, resource, action):
                 if _has_policy_actions(action, policy.get('action')):
                     return EFFECTS.get(policy.get('effect', 'allow'))
     return None
+

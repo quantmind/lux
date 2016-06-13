@@ -153,11 +153,3 @@ class MailingList(Model):
         return relationship(
             'User',
             backref=backref("mailinglists", cascade="all, delete-orphan"))
-
-
-class Acl(Model):
-    """Access control list"""
-    user_id = Column(Integer, primary_key=True)
-    resource = Column(String, primary_key=True)
-    action = Column(Integer, primary_key=True)
-    effect = Column(Integer, primary_key=True)

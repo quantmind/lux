@@ -121,6 +121,11 @@ class LuxModel:
             query = self.query(request, session, *filters, **kwargs)
             return query.one()
 
+    def get_list(self, request, *filters, session=None, **kwargs):
+        with self.session(request, session=session) as session:
+            query = self.query(request, session, *filters, **kwargs)
+            return query.all()
+
     # CRUD API
     def create_model(self, request, instance, data, session=None):
         """Create a model ``instance``"""

@@ -77,7 +77,7 @@ class Resource:
 
     def __call__(self, request, load_only=None):
         perms = self.permissions(request)
-        if not perms:
+        if perms is None:
             raise PermissionDenied
         if load_only:
             return tuple(set(perms).intersection(load_only))
@@ -87,7 +87,7 @@ class Resource:
     def permissions(self, request):
         """Dictionary of permissions for this :class:`.Resource`
         """
-        perm = None
+        perms = None
         permissions = request.cache.permissions
         if permissions is None:
             request.cache.permissions = permissions = {}
@@ -95,20 +95,20 @@ class Resource:
         if self.resource not in permissions:
             permissions[self.resource] = {}
         elif self.action in permissions[self.resource]:
-            perm = permissions[self.resource][self.action]
+            perms = permissions[self.resource][self.action]
 
-        if perm is None:
+        if perms is None:
             has = request.cache.auth_backend.has_permission
             root_perm = has(request, self.resource, self.action)
             if root_perm and self.fields:
                 has = request.cache.auth_backend.has_permission
-                perm = tuple((name for name in self.fields if
-                              has(request, '%s:%s' % (self.resource, name),
+                perms = tuple((name for name in self.fields if
+                               has(request, '%s:%s' % (self.resource, name),
                                   self.action)
+                               )
                               )
-                             )
-            else:
-                perm = ()
-            permissions[self.resource][self.action] = perm
+                permissions[self.resource][self.action] = perms
+            elif root_perm:
+                return ()
 
-        return perm
+        return perms

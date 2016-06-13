@@ -24,7 +24,7 @@ from lux.core import App
 from lux.extensions.rest import ApiClient
 from lux.core.commands.generate_secret_key import generate_secret
 
-logger = logging.getLogger('lux.test')
+logger = logging.getLogger('pulsar.test')
 
 
 __all__ = ['TestClient',
@@ -108,7 +108,27 @@ def get_params(*names):
     return cfg
 
 
-def load_fixtures(app, path=None):
+@green
+def create_users(app, items):
+    items.insert(0, {
+        "username": "testuser",
+        "password": "testuser",
+        "superuser": True,
+        "active": True
+    })
+    logger.debug('Creating %d users', len(items))
+    request = app.wsgi_request()
+    auth = app.auth_backend
+    processed = set()
+    for params in items:
+        if params.get('username') in processed:
+            continue
+        user = auth.create_user(request, **params)
+        processed.add(user.username)
+    return len(processed)
+
+
+async def load_fixtures(app, path=None):
     fpath = path if path else os.path.join(app.meta.path, 'fixtures')
 
     fixtures = OrderedDict()
@@ -123,30 +143,32 @@ def load_fixtures(app, path=None):
             logger.error('Could not find %s path for fixtures', path)
         return 0
 
-    total = 0
+    total = await create_users(app, fixtures.pop('users', []))
+
+    client = TestClient(app)
+    test = TestCase()
+    request = await client.post('/authorizations',
+                                json=dict(username='testuser',
+                                          password='testuser'))
+    client.test_token = test.json(request.response, 201)['token']
 
     for model, items in fixtures.items():
         logger.debug('Creating %d fixtures for "%s"', len(items), model)
-        if model == 'user':
-            request = app.wsgi_request()
-            auth = app.auth_backend
-            for params in items:
-                auth.create_user(request, **params)
-                total += 1
-        else:
-            odm = app.odm()
-            model = odm[model]
-            with odm.begin() as session:
-                for params in items:
-                    session.add(model(**params))
-                total += 1
+        for params in items:
+            request = await client.post('/%s' % model,
+                                        json=params,
+                                        token=client.test_token)
+            test.json(request.response, 201)
+            total += 1
 
-    logger.info('Created %s objects from %d models', total, len(fixtures))
+    logger.info('Created %s objects from %d models', total, 1 + len(fixtures))
 
 
 class TestClient:
     """An utility for simulating lux clients
     """
+    test_token = None
+
     def __init__(self, app, headers=None):
         self.app = app
         self.headers = headers or []
@@ -448,6 +470,7 @@ class AppTestCase(unittest.TestCase, TestMixin):
             # Store the original odm for removing the new databases
             cls.odm = cls.app.odm
             await cls.setupdb()
+        await as_coroutine(cls.populatedb())
         await as_coroutine(cls.beforeAll())
 
     @classmethod
@@ -491,7 +514,6 @@ class AppTestCase(unittest.TestCase, TestMixin):
                             cls.datastore[key] = new_url
         cls.app.config['DATASTORE'] = cls.datastore
         odm.table_create()
-        cls.populatedb()
 
     @classmethod
     @green
@@ -501,7 +523,7 @@ class AppTestCase(unittest.TestCase, TestMixin):
 
     @classmethod
     def populatedb(cls):
-        load_fixtures(cls.app)
+        return load_fixtures(cls.app)
 
     @classmethod
     def api_url(cls, path):

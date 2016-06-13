@@ -60,7 +60,7 @@ class Query(BaseQuery):
     def all(self):
         model = self.model
         fields = self.fields
-        return (ModelInstance(model, o, fields) for o in self._query().all())
+        return [ModelInstance(model, o, fields) for o in self._query().all()]
 
     def limit(self, limit):
         self.sql_query = self.sql_query.limit(limit)
@@ -290,16 +290,15 @@ class RestModel(rest.RestModel):
         if is_rel_field(col):
             rel_model = self.app.models.get(col.model)
             if isinstance(current_value, (list, set)):
-                idfield = rel_model.id_field
-                all = set((getattr(v, idfield) for v in value))
+                value = tuple((rel_model.instance(v) for v in value))
+                all_ids = tuple((item.id for item in value))
                 avail = set()
                 for item in tuple(current_value):
                     item = rel_model.instance(item)
-                    pk = item.id
-                    if item.id not in all:
-                        current_value.remove(pk)
+                    if item.id not in all_ids:
+                        current_value.remove(item.id)
                     else:
-                        avail.add(pk)
+                        avail.add(item.id)
                 for item in value:
                     if item.id not in avail:
                         current_value.append(item.obj)

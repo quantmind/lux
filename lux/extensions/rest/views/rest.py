@@ -125,9 +125,6 @@ class CRUD(MetadataMixin, RestRouter):
 
     This class adds routes to the :class:`.RestRouter`
     '''
-    def urlargs(self, request):
-        return {self.model.id_field: request.urlargs['id']}
-
     def get(self, request):
         '''Get a list of models
         '''
@@ -221,7 +218,8 @@ class CRUD(MetadataMixin, RestRouter):
                 instance = self.get_instance(
                     request,
                     session=session,
-                    check_permission=Resource.rest(request, 'delete')
+                    check_permission=Resource.rest(request, 'delete',
+                                                   self.model.fields())
                 )
                 model.delete_model(request, instance, session=session)
                 request.response.status_code = 204

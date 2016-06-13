@@ -41,8 +41,7 @@ class AuthUtils:
 
         # Get new token
         request = await self.client.post('/authorizations',
-                                         content_type='application/json',
-                                         body=credentials)
+                                         json=credentials)
         user = request.cache.user
         self.assertFalse(user.is_authenticated())
         data = self.json(request.response, 201)

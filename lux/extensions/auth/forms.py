@@ -80,9 +80,8 @@ class TokenModel(RestModel):
 # FORMS
 class PermissionForm(forms.Form):
     model = 'permissions'
-    id = forms.HiddenField(required=False)
     name = forms.CharField()
-    description = forms.TextField()
+    description = forms.TextField(required=False)
     policy = forms.JsonField(text_edit=json.dumps({'mode': 'json'}))
 
     def clean(self):
@@ -92,7 +91,6 @@ class PermissionForm(forms.Form):
 
 class GroupForm(forms.Form):
     model = 'groups'
-    id = forms.HiddenField(required=False)
     name = forms.SlugField(validator=UniqueField())
     permissions = RelationshipField('permissions',
                                     multiple=True,

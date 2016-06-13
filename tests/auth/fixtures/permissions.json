@@ -1,0 +1,37 @@
+{
+    "users": [
+        {
+            "username": "pippo",
+            "password": "pippo",
+            "active": true
+        }
+    ],
+    "permissions": [
+        {
+            "name": "objective-all",
+            "policy": {
+                "resource": "objectives:*",
+                "action": "*"
+            }
+        },
+        {
+            "name": "objective-deadline-no-update",
+            "policy": {
+                "resource": "objectives:*:deadline",
+                "action": "update",
+                "effect": "deny"
+            }
+        }
+    ],
+    "groups": [
+        {
+            "name": "anonymous",
+            "permissions": ["objective-all", "objective-deadline-no-update"]
+        }
+    ],
+    "objectives": [
+        {
+            "subject": "A simple test objective"
+        }
+    ]
+}

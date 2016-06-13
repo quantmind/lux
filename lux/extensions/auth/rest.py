@@ -20,7 +20,7 @@ class PermissionCRUD(CRUD):
         'permission',
         'permission',
         'permission',
-        repr_field='name'
+        id_field='name'
     )
 
 
@@ -29,7 +29,7 @@ class GroupCRUD(CRUD):
         'group',
         'create-group',
         'group',
-        repr_field='name',
+        id_field='name',
         fields=[RestField('permissions', model='permissions')]
     )
 
