@@ -7,6 +7,7 @@ from pulsar.utils.slugify import slugify
 
 from lux.core import cached, models
 from lux.extensions.rest import RestModel, RestField
+from lux.utils.data import as_tuple
 from lux.utils.files import skipfile
 
 from .contents import get_reader
@@ -16,6 +17,7 @@ FIELDS = [
     RestField('priority', sortable=True, type='int'),
     RestField('order', sortable=True, type='int'),
     RestField('slug', sortable=True),
+    RestField('group', sortable=True),
     RestField('path', sortable=True),
     RestField('title')]
 
@@ -50,14 +52,11 @@ class ContentModel(RestModel):
     def get_query(self, session):
         return session
 
-    def tojson(self, request, content, in_list=False, **kw):
-        content = content.json(request.app)
-        path = content.get('path')
-        if path is not None:
-            content['slug'] = slugify(path) or 'index'
+    def tojson(self, request, instance, in_list=False, **kw):
+        data = instance.obj
         if in_list:
-            content.pop('body', None)
-        return content
+            data.pop('body', None)
+        return data
 
     def asset(self, filename):
         if self.html_url:
@@ -66,30 +65,6 @@ class ContentModel(RestModel):
             path = filename
         src = os.path.join(self.directory, filename)
         return dict(src=src, path=path)
-
-    @cached
-    def all(self, request):
-        """Generator of contents in this model
-
-        :param force: if true all content is yielded, otherwise only content
-            matching the extension
-        """
-        group = request.urlargs.get('group')
-        if not group:
-            return []
-        directory = os.path.join(self.directory, group)
-        ext = '.%s' % self.ext
-        for dirpath, dirnames, filenames in os.walk(directory):
-            for filename in filenames:
-                if skipfile(filename):
-                    continue
-
-                path = os.path.relpath(dirpath, self.directory)
-                filename = os.path.join(path, filename)
-
-                if filename.endswith(ext):
-                    filename = filename[:-len(ext)]
-                    yield self.read(request, filename)
 
     # INTERNALS
     def _path(self, request, path):
@@ -103,6 +78,7 @@ class ContentModel(RestModel):
 
 
 class QuerySession(models.Query):
+    _filtered_data = None
     _data = None
     _limit = None
     _offset = None
@@ -110,6 +86,9 @@ class QuerySession(models.Query):
 
     def __init__(self, model, request):
         super().__init__(model)
+        self._filters = []
+        self._groups = []
+        self._sortby = []
         self.request = request
 
     def __repr__(self):
@@ -134,8 +113,12 @@ class QuerySession(models.Query):
 
     # Query methods
     def one(self):
-        if self._paths:
-            return self.read(self._paths[0])
+        data = self.all()
+        if data:
+            if len(data) > 1:
+                self.request.logger.error('Multiple result found for model %s.'
+                                          'returning the first' % self.name)
+            return data[0]
         else:
             raise Http404
 
@@ -151,33 +134,31 @@ class QuerySession(models.Query):
         return len(self._get_data())
 
     def filter_args(self, args):
+        self._filtered_data = None
         self._paths = args
 
-    def sortby_field(self, field, direction):
-        data = self._get_data()
-        if direction == 'desc':
-            data = [desc(d, field) for d in data]
-        else:
-            data = [asc(d, field) for d in data]
-        self._data = [s.d for s in sorted(data)]
-        return self
-
     def filter_field(self, field, op, value):
-        data = []
-        op = OPERATORS.get(op)
-        if op:
-            for content in self._get_data():
-                val = content.get(field)
-                try:
-                    if op(val, value):
-                        data.append(content)
-                except Exception:
-                    pass
-        self._data = data
-        return self
+        self._filtered_data = None
+        if op in OPERATORS:
+            op = OPERATORS[op]
+            if field == 'group':
+                self._groups.extend(as_tuple(value))
+            self._filters.append((field, op, value))
+        else:
+            self.app.logger.error('Could not apply filter %s to %s',
+                                  op, self)
+
+    def sortby_field(self, field, direction):
+        self._sortby.append((field, direction))
 
     def all(self):
-        data = self.self.model.all(self.request)
+        data = self._get_data()
+        for field, direction in self._sortby:
+            if direction == 'desc':
+                data = [desc(d, field) for d in data]
+            else:
+                data = [asc(d, field) for d in data]
+            data = [s.d for s in sorted(data)]
         if self._offset:
             data = data[self._offset:]
         if self._limit:
@@ -185,40 +166,59 @@ class QuerySession(models.Query):
         return data
 
     #  INTERNALS
+    def _get_data(self):
+        model = self.model
+        if self._filtered_data is None:
+            if self._data is None:
+                self._data = []
+                for group in self._groups:
+                    cache = cached(app=self.app, key='contents:%s' % group)
+                    self._data.extend(cache(self._all)(group))
+            self._filtered_data = data = []
+            for content in self._data:
+                if self._filter(content):
+                    data.append(model.instance(content, self.fields))
+        return self._filtered_data
+
     def _sort(self, c):
         if self._sort_field in c:
             return
 
-    def read(self, path):
-        '''Read content from file in the repository
-        '''
+    def _filter(self, content):
+        for field, op, value in self._filters:
+            val = content.get(field)
+            try:
+                if not op(val, value):
+                    return False
+            except Exception:
+                return False
+        return True
+
+    def _all(self, group):
+        """Contents in this model group
+        """
         model = self.model
-        src = os.path.join(model.directory, path)
-        if os.path.isdir(src):
-            src = os.path.join(src, 'index')
-
-        # Don't serve path with a suffix
-        content_type, _ = mimetypes.guess_type(src)
-        if content_type:
-            raise Http404
-
-        # Add extension
+        directory = os.path.join(model.directory, group)
         ext = '.%s' % model.ext
-        src = '%s%s' % (src, ext)
-        if not os.path.isfile(src):
-            raise Http404
+        reader = get_reader(self.app, ext)
+        data = []
+        for dirpath, dirnames, filenames in os.walk(directory):
+            for filename in filenames:
+                if skipfile(filename):
+                    continue
 
-        path = os.path.relpath(src, model.directory)
-        #
-        # Remove extension
-        path = path[:-len(ext)]
-        if path.endswith('index'):
-            path = path[:-5]
-        if path.endswith('/'):
-            path = path[:-1]
-        path = '/%s' % path
-        meta = dict(path=path)
-        return get_reader(self.app, src).read(src, meta)
+                if dirpath != directory:
+                    path = os.path.relpath(dirpath, directory)
+                    filename = os.path.join(path, filename)
+
+                if filename.endswith(ext):
+                    slug = filename[:-len(ext)]
+                    src = os.path.join(directory, filename)
+                    meta = dict(path='/%s/%s' % (group, slug),
+                                group=group,
+                                slug=slug)
+                    data.append(reader.read(src, meta).tojson())
+        return data
 
 
 class asc:

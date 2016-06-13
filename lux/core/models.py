@@ -37,6 +37,7 @@ class LuxModel:
     """
     name = None
     identifier = None
+    """Unique string that identifies the model"""
     _app = None
 
     @property
@@ -149,29 +150,25 @@ class LuxModel:
     def get_instance_value(self, instance, name):
         return getattr(instance.obj, name, None)
 
+    # PERMISSIONS
     def check_permission(self, request, action, *args):
         """
         Checks whether the user has the requested level of access to
         the model, raising PermissionDenied if not
 
-        :param request:     request object
+        :param request:     WSGI request object
         :param action:      action to check permission for
         :param args:        additional namespaces for resource
         :raise:             PermissionDenied
+        :return:            the resource for which permission is granted
         """
-        resource = self.name
+        resource = self.identifier
         if args:
             resource = '%s:%s' % (resource, ':'.join(args))
         backend = request.cache.auth_backend
         if not backend.has_permission(request, resource, action):
             raise PermissionDenied
-
-    def has_permission_for_field(self, request, field_name, action):
-        try:
-            self.check_permission(request, action, field_name)
-            return True
-        except PermissionDenied:
-            return False
+        return resource
 
     def fields_with_permission(self, request, action, load_only=None):
         """Return a tuple of fields with valid permissions for ``action``
@@ -180,12 +177,12 @@ class LuxModel:
         raise PermissionDenied
         """
         action, args = permission_args(action)
-        self.check_permission(request, action, *args)
+        resource = self.check_permission(request, action, *args)
         fields = self.load_only_fields(load_only)
-        perms = self.permissions(request, action)
+        perms = self.permissions(request, action, resource)
         return tuple((field for field in fields if perms.get(field)))
 
-    def permissions(self, request, action, *args):
+    def permissions(self, request, action, resource):
         """
         Gets whether the user has the quested access level on
         each field in the model.
@@ -194,23 +191,25 @@ class LuxModel:
 
         :param request:     request object
         :param action:      access level
+        :param resource:    base resource
         :return:            dict, with column names as keys,
                             Booleans as values
         """
-        ret = None
+        perm = None
         cache = request.cache
         if 'model_permissions' not in cache:
             cache.model_permissions = {}
-        if self.name not in cache.model_permissions:
-            cache.model_permissions[self.name] = {}
-        elif action in cache.model_permissions[self.name]:
-            ret = cache.model_permissions[self.name][action]
+        if self.identifier not in cache.model_permissions:
+            cache.model_permissions[self.identifier] = {}
+        elif action in cache.model_permissions[self.identifier]:
+            perm = cache.model_permissions[self.identifier][action]
 
-        if not ret:
-            perm = self.has_permission_for_field
-            ret = {name: perm(request, name, action) for name in self.fields()}
-            cache.model_permissions[self.name][action] = ret
-        return ret
+        if perm is None:
+            has = cache.auth_backend.has_permission
+            perm = {name: has(request, '%s:%s' % (resource, name), action)
+                    for name in self.fields()}
+            cache.model_permissions[self.identifier][action] = perm
+        return perm
 
     # INTERNALS
     def register(self, app):
@@ -243,7 +242,10 @@ class ModelInstance:
         self.model = model
         self.obj = obj
         self.fields = fields
-        obj.model_instance = self
+        try:
+            obj._model_instance = self
+        except Exception:
+            pass
 
     @property
     def id(self):
@@ -263,8 +265,8 @@ class ModelInstance:
 
     @classmethod
     def create(cls, model, obj, fields=None):
-        if hasattr(obj, 'model_instance'):
-            return obj.model_instance
+        if hasattr(obj, '_model_instance'):
+            return obj._model_instance
         return cls(model, obj, fields)
 
     def has(self, field):

@@ -5,9 +5,13 @@ from pulsar import PermissionDenied, ImproperlyConfigured
 from .. import AuthBackend
 from .mixins import jwt, SessionBackendMixin
 from .registration import RegistrationMixin
+from .permissions import PemissionsMixin
 
 
-class SessionBackend(SessionBackendMixin, RegistrationMixin, AuthBackend):
+class SessionBackend(SessionBackendMixin,
+                     RegistrationMixin,
+                     PemissionsMixin,
+                     AuthBackend):
     """SessionBackend is used when the client is a web browser
 
     It maintain a session via a cookie key

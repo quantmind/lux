@@ -123,19 +123,12 @@ class HtmlContent:
         return self.src
     __str__ = __repr__
 
-    def json(self, app):
+    def tojson(self):
         """Convert the content into a JSON dictionary
         """
-        if self.meta is not None:
-            meta = self.meta
-            if 'modified' not in meta:
-                meta['modified'] = modified_datetime(self.src)
-            render = app.template_engine(meta.get('template_engine'))
-            context = app.config.copy()
-            context.update(meta)
-            meta = render_data(app, meta, render, context)
-        else:
-            meta = {}
+        meta = self.meta or {}
+        if self.src and 'modified' not in meta:
+            meta['modified'] = modified_datetime(self.src)
         meta['body_length'] = len(self.body)
         meta['body'] = self.body
         return dict(_flatten(meta))

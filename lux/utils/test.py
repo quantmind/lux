@@ -109,17 +109,16 @@ def get_params(*names):
 
 
 def load_fixtures(app, path=None):
-    if not path:
-        path = os.path.join(app.meta.path, 'fixtures')
+    fpath = path if path else os.path.join(app.meta.path, 'fixtures')
 
     fixtures = OrderedDict()
-    if os.path.isdir(path):
-        for filename in os.listdir(path):
+    if os.path.isdir(fpath):
+        for filename in os.listdir(fpath):
             if filename.endswith('.json'):
                 with open(os.path.join(path, filename), 'r') as file:
                     fixtures.update(_json.load(file,
                                                object_pairs_hook=OrderedDict))
-    else:
+    elif path:
         logger.error('Could not find %s path for fixtures', path)
 
     total = 0

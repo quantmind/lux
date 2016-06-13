@@ -32,9 +32,9 @@ class RestField:
         self.name = name
         self.sortable = sortable
         self.filter = filter
-        self.type = type
-        self.displayName = displayName
-        self.field = field
+        self.type = type or 'string'
+        self.displayName = displayName or nicename(name)
+        self.field = field or name
         self.hidden = hidden
         self.model = model
 
@@ -58,25 +58,18 @@ class RestField:
 
     __str__ = __repr__
 
-    def tojson(self, model=None, defaults=True):
+    def tojson(self, model=None):
         if self.model:
             if self.field:
                 model._fields.add_exclude(self.field)
             if not self.type:
                 self.type = 'object'
-        return dict(self._as_dict(defaults))
+        return dict(self._as_dict())
 
-    def _as_dict(self, defaults):
+    def _as_dict(self):
         for k, v in self.__dict__.items():
             if k.startswith('_'):
                 continue
-            if v is None and defaults:
-                if k == 'displayName':
-                    v = nicename(self.name)
-                elif k == 'field':
-                    v = self.name
-                elif k == 'type':
-                    v = 'string'
             if v is not None:
                 yield k, v
 

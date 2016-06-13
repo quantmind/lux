@@ -26,12 +26,15 @@ class ContentCRUD(CRUD):
     def filters_params(self, request, *filters, **params):
         """Enhance permission check for groups
         """
-        group = request.urlargs['group']
+        filters, params = super().filters_params(request, *filters, **params)
+        group = params['group']
         check_permission = params.get('check_permission')
         if check_permission and not isinstance(check_permission, dict):
             params['check_permission'] = check_permission_dict(
                 group, check_permission)
-        return super().filters_params(request, *filters, **params)
+        if 'id' in params:
+            params['slug'] = params.pop('id')
+        return filters, params
 
     def get_list(self, request, *filters, **params):
         params['priority:gt'] = 0
