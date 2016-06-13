@@ -45,7 +45,7 @@ class WsModelRpc:
         model = get_model(wsrequest)
         check_ws_permission(wsrequest, model.name, 'read')
         request = wsrequest.wsgi_request
-        return model.collection_data(request, **wsrequest.params)
+        return model.get_list(request, **wsrequest.params)
 
     def ws_authenticate(self, wsrequest):
         """Websocket RPC method for authenticating a user

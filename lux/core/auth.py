@@ -1,3 +1,4 @@
+from pulsar import PermissionDenied
 from pulsar.utils.structures import inverse_mapping
 
 from lux.utils.data import as_tuple
@@ -51,3 +52,63 @@ class SimpleBackend(AuthBase):
         """Get a dictionary of permissions for the given resource"""
         perm = dict(((action, True) for action in ACTIONS))
         return dict(((r, perm.copy()) for r in as_tuple(resources)))
+
+
+class Resource:
+
+    def __init__(self, resource, action=None, fields=None):
+        self.resource = resource
+        self.action = action or 'read'
+        self.fields = fields
+
+    @classmethod
+    def rest(cls, request, action, fields=None, pop=0, list=False):
+        resource = request.path[1:].replace('/', ':')
+        if pop:
+            resource = ':'.join(resource.split(':')[:-pop])
+        if list:
+            resource = '%s:*' % resource
+        return cls(resource, action, fields)
+
+    @classmethod
+    def app(cls, request):
+        resource = '%s%s' % (request.config['APP_NAME'], request.path)
+        return cls(resource.replace('/', ':'))
+
+    def __call__(self, request, load_only=None):
+        perms = self.permissions(request)
+        if not perms:
+            raise PermissionDenied
+        if load_only:
+            return tuple(set(perms).intersection(load_only))
+        else:
+            return perms
+
+    def permissions(self, request):
+        """Dictionary of permissions for this :class:`.Resource`
+        """
+        perm = None
+        permissions = request.cache.permissions
+        if permissions is None:
+            request.cache.permissions = permissions = {}
+
+        if self.resource not in permissions:
+            permissions[self.resource] = {}
+        elif self.action in permissions[self.resource]:
+            perm = permissions[self.resource][self.action]
+
+        if perm is None:
+            has = request.cache.auth_backend.has_permission
+            root_perm = has(request, self.resource, self.action)
+            if root_perm and self.fields:
+                has = request.cache.auth_backend.has_permission
+                perm = tuple((name for name in self.fields if
+                              has(request, '%s:%s' % (self.resource, name),
+                                  self.action)
+                              )
+                             )
+            else:
+                perm = ()
+            permissions[self.resource][self.action] = perm
+
+        return perm

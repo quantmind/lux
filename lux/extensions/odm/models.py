@@ -329,7 +329,7 @@ class RestModel(rest.RestModel):
                 # If a database column
                 if isinstance(dbcol, Column):
                     info = column_info(col.name, dbcol)
-                    info.update(col.tojson(self, defaults=False))
+                    info.update(col.tojson(self))
                     col = RestField.make(info)
                 _set_field(col)
 
@@ -363,7 +363,7 @@ def column_info(name, col):
 
     info = {'name': name,
             'field': col.name,
-            'displayName': col.doc or nicename(name),
+            'displayName': col.doc,
             'sortable': sortable,
             'filter': filter,
             'type': type}

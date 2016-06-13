@@ -14,7 +14,7 @@ from .cms import CMS
 from .mail import EmailBackend
 from .cache import cached, Cache, register_cache, create_cache
 from .exceptions import raise_http_error, ShellError
-from .auth import AuthBase, backend_action, auth_backend_actions
+from .auth import AuthBase, backend_action, auth_backend_actions, Resource
 
 
 GET_HEAD = frozenset(('GET', 'HEAD'))
@@ -51,6 +51,7 @@ __all__ = ['ConsoleParser',
            'ShellError',
            #
            'AuthBase',
+           'Resource',
            'backend_action',
            'auth_backend_actions',
            #

@@ -1,6 +1,6 @@
 from copy import copy
 
-from pulsar import ImproperlyConfigured, Http404, PermissionDenied
+from pulsar import ImproperlyConfigured
 
 
 class ModelContainer(dict):
@@ -75,12 +75,12 @@ class LuxModel:
         """
         raise NotImplementedError
 
+    # API
     def field(self, name):
         """Get the field object for field ``name``
         """
         return self.fields().get(name)
 
-    # API
     def instance(self, o=None, fields=None):
         """Return a :class:`.ModelInstance`
 
@@ -95,6 +95,7 @@ class LuxModel:
             o = self.create_instance()
         return ModelInstance.create(self, o, fields)
 
+    # QUERY API
     def query(self, request, session, *filters, check_permission=None,
               load_only=None, **params):
         """Get a :class:`.Query` object
@@ -109,20 +110,18 @@ class LuxModel:
         """
         query = self.get_query(session)
         if check_permission:
-            fields = self.fields_with_permission(request, check_permission,
-                                                 load_only)
+            fields = check_permission(request, load_only)
             query = query.load_only(*fields)
         elif load_only:
             query = query.load_only(*load_only)
         return query.filter(*filters, **params)
 
-    def get_instance(self, request, *args, session=None, **kwargs):
-        if not args and not kwargs:  # pragma    nocover
-            raise Http404
+    def get_instance(self, request, *filters, session=None, **kwargs):
         with self.session(request, session=session) as session:
-            query = self.query(request, session, *args, **kwargs)
+            query = self.query(request, session, *filters, **kwargs)
             return query.one()
 
+    # CRUD API
     def create_model(self, request, instance, data, session=None):
         """Create a model ``instance``"""
         return self.update_model(request, instance, data,
@@ -149,67 +148,6 @@ class LuxModel:
 
     def get_instance_value(self, instance, name):
         return getattr(instance.obj, name, None)
-
-    # PERMISSIONS
-    def check_permission(self, request, action, *args):
-        """
-        Checks whether the user has the requested level of access to
-        the model, raising PermissionDenied if not
-
-        :param request:     WSGI request object
-        :param action:      action to check permission for
-        :param args:        additional namespaces for resource
-        :raise:             PermissionDenied
-        :return:            the resource for which permission is granted
-        """
-        resource = self.identifier
-        if args:
-            resource = '%s:%s' % (resource, ':'.join(args))
-        backend = request.cache.auth_backend
-        if not backend.has_permission(request, resource, action):
-            raise PermissionDenied
-        return resource
-
-    def fields_with_permission(self, request, action, load_only=None):
-        """Return a tuple of fields with valid permissions for ``action``
-
-        If the user cannot perform ``action`` on any field this method should
-        raise PermissionDenied
-        """
-        action, args = permission_args(action)
-        resource = self.check_permission(request, action, *args)
-        fields = self.load_only_fields(load_only)
-        perms = self.permissions(request, action, resource)
-        return tuple((field for field in fields if perms.get(field)))
-
-    def permissions(self, request, action, resource):
-        """
-        Gets whether the user has the quested access level on
-        each field in the model.
-
-        Results are cached for future function calls
-
-        :param request:     request object
-        :param action:      access level
-        :param resource:    base resource
-        :return:            dict, with column names as keys,
-                            Booleans as values
-        """
-        perm = None
-        cache = request.cache
-        if 'model_permissions' not in cache:
-            cache.model_permissions = {}
-        if self.identifier not in cache.model_permissions:
-            cache.model_permissions[self.identifier] = {}
-        elif action in cache.model_permissions[self.identifier]:
-            perm = cache.model_permissions[self.identifier][action]
-
-        if perm is None:
-            has = cache.auth_backend.has_permission
-            perm = {name: has(request, '%s:%s' % (resource, name), action)
-                    for name in self.fields()}
-            cache.model_permissions[self.identifier][action] = perm
-        return perm
 
     # INTERNALS
     def register(self, app):

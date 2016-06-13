@@ -11,6 +11,8 @@ from pulsar.utils.structures import mapping_iterator
 
 from lux.utils.data import unique_tuple
 
+from .auth import Resource
+
 
 TEXT_CONTENT_TYPES = unique_tuple(('text/html', 'text/plain'))
 
@@ -137,6 +139,10 @@ class HtmlRouter(JsonRouter):
     with content management.
     """
     response_content_types = DEFAULT_CONTENT_TYPES
+
+    def check_permission(self, request):
+        resource = Resource.app(request)
+        resource(request)
 
     def get(self, request):
         return self.html_response(request, self.get_html(request))

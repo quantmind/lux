@@ -48,7 +48,8 @@ class Extension(LuxExtension):
             middleware.append(GithubHook('/refresh-content',
                                          handle_payload=PullRepo(location),
                                          secret=secret))
-        middleware.append(ContentCRUD(ContentModel(location)))
+        middleware.append(ContentCRUD('{0}/<group>',
+                                      model=ContentModel(location)))
         return middleware
 
     def get_template_full_path(self, app, name):

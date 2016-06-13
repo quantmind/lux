@@ -295,7 +295,7 @@ class RestModel(LuxModel, RestClient):
         fields = self.fields()
 
         if check_permission:
-            fnames = self.fields_with_permission(request, check_permission)
+            fnames = check_permission(request)
         else:
             fnames = tuple(fields)
         #

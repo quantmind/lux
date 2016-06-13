@@ -1,7 +1,7 @@
 from pulsar import MethodNotAllowed
 from pulsar.apps.wsgi import route
 
-from lux.core import JsonRouter, GET_HEAD, POST_PUT
+from lux.core import JsonRouter, GET_HEAD, POST_PUT, Resource
 from lux.forms import get_form_class
 
 from ..models import RestModel
@@ -48,12 +48,17 @@ class RestRouter(JsonRouter):
             else:
                 url = url_or_model
 
+        if not self.model:
+            self.model = kwargs.pop('model', None)
+
         if not isinstance(self.model, RestModel):
             raise TypeError('REST model not available in %s router' %
                             self.__class__.__name__)
 
-        url = url or self.model.identifier
-        assert url is not None, "Model %s has no valid url" % self.model
+        if url is None:
+            url = self.model.identifier
+        else:
+            url = url.format(self.model.identifier)
         super().__init__(url, *args, **kwargs)
 
     def filters_params(self, request, *filters, **params):
@@ -106,7 +111,12 @@ class MetadataMixin:
             request.app.fire('on_preflight', request, methods=GET_HEAD)
             return request.response
 
-        meta = self.model.meta(request, check_permission='read')
+        meta = self.model.meta(
+            request,
+            check_permission=Resource.rest(request, 'read',
+                                           self.model.fields(),
+                                           pop=1, list=True)
+        )
         return self.json_response(request, meta)
 
 
@@ -121,7 +131,12 @@ class CRUD(MetadataMixin, RestRouter):
     def get(self, request):
         '''Get a list of models
         '''
-        data = self.get_list(request, check_permission='read')
+        data = self.get_list(
+            request,
+            check_permission=Resource.rest(request, 'read',
+                                           self.model.fields(),
+                                           list=True)
+        )
         return self.json_response(request, data)
 
     def post(self, request):
@@ -132,9 +147,11 @@ class CRUD(MetadataMixin, RestRouter):
         if not form_class:
             raise MethodNotAllowed
 
-        fields = model.fields_with_permission(request, 'create')
-        instance = model.instance(fields=fields)
+        check_permission = Resource.rest(request, 'create',
+                                         self.model.fields(), list=True)
+        fields = check_permission(request)
 
+        instance = model.instance(fields=fields)
         data, files = request.data_and_files()
         form = form_class(request, data=data, files=files)
         if form.is_valid():
@@ -168,8 +185,12 @@ class CRUD(MetadataMixin, RestRouter):
         model = self.model
         with model.session(request) as session:
             if request.method in GET_HEAD:
-                instance = self.get_instance(request, session=session,
-                                             check_permission='read')
+                instance = self.get_instance(
+                    request,
+                    session=session,
+                    check_permission=Resource.rest(request, 'read',
+                                                   self.model.fields())
+                )
                 data = model.tojson(request, instance)
 
             elif request.method in POST_PUT:
@@ -178,9 +199,12 @@ class CRUD(MetadataMixin, RestRouter):
                 if not form_class:
                     raise MethodNotAllowed
 
-                instance = self.get_instance(request, session=session,
-                                             check_permission='update')
-
+                instance = self.get_instance(
+                    request,
+                    session=session,
+                    check_permission=Resource.rest(request, 'update',
+                                                   self.model.fields())
+                )
                 data, files = request.data_and_files()
                 form = form_class(request, data=data, files=files,
                                   previous_state=instance)
@@ -194,8 +218,11 @@ class CRUD(MetadataMixin, RestRouter):
                     data = form.tojson()
 
             elif request.method == 'DELETE':
-                instance = self.get_instance(request, session=session,
-                                             check_permission='delete')
+                instance = self.get_instance(
+                    request,
+                    session=session,
+                    check_permission=Resource.rest(request, 'delete')
+                )
                 model.delete_model(request, instance, session=session)
                 request.response.status_code = 204
                 return request.response

@@ -115,11 +115,13 @@ def load_fixtures(app, path=None):
     if os.path.isdir(fpath):
         for filename in os.listdir(fpath):
             if filename.endswith('.json'):
-                with open(os.path.join(path, filename), 'r') as file:
+                with open(os.path.join(fpath, filename), 'r') as file:
                     fixtures.update(_json.load(file,
                                                object_pairs_hook=OrderedDict))
-    elif path:
-        logger.error('Could not find %s path for fixtures', path)
+    else:
+        if path:
+            logger.error('Could not find %s path for fixtures', path)
+        return 0
 
     total = 0
 
