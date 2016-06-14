@@ -22,6 +22,7 @@ class ContentCRUD(CRUD):
     def filters_params(self, request, *filters, **params):
         """Enhance permission check for groups
         """
+        filters, params = super().filters_params(request, *filters, **params)
         if 'id' in params:
             params['slug'] = params.pop('id')
         return filters, params

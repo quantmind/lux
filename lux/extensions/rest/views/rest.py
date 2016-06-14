@@ -51,14 +51,12 @@ class RestRouter(JsonRouter):
         if not self.model:
             self.model = kwargs.pop('model', None)
 
-        if not isinstance(self.model, RestModel):
-            raise TypeError('REST model not available in %s router' %
-                            self.__class__.__name__)
+        if self.model:
+            if url is None:
+                url = self.model.identifier
+            else:
+                url = url.format(self.model.identifier)
 
-        if url is None:
-            url = self.model.identifier
-        else:
-            url = url.format(self.model.identifier)
         super().__init__(url, *args, **kwargs)
 
     def filters_params(self, request, *filters, **params):
@@ -71,10 +69,15 @@ class RestRouter(JsonRouter):
             params[self.model.id_field] = params.pop('id')
         return filters, params
 
+    def get_model(self, request):
+        """Get the Rest model for this Router"""
+        return self.model
+
     # RestView implementation
     def get_instance(self, request, *filters, **params):
         filters, params = self.filters_params(request, *filters, **params)
-        return self.model.get_instance(request, *filters, **params)
+        model = self.get_model(request)
+        return model.get_instance(request, *filters, **params)
 
     def get_list(self, request, *filters, check_permission=None, **params):
         """Return a list of models satisfying user queries
@@ -93,7 +96,8 @@ class RestRouter(JsonRouter):
         params['search'] = params.pop(cfg['API_SEARCH_KEY'], None)
         params['check_permission'] = check_permission
         filters, params = self.filters_params(request, *filters, **params)
-        return self.model.query_data(request, *filters, **params)
+        model = self.get_model(request)
+        return model.query_data(request, *filters, **params)
 
     def options(self, request):
         '''Handle the CORS preflight request
@@ -112,11 +116,12 @@ class MetadataMixin:
         if request.method == 'OPTIONS':
             request.app.fire('on_preflight', request, methods=GET_HEAD)
             return request.response
+        model = self.get_model(request)
 
-        meta = self.model.meta(
+        meta = model.meta(
             request,
             check_permission=Resource.rest(request, 'read',
-                                           self.model.fields(),
+                                           model.fields(),
                                            pop=1, list=True)
         )
         return self.json_response(request, meta)
@@ -130,10 +135,11 @@ class CRUD(MetadataMixin, RestRouter):
     def get(self, request):
         '''Get a list of models
         '''
+        model = self.get_model(request)
         data = self.get_list(
             request,
             check_permission=Resource.rest(request, 'read',
-                                           self.model.fields(),
+                                           model.fields(),
                                            list=True)
         )
         return self.json_response(request, data)
@@ -141,13 +147,13 @@ class CRUD(MetadataMixin, RestRouter):
     def post(self, request):
         '''Create a new model
         '''
-        model = self.model
+        model = self.get_model(request)
         form_class = get_form_class(request, model.form)
         if not form_class:
             raise MethodNotAllowed
 
         check_permission = Resource.rest(request, 'create',
-                                         self.model.fields(), list=True)
+                                         model.fields(), list=True)
         fields = check_permission(request)
 
         instance = model.instance(fields=fields)
@@ -181,14 +187,14 @@ class CRUD(MetadataMixin, RestRouter):
             request.app.fire('on_preflight', request)
             return request.response
 
-        model = self.model
+        model = self.get_model(request)
         with model.session(request) as session:
             if request.method in GET_HEAD:
                 instance = self.get_instance(
                     request,
                     session=session,
                     check_permission=Resource.rest(request, 'read',
-                                                   self.model.fields())
+                                                   model.fields())
                 )
                 data = model.tojson(request, instance)
 
@@ -202,7 +208,7 @@ class CRUD(MetadataMixin, RestRouter):
                     request,
                     session=session,
                     check_permission=Resource.rest(request, 'update',
-                                                   self.model.fields())
+                                                   model.fields())
                 )
                 data, files = request.data_and_files()
                 form = form_class(request, data=data, files=files,
@@ -221,7 +227,7 @@ class CRUD(MetadataMixin, RestRouter):
                     request,
                     session=session,
                     check_permission=Resource.rest(request, 'delete',
-                                                   self.model.fields())
+                                                   model.fields())
                 )
                 model.delete_model(request, instance, session=session)
                 request.response.status_code = 204

@@ -1,5 +1,3 @@
-from pulsar import Http404
-
 from lux.utils import test
 from lux.extensions.content.github import github_signature
 

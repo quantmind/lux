@@ -5,8 +5,6 @@ from lux.utils import test
 
 class TestErrorsPostgresql(test.AppTestCase):
     config_file = 'tests.odm'
-    config_params = {
-        'DATASTORE': 'postgresql+green://lux:luxtest@127.0.0.1:5432/luxtests'}
 
     @test.green
     def test_error_multiple(self):

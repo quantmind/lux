@@ -31,6 +31,7 @@ from .views.rest import RestRoot, RestRouter, MetadataMixin, CRUD
 from .views.auth import Authorization
 from .pagination import Pagination, GithubPagination
 from .forms import RelationshipField, UniqueField
+from .query import Query
 from .user import (MessageMixin, UserMixin, SessionMixin, PasswordMixin,
                    User, Session, session_backend)
 
@@ -48,6 +49,8 @@ __all__ = ['RestModel',
            'RestRouter',
            'MetadataMixin',
            'CRUD',
+           #
+           'Query',
            #
            'Pagination',
            'GithubPagination',

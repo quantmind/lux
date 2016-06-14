@@ -23,20 +23,6 @@
     ],
     "permissions": [
         {
-            "name": "objective-all",
-            "policy": [
-                {
-                    "resource": "objectives:*",
-                    "action": "*"
-                },
-                {
-                    "resource": "objectives:*:deadline",
-                    "action": "update",
-                    "effect": "deny"
-                }
-            ]
-        },
-        {
             "name": "view-users",
             "description": "View users",
             "policy": [
@@ -75,12 +61,8 @@
     ],
     "groups": [
         {
-            "name": "anonymous",
-            "permissions": ["objective-all"]
-        },
-        {
             "name": "users",
-            "permissions": ["view-users", "objective-all"]
+            "permissions": ["view-users"]
         },
         {
             "name": "power-users",

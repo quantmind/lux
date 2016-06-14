@@ -13,6 +13,9 @@ class ModelContainer(dict):
     def register(self, model):
         '''Register a new Lux Model to the application
         '''
+        if not model:
+            return
+
         if not isinstance(model, LuxModel):
             model = model()
 
@@ -47,12 +50,15 @@ class LuxModel:
         return self._app
 
     # ABSTRACT METHODS
-    def session(self, session=None):
-        '''Return a session for aggregating a query.
+    def session(self, request, session=None):
+        """Return a session for aggregating a query.
 
-        The returned object should be context manager and support the query
-        method.
-        '''
+        A session must be a context manager and support these methods:
+
+        * ``query(model)``: to create a model :class:`.Query`
+        * ``add(model)``: add a model to the session
+        * ``delete(model)`: delete a model
+        """
         raise NotImplementedError
 
     def get_query(self, session):

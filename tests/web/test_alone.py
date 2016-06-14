@@ -1,13 +1,10 @@
 from lux.utils import test
-from tests.web import testdb
+
+import tests
 
 
-class ContentTest(test.AppTestCase):
+class ContentTest(tests.AuthFixtureMixin, test.AppTestCase):
     config_file = 'example.webalone.config'
-
-    @classmethod
-    def populatedb(cls):
-        testdb(cls.app)
 
     async def test_media_404(self):
         request = await self.client.get('/media/')

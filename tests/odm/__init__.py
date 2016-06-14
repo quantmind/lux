@@ -21,8 +21,15 @@ EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.auth']
 
 AUTHENTICATION_BACKENDS = ['lux.extensions.auth.TokenBackend']
+DATASTORE = 'postgresql+green://lux:luxtest@127.0.0.1:5432/luxtests'
 CORS_ALLOWED_METHODS = 'GET, POST, DELETE'
 API_URL = ''
+DEFAULT_POLICY = [
+    {
+        "resource": '*',
+        "action": "read"
+    }
+]
 
 
 class TestEnum(Enum):

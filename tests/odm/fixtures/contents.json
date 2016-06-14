@@ -1,12 +1,15 @@
 {
-    "content": [
+    "tasks": [
         {
-            "group": "default",
-            "name": "default"
+            "subject": "pippo to the rescue",
+            "desc": "abu"
         },
         {
-            "group": "default",
-            "name": "default"
+            "subject": "pluto to the rescue",
+            "desc": "genie"
+        },
+        {
+            "subject": "earth is the centre of the universe"
         }
     ]
 }

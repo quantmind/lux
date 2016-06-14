@@ -1,30 +1,9 @@
-import tests.odm.test_postgresql as postgresql
-from tests.odm.test_sqlite import TestSqliteMixin
+from lux.utils import test
+
+from tests.odm.utils import SqliteMixin, OdmUtils
 
 
-class TestFiltersPsql(postgresql.TestPostgreSqlBase):
-
-    @classmethod
-    def populatedb(cls):
-        super().populatedb()
-        odm = cls.app.odm()
-
-        with odm.begin() as session:
-            cls.pippo = odm.task(
-                subject='pippo to the rescue',
-                desc='abu'
-            )
-            cls.pluto = odm.task(
-                subject='pluto to the rescue',
-                desc='genie'
-            )
-            cls.earth = odm.task(
-                subject='earth is the centre of the universe',
-                desc=None
-            )
-            session.add(cls.pippo)
-            session.add(cls.pluto)
-            session.add(cls.earth)
+class TestFiltersPsql(OdmUtils, test.AppTestCase):
 
     async def test_notequals(self):
         request = await self.client.get('/tasks?desc:ne=abu')
@@ -106,7 +85,7 @@ class TestFiltersPsql(postgresql.TestPostgreSqlBase):
             self.assertTrue(entry['subject'])
 
 
-class TestFiltersSqlite(TestSqliteMixin, TestFiltersPsql):
+class TestFiltersSqlite(SqliteMixin, TestFiltersPsql):
 
     def test_search(self):
         # MATCH is not implemented in SQLite

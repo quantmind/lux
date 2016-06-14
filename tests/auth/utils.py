@@ -34,19 +34,3 @@ class AuthUtils:
         self.assertEqual(user.is_superuser(), superuser)
         self.assertEqual(user.is_active(), active)
         return {'username': username, 'password': password}
-
-    async def _token(self, credentials):
-        '''Return a token for a user
-        '''
-        if isinstance(credentials, str):
-            credentials = {"username": credentials,
-                           "password": credentials}
-
-        # Get new token
-        request = await self.client.post('/authorizations',
-                                         json=credentials)
-        user = request.cache.user
-        self.assertFalse(user.is_authenticated())
-        data = self.json(request.response, 201)
-        self.assertTrue('token' in data)
-        return data['token']

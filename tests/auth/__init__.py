@@ -19,6 +19,17 @@ DEFAULT_PERMISSION_LEVEL = 'none'
 AUTHENTICATION_BACKENDS = ['lux.extensions.auth.TokenBackend']
 COMING_SOON_URL = 'coming-soon'
 DATASTORE = 'postgresql+green://lux:luxtest@127.0.0.1:5432/luxtests'
+DEFAULT_POLICY = [
+    {
+        "resource": "objectives:*",
+        "action": "*"
+    },
+    {
+        "resource": "objectives:*:deadline",
+        "action": "update",
+        "effect": "deny"
+    }
+]
 
 Model = odm.model_base('odmtest')
 

@@ -262,7 +262,9 @@ class RestModel(LuxModel, RestClient):
         for url_name in self._fields.urls:
             method = getattr(self, url_name, None)
             if method and (not instance.fields or url_name in instance.fields):
-                data[url_name] = method(request, id_value)
+                url = method(request, id_value)
+                if url:
+                    data[url_name] = url
         return data
 
     def query_data(self, request, *filters, limit=None, offset=None,
@@ -314,7 +316,7 @@ class RestModel(LuxModel, RestClient):
         if permissions:
             meta['permissions'] = permissions
 
-        with self.session(session) as session:
+        with self.session(request, session=session) as session:
             query = self.query(request, session).filter(*filters)
             meta['total'] = query.count()
         return meta

@@ -16,17 +16,11 @@ class PemissionsMixin:
         users = request.app.models.get('users')
         groups = request.app.models.get('groups')
         perms = []
-        if not users or not groups:
+        if not users or not groups or not user.is_authenticated():
             return perms
         with users.session(request) as session:
-            if user.is_authenticated():
-                session.add(user)
-                user_groups = set(user.groups)
-            else:
-                name = request.config['ANONYMOUS_GROUP']
-                query = groups.query(request, session, name=name)
-                user_groups = set((o.obj for o in query.all()))
-            for group in user_groups:
+            session.add(user)
+            for group in set(user.groups):
                 for permission in group.permissions:
                     policy = permission.policy
                     if not isinstance(policy, list):
