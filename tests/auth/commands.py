@@ -8,5 +8,5 @@ class AuthCommandsMixin:
         self.assertTrue(command.help)
         await self.wait.assertRaises(CommandError, command,
                                      ['--username', 'dfgdgf'])
-        token = await command(['--username', 'littlepippo'])
+        token = await command(['--username', 'pippo'])
         self.assertTrue(token)

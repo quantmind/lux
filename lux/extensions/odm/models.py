@@ -12,7 +12,6 @@ from sqlalchemy.exc import DataError
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
 from pulsar import Http404
-from pulsar.utils.html import nicename
 
 from odm.utils import get_columns
 

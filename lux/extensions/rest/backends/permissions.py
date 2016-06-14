@@ -1,12 +1,38 @@
 from lux.core.auth import ACTIONS
+from lux.core import cached
+
 from ..policy import has_permission
 
 
 class PemissionsMixin:
     """Implements the ``has_permission`` backend action
     """
+    @cached(user=True)
     def get_permission_policies(self, request):
-        raise NotImplementedError
+        """Returns a list of permission policy documents for the
+        current request
+        """
+        user = request.cache.user
+        users = request.app.models.get('users')
+        groups = request.app.models.get('groups')
+        perms = []
+        if not users or not groups:
+            return perms
+        with users.session(request) as session:
+            if user.is_authenticated():
+                session.add(user)
+                user_groups = set(user.groups)
+            else:
+                name = request.config['ANONYMOUS_GROUP']
+                query = groups.query(request, session, name=name)
+                user_groups = set((o.obj for o in query.all()))
+            for group in user_groups:
+                for permission in group.permissions:
+                    policy = permission.policy
+                    if not isinstance(policy, list):
+                        policy = (policy,)
+                    perms.extend(policy)
+        return perms
 
     def has_permission(self, request, resource, level):
         user = request.cache.user
@@ -15,8 +41,8 @@ class PemissionsMixin:
             return True
         else:
             # Get permissions list for the current request
-            permissions = self.get_permission_policies(request)
-            return has_permission(request, permissions, resource, level)
+            policies = self.get_permission_policies(request)
+            return has_permission(request, policies, resource, level)
 
     def get_permissions(self, request, resources, actions=None):
         if not actions:

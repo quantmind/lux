@@ -47,6 +47,7 @@ __all__ = ['RestModel',
            #
            'RestRouter',
            'MetadataMixin',
+           'CRUD',
            #
            'Pagination',
            'GithubPagination',
@@ -115,15 +116,8 @@ class Extension(MultiAuthBackend):
                   'to the application and long and random enough'),
         Parameter('CHECK_USERNAME', 'lux.extensions.rest:check_username',
                   'Dotted path to username validation function'),
-        Parameter('PERMISSION_LEVELS', {'read': 10,
-                                        'create': 20,
-                                        'update': 30,
-                                        'delete': 40},
-                  'When a model'),
-        Parameter('DEFAULT_PERMISSION_LEVEL', 'read',
-                  'Default permission level'),
-        Parameter('DEFAULT_PERMISSION_LEVELS', {'site:admin': 'none'},
-                  'Dictionary of default permission levels'),
+        Parameter('DEFAULT_POLICY', (),
+                  'List/tuple of default policy documents'),
         #
         # REST API SETTINGS
         Parameter('API_URL', None, 'URL FOR THE REST API'),

@@ -4,7 +4,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm import joinedload
 from datetime import datetime
 
-from lux.core import cached, json_message
+from lux.core import json_message
 from lux.utils.crypt import digest
 from lux.utils.auth import normalise_email
 from lux.extensions.rest import PasswordMixin, backends, AuthenticationError
@@ -205,26 +205,6 @@ class AuthMixin(PasswordMixin, MalingListBackendMixin):
                     return user
                 return True
         return False
-
-    @cached(user=True)
-    def get_permission_policies(self, request):
-        """Returns a dictionary mapping permission names to permission
-        policies for the current request
-        """
-        odm = request.app.odm()
-        user = request.cache.user
-        perms = {}
-        with odm.begin() as session:
-            if user.is_authenticated():
-                session.add(user)
-                groups = set(user.groups)
-            else:
-                cfg = request.config
-                query = session.query(odm.group)
-                groups = set(query.filter_by(name=cfg['ANONYMOUS_GROUP']))
-            for group in groups:
-                perms.update(((p.name, p.policy) for p in group.permissions))
-        return perms
 
 
 class TokenBackend(AuthMixin, backends.TokenBackend):

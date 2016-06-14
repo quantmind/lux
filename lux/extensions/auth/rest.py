@@ -1,9 +1,6 @@
-from datetime import datetime, timedelta
-
 from lux.core import route, GET_HEAD
 from lux.forms import get_form_class
-from lux.extensions.rest import (RestField, user_permissions, MetadataMixin,
-                                 CRUD, RestRouter)
+from lux.extensions.rest import RestField, user_permissions, CRUD, RestRouter
 from lux.extensions.odm import RestModel
 
 from pulsar import MethodNotAllowed

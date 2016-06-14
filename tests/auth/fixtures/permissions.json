@@ -3,35 +3,114 @@
         {
             "username": "pippo",
             "password": "pippo",
+            "email": "littlepippo@pippo.com",
+            "first_name": "Little Pippo",
+            "active": true
+        },
+        {
+            "username": "pluto",
+            "password": "pluto",
+            "email": "pluto@pluto.com",
+            "first_name": "Plutone",
+            "active": true
+        },
+        {
+            "username": "toni",
+            "password": "toni",
+            "email": "toni@toni.com",
             "active": true
         }
     ],
     "permissions": [
         {
             "name": "objective-all",
+            "policy": [
+                {
+                    "resource": "objectives:*",
+                    "action": "*"
+                },
+                {
+                    "resource": "objectives:*:deadline",
+                    "action": "update",
+                    "effect": "deny"
+                }
+            ]
+        },
+        {
+            "name": "view-users",
+            "description": "View users",
+            "policy": [
+                {
+                    "resource": "users:*",
+                    "action": "read"
+                },
+                {
+                    "resource": [
+                        "users:*:groups",
+                        "users:*:superuser"
+                    ],
+                    "action": "*",
+                    "effect": "deny"
+                }
+            ]
+        },
+        {
+            "name": "read-secrets-users-groups",
             "policy": {
-                "resource": "objectives:*",
-                "action": "*"
+                "resource": [
+                    "secrets:*",
+                    "users:*",
+                    "groups:*"
+                ],
+                "action": "read"
             }
         },
         {
-            "name": "objective-deadline-no-update",
+            "name": "policy-maker",
             "policy": {
-                "resource": "objectives:*:deadline",
-                "action": "update",
-                "effect": "deny"
+                "resource": "permissions:*",
+                "action": ["read", "create", "update"]
             }
         }
     ],
     "groups": [
         {
             "name": "anonymous",
-            "permissions": ["objective-all", "objective-deadline-no-update"]
+            "permissions": ["objective-all"]
+        },
+        {
+            "name": "users",
+            "permissions": ["view-users", "objective-all"]
+        },
+        {
+            "name": "power-users",
+            "permissions": ["read-secrets-users-groups"]
+        },
+        {
+            "name": "policy-makers",
+            "permissions": ["policy-maker"]
         }
     ],
     "objectives": [
         {
             "subject": "A simple test objective"
+        },
+        {
+            "subject": "Another simple one"
+        }
+    ],
+    "api": [
+        {
+            "api_url": "/users/pippo",
+            "groups": ["users"]
+        },
+        {
+            "api_url": "/users/pluto",
+            "groups": ["power-users"]
+        },
+        {
+            "api_url": "/users/toni",
+            "groups": ["policy-makers"]
         }
     ]
 }

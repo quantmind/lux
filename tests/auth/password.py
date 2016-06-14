@@ -10,41 +10,33 @@ class PasswordMixin:
         self.assertFalse(user.is_authenticated())
 
     async def test_reset_password_errors(self):
-        token = await self._token()
+        token = await self._token('pippo')
         request = await self.client.post('/authorizations/reset-password',
-                                         body={},
-                                         content_type='application/json',
+                                         json={},
                                          token=token)
         # user is authenticated, method not allowed
         self.json(request.response, 405)
         request = await self.client.post('/authorizations/reset-password',
-                                         body={},
-                                         content_type='application/json')
+                                         json={})
         self.assertValidationError(request.response)
 
     async def test_reset_password_200(self):
-        data = dict(email='bigpippo@pluto.com')
+        data = dict(email='toni@toni.com')
         request = await self.client.post('/authorizations/reset-password',
-                                         body=data,
-                                         content_type='application/json')
+                                         json=data)
         self.json(request.response, 200)
 
     async def test_login_fail(self):
         data = {'username': 'jdshvsjhvcsd',
                 'password': 'dksjhvckjsahdvsf'}
-        request = await self.client.post('/authorizations',
-                                         content_type='application/json',
-                                         body=data)
+        request = await self.client.post('/authorizations', json=data)
         self.assertValidationError(request.response,
                                    text='Invalid username or password')
-
-    def test_create_superuser_command_and_token(self):
-        return self._token()
 
     async def test_corrupted_token(self):
         '''Test the response when using a corrupted token
         '''
-        token = await self._token()
+        token = await self._token('testuser')
         request = await self.client.get('/secrets')
         self.assertEqual(request.response.status_code, 403)
         request = await self.client.get('/secrets', token=token)

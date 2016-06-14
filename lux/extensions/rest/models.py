@@ -127,11 +127,12 @@ class RestClient:
 class FieldsInfo:
     map = None
 
-    def __init__(self, urls, include, exclude, hidden):
+    def __init__(self, urls, include, exclude, hidden, list_exclude):
         self.urls = urls
         self.include = include
         self.hidden = hidden
         self._exclude = exclude
+        self._list_exclude = list_exclude
 
     def exclude(self, exclude=None, exclude_urls=False):
         exclude = set(exclude or ())
@@ -193,7 +194,7 @@ class RestModel(LuxModel, RestClient):
 
     def __init__(self, name, form=None, updateform=None, fields=None,
                  url=None, exclude=None, html_url=None, id_field=None,
-                 repr_field=None, hidden=None):
+                 repr_field=None, hidden=None, list_exclude=None):
         assert name, 'model name not available'
         self.name = name
         self.form = form
@@ -207,7 +208,8 @@ class RestModel(LuxModel, RestClient):
             urls=tuple((f['name'] for f in URL_FIELDS)),
             include=list(chain(fields or (), URL_FIELDS)),
             exclude=set(exclude or ()),
-            hidden=set(hidden or ())
+            hidden=set(hidden or ()),
+            list_exclude=set(list_exclude or ())
         )
 
     def __repr__(self):
@@ -253,15 +255,6 @@ class RestModel(LuxModel, RestClient):
         return min(limit, max_limit)
 
     def instance_urls(self, request, instance, data):
-        """
-        Makes a model instance JSON-friendly. Removes fields that the
-        user does not have read access to.
-
-        :param request:     WSGI request
-        :param obj:         model instance
-        :param load_only:   Optional list of fields to load
-        :return:            dict
-        """
         if self.id_field not in data:
             id_value = instance.id
         else:

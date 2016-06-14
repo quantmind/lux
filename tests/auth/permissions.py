@@ -4,7 +4,7 @@ class PermissionsMixin:
 
     async def test_create_permission_errors(self):
         """Test permissions CREATE/UPDATE/DELETE"""
-        token = await self._token()
+        token = await self._token('testuser')
         request = await self.client.post('/permissions',
                                          json=dict(name='blabla'),
                                          token=token)
@@ -47,7 +47,7 @@ class PermissionsMixin:
 
     async def test_column_permissions_read(self):
         """Tests read requests against columns with permission level 0"""
-        su_token = await self._token(self.su_credentials)
+        su_token = await self._token('testuser')
 
         objective = await self._create_objective(su_token)
 
@@ -95,7 +95,7 @@ class PermissionsMixin:
         Tests create and update requests against columns
         with permission levels 10 and 20
         """
-        su_token = await self._token(self.su_credentials)
+        su_token = await self._token('testuser')
 
         objective = await self._create_objective(su_token,
                                                  deadline="next week",
@@ -132,23 +132,19 @@ class PermissionsMixin:
         Checks that a custom policy works on a column with default access
         level 0
         """
-        user_token = await self._token(self.user_credentials)
+        user_token = await self._token('pippo')
 
         objective = await self._create_objective(user_token)
 
         request = await self.client.get(
             '/objectives/{}'.format(objective['id']), token=user_token)
-        response = request.response
-        self.assertEqual(response.status_code, 200)
-        data = self.json(response)
+        data = self.json(request.response, 200)
         self.assertTrue('id' in data)
         self.assertTrue('subject' in data)
 
         request = await self.client.get(
             '/objectives', token=user_token)
-        response = request.response
-        self.assertEqual(response.status_code, 200)
-        data = self.json(response)
+        data = self.json(request.response, 200)
         self.assertTrue('result' in data)
         for item in data['result']:
             self.assertTrue('id' in item)
@@ -156,23 +152,17 @@ class PermissionsMixin:
 
         request = await self.client.get(
             '/objectives/metadata', token=user_token)
-        response = request.response
-        self.assertEqual(response.status_code, 200)
-        data = self.json(response)
+        data = self.json(request.response, 200)
         self.assertTrue(
             any(field['name'] == 'subject' for field in data['columns']))
 
         request = await self.client.post(
             '/objectives/{}'.format(objective['id']),
-            content_type='application/json',
             token=user_token,
-            body={
-                'subject': 'subject changed'
-            })
+            json={'subject': 'subject changed'}
+        )
 
-        response = request.response
-        self.assertEqual(response.status_code, 200)
-        data = self.json(response)
+        data = self.json(request.response, 200)
         self.assertTrue('id' in data)
         self.assertTrue('subject' in data)
         self.assertEqual(data['subject'], "subject changed")

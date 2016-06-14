@@ -67,6 +67,8 @@ class RestRouter(JsonRouter):
         mtehods
         """
         params.update(request.urlargs)
+        if 'id' in params:
+            params[self.model.id_field] = params.pop('id')
         return filters, params
 
     # RestView implementation

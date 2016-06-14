@@ -2,7 +2,7 @@ import time
 from functools import wraps
 from datetime import datetime, timedelta
 
-from pulsar import ImproperlyConfigured, Http401
+from pulsar import Http401
 from pulsar.apps.wsgi import Route, wsgi_request
 
 from lux.core import app_attribute

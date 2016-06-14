@@ -150,15 +150,20 @@ async def load_fixtures(app, path=None):
     request = await client.post('/authorizations',
                                 json=dict(username='testuser',
                                           password='testuser'))
-    client.test_token = test.json(request.response, 201)['token']
+    test_token = test.json(request.response, 201)['token']
 
     for model, items in fixtures.items():
         logger.debug('Creating %d fixtures for "%s"', len(items), model)
         for params in items:
-            request = await client.post('/%s' % model,
+            url = params.pop('api_url', '/%s' % model)
+            request = await client.post(url,
                                         json=params,
-                                        token=client.test_token)
-            test.json(request.response, 201)
+                                        token=test_token)
+            data = test.json(request.response)
+            code = request.response.status_code
+            if code > 201:
+                raise AssertionError('%s api call got %d: %s' %
+                                     (url, code, data))
             total += 1
 
     logger.info('Created %s objects from %d models', total, 1 + len(fixtures))
@@ -167,8 +172,6 @@ async def load_fixtures(app, path=None):
 class TestClient:
     """An utility for simulating lux clients
     """
-    test_token = None
-
     def __init__(self, app, headers=None):
         self.app = app
         self.headers = headers or []

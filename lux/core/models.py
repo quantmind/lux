@@ -117,11 +117,15 @@ class LuxModel:
         return query.filter(*filters, **params)
 
     def get_instance(self, request, *filters, session=None, **kwargs):
+        """Get a single instance from positional and keyed-valued filters
+        """
         with self.session(request, session=session) as session:
             query = self.query(request, session, *filters, **kwargs)
             return query.one()
 
     def get_list(self, request, *filters, session=None, **kwargs):
+        """Get a list of instances from positional and keyed-valued filters
+        """
         with self.session(request, session=session) as session:
             query = self.query(request, session, *filters, **kwargs)
             return query.all()
@@ -276,7 +280,7 @@ class Query:
 
     def filter(self, *filters, search=None, **params):
         if filters:
-            self.filter_args(filters)
+            self.filter_args(*filters)
 
         fields = self.model.fields()
 

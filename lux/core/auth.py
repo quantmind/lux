@@ -104,7 +104,7 @@ class Resource:
                 has = request.cache.auth_backend.has_permission
                 perms = tuple((name for name in self.fields if
                                has(request, '%s:%s' % (self.resource, name),
-                                  self.action)
+                                   self.action)
                                )
                               )
                 permissions[self.resource][self.action] = perms

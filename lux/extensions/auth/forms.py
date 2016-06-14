@@ -85,8 +85,9 @@ class PermissionForm(forms.Form):
     policy = forms.JsonField(text_edit=json.dumps({'mode': 'json'}))
 
     def clean(self):
-        policy = self.cleaned_data['policy']
-        self.cleaned_data['policy'] = validate_policy(policy)
+        if 'policy' in self.cleaned_data:
+            policy = self.cleaned_data['policy']
+            self.cleaned_data['policy'] = validate_policy(policy)
 
 
 class GroupForm(forms.Form):
@@ -106,7 +107,7 @@ class UserForm(forms.Form):
     superuser = forms.BooleanField()
     active = forms.BooleanField()
     joined = forms.DateTimeField(readonly=True, required=False)
-    # groups = RelationshipField('groups', multiple=True, required=False)
+    groups = RelationshipField('groups', multiple=True, required=False)
 
 
 class ChangePasswordForm(PasswordForm):

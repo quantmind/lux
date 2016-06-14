@@ -1,8 +1,9 @@
+from itertools import chain
 from lux.forms import ValidationError
 
 
 POLICY = dict(effect=(str, frozenset(('allow', 'deny'))),
-              # An action is a string or a list of PERMISSION_LEVELS
+              # An action is a string, a wildcard or a list of actions
               action=((str, list), None),
               # A resource can be a string or a list of resources.
               # A resource is object/model we are checking permission
@@ -14,25 +15,61 @@ EFFECTS = {'allow': True,
            'deny': False}
 
 
-def has_permission(request, permissions, resource, action):
+def has_permission(request, policies, resource, action):
     '''Check for permission to perform an ``action`` on a ``resource``
 
     :param permissions: dictionary or permissions
     :param resource: resource string, colon separated
     :param action: action to check permission for
     '''
-    while resource:
-        permission = _check_policies(permissions, resource, action)
-        if permission is not None:
-            return permission
-        else:
-            default = request.config['DEFAULT_PERMISSION_LEVELS'].get(resource)
-            if default is not None:
-                return _has_policy_actions(action, default)
-        resource = resource.rpartition(':')[0]
+    namespaces = resource.split(':')
+    available_policies = []
+    #
+    # First select appropriate policies
+    for policy in chain(policies, request.config['DEFAULT_POLICY']):
+        resources = policy.get('resource')
+        if resources and _has_policy_actions(action, policy.get('action')):
+            effect = EFFECTS.get(policy.get('effect', 'allow'))
+            if not isinstance(resources, list):
+                resources = (resources,)
+            for available_resource in resources:
+                bits = available_resource.split(':')
+                if len(bits) > len(namespaces):
+                    continue
+                available_policies.append((bits, effect))
 
-    default = request.config['DEFAULT_PERMISSION_LEVEL']
-    return _has_policy_actions(action, default)
+    if not available_policies:
+        return False
+
+    while namespaces:
+        has = {}
+        for policy, effect in available_policies:
+            if len(policy) != len(namespaces):
+                continue
+
+            match = 0
+            for a, b in zip(namespaces, policy):
+                if a == b:
+                    match += 1
+                elif b != '*':
+                    match = False
+                    break
+
+            if match is False:  # No match
+                continue
+
+            if match == len(namespaces) and not effect:
+                return False
+
+            if has.get(match) is not False:
+                has[match] = effect
+
+        if has:
+            return has[sorted(has)[-1]]
+
+        namespaces.pop()
+
+    return False
 
 
 def validate_policy(policy):
@@ -79,23 +116,6 @@ def validate_single_policy(policy):
     return p
 
 
-def _check_policies(policies, resource, action):
-    """
-    Checks an action against a list of policies
-    :param policies:    dict of policies
-    :param name:        action name
-    :param level:       access level
-    :return:            True if access is granted, False if denied,
-                        None if no specific determination made
-    """
-    if isinstance(policies, dict):
-        for policy in policies.values():
-            permission = _has_permission(policy, resource, action)
-            if permission is not None:
-                return permission
-    return None
-
-
 def _has_policy_actions(action, actions):
     if actions == '*':
         return True
@@ -105,16 +125,3 @@ def _has_policy_actions(action, actions):
                 return True
     elif isinstance(action, str) and isinstance(actions, str):
         return action.lower() == actions.lower()
-
-
-def _has_permission(policy, resource, action):
-    resources = policy.get('resource')
-    if resources:
-        if not isinstance(resources, list):
-            resources = (resources,)
-        for available_resource in resources:
-            if available_resource == resource:
-                if _has_policy_actions(action, policy.get('action')):
-                    return EFFECTS.get(policy.get('effect', 'allow'))
-    return None
-

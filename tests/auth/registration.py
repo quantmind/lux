@@ -1,14 +1,14 @@
 
 
 class RegistrationMixin:
-    """Test registration CRUD views
-    """
+    """Test registration CRUD views"""
+
     async def test_get_registrations_403(self):
         request = await self.client.get('/registrations')
         self.assertEqual(request.response.status_code, 403)
 
     async def test_get_registrations(self):
-        token = await self._token()
+        token = await self._token('testuser')
         request = await self.client.get('/registrations', token=token)
         self.json(request.response, 200)
 
@@ -21,7 +21,7 @@ class RegistrationMixin:
         self.assertEqual(request.response.status_code, 403)
 
     async def test_get_registrations_metadata(self):
-        token = await self._token()
+        token = await self._token('testuser')
         request = await self.client.get('/registrations/metadata',
                                         token=token)
         self.json(request.response, 200)

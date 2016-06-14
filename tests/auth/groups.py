@@ -3,7 +3,7 @@
 class GroupsMixin:
 
     async def test_group_validation(self):
-        token = await self._token()
+        token = await self._token('testuser')
         payload = {'name': 'abc'}
         request = await self.client.post('/groups',
                                          json=payload,
@@ -11,7 +11,7 @@ class GroupsMixin:
         data = self.json(request.response, 201)
         gid = data['id']
         payload['name'] = 'abcd'
-        request = await self.client.post('/groups/{}'.format(gid),
+        request = await self.client.post('/groups/abc',
                                          json=payload,
                                          token=token)
 
@@ -31,10 +31,9 @@ class GroupsMixin:
     async def test_add_user_to_group(self):
         credentials = await self._new_credentials()
         username = credentials['username']
-        token = await self._token(credentials)
+        token = await self._token('testuser')
         request = await self.client.put('/users/%s' % username,
-                                        body={'groups[]': [1]},
-                                        content_type='application/json',
+                                        json={'groups': ['users']},
                                         token=token)
         data = self.json(request.response, 200)
         self.assertTrue('groups[]' in data)
