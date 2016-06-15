@@ -1,9 +1,5 @@
 from example.cfg import *   # noqa
 
-EXTENSIONS = EXTENSIONS + (
-    'lux.extensions.auth',
-    'lux.extensions.odm'
-)
 
 API_URL = ''
 AUTHENTICATION_BACKENDS = ['lux.extensions.auth.TokenBackend']

@@ -32,7 +32,7 @@ class RestField:
         self.name = name
         self.sortable = sortable
         self.filter = filter
-        self.type = type or 'string'
+        self.type = type or ('object' if model else 'string')
         self.displayName = displayName or nicename(name)
         self.field = field or name
         self.hidden = hidden
@@ -58,12 +58,7 @@ class RestField:
 
     __str__ = __repr__
 
-    def tojson(self, model=None):
-        if self.model:
-            if self.field:
-                model._fields.add_exclude(self.field)
-            if not self.type:
-                self.type = 'object'
+    def tojson(self):
         return dict(self._as_dict())
 
     def _as_dict(self):
@@ -311,7 +306,7 @@ class RestModel(LuxModel, RestClient):
                 'url': self.api_url(request),
                 'id': self.id_field,
                 'repr': self.repr_field,
-                'columns': [fields[name].tojson(self) for name in fnames],
+                'columns': [fields[name].tojson() for name in fnames],
                 'default-limit': request.config['API_LIMIT_DEFAULT']}
         if permissions:
             meta['permissions'] = permissions

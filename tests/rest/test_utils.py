@@ -6,6 +6,6 @@ class TestUtils(test.TestCase):
 
     def test_rest_column(self):
         col = RestField('bla')
-        info = col.tojson(None)
+        info = col.tojson()
         self.assertEqual(info['name'], 'bla')
         self.assertEqual(info['field'], 'bla')

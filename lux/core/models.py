@@ -3,6 +3,10 @@ from copy import copy
 from pulsar import ImproperlyConfigured
 
 
+class ModelNotAvailable(Exception):
+    pass
+
+
 class ModelContainer(dict):
     """Mapping of model identifiers to :class:`.LuxModel` objects
     """
@@ -322,7 +326,14 @@ class Query:
         """
         model = self.model
         kw['in_list'] = True
-        return [model.tojson(request, o, **kw) for o in self.all()]
+        result = []
+        for o in self.all():
+            try:
+                data = model.tojson(request, o, **kw)
+            except ModelNotAvailable:
+                continue
+            result.append(data)
+        return result
 
 
 def permission_args(action):

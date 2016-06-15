@@ -70,7 +70,7 @@ class TestPostgreSql(OdmUtils, test.AppTestCase):
         self.assertIsInstance(data, dict)
         columns = data['columns']
         self.assertIsInstance(columns, list)
-        self.assertEqual(len(columns), 10)
+        self.assertEqual(len(columns), 9)
 
     async def test_create_task(self):
         token = await self._token('testuser')
@@ -257,28 +257,6 @@ class TestPostgreSql(OdmUtils, test.AppTestCase):
         response = request.response
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.content)
-
-    async def test_filter(self):
-        token = await self._token('testuser')
-        await self._create_task(token, 'A done task', done=True)
-        await self._create_task(token, 'a not done task')
-        request = await self.client.get('/tasks?done=1')
-        data = self.json(request.response, 200)
-        result = data['result']
-        self.assertIsInstance(result, list)
-        self.assertTrue(result)
-        for task in result:
-            self.assertEqual(task['done'], True)
-
-        request = await self.client.get('/tasks?done=0')
-        response = request.response
-        self.assertEqual(response.status_code, 200)
-        data = self.json(response)
-        result = data['result']
-        self.assertIsInstance(result, list)
-        self.assertTrue(result)
-        for task in result:
-            self.assertEqual(task['done'], False)
 
     async def test_limit(self):
         token = await self._token('testuser')

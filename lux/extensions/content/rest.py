@@ -19,14 +19,6 @@ def check_permission_dict(group, action):
 class ContentCRUD(CRUD):
     """REST API view for content
     """
-    def filters_params(self, request, *filters, **params):
-        """Enhance permission check for groups
-        """
-        filters, params = super().filters_params(request, *filters, **params)
-        if 'id' in params:
-            params['slug'] = params.pop('id')
-        return filters, params
-
     def get_list(self, request, *filters, **params):
         params['priority:gt'] = 0
         return super().get_list(request, *filters, **params)

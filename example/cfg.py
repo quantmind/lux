@@ -4,7 +4,10 @@ from tests.config import redis_cache_server
 
 EXTENSIONS = ('lux.extensions.base',
               'lux.extensions.rest',
-              'lux.extensions.content')
+              'lux.extensions.content',
+              'lux.extensions.admin',
+              'lux.extensions.auth',
+              'lux.extensions.odm')
 
 
 APP_NAME = COPYRIGHT = HTML_TITLE = 'website.com'
@@ -42,3 +45,10 @@ CONTENT_GROUPS = {
         }
     }
 }
+
+DEFAULT_POLICY = [
+    {
+        "resource": "contents:*",
+        "action": "read"
+    }
+]

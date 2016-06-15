@@ -225,6 +225,4 @@ class TestSockJSRestApp(test.AppTestCase):
         self.assertTrue(msg)
         self.assertEqual(msg['event'], 'create')
         self.assertEqual(msg['channel'], 'lux-tasks')
-        # no url in the websocket data
-        data.pop('url')
         self.assertEqual(msg['data'], data)

@@ -9,13 +9,15 @@ from sqlalchemy.orm import class_mapper, load_only
 from sqlalchemy.orm.base import instance_state
 from sqlalchemy.sql.expression import func, cast
 from sqlalchemy.exc import DataError
-from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
+from sqlalchemy.orm.exc import (NoResultFound, MultipleResultsFound,
+                                ObjectDeletedError)
 
 from pulsar import Http404
 
 from odm.utils import get_columns
 
-from lux.core import app_attribute, ModelInstance, Query as BaseQuery
+from lux.core import (app_attribute, ModelInstance, ModelNotAvailable,
+                      Query as BaseQuery)
 from lux.extensions import rest
 
 
@@ -39,7 +41,12 @@ class Query(BaseQuery):
 
     def __init__(self, model, session):
         super().__init__(model, session)
+        self.request = session.request
         self.sql_query = session.query(model.db_model())
+
+    @property
+    def logger(self):
+        return self.request.logger
 
     def count(self):
         return self._query().count()
@@ -51,8 +58,8 @@ class Query(BaseQuery):
         except (DataError, NoResultFound):
             raise Http404
         except MultipleResultsFound:
-            self.app.logger.error('Multiple result found for model %s.'
-                                  'returning the first' % self.name)
+            self.logger.error('Multiple result found for model %s.'
+                              'returning the first' % self.name)
             one = query.first()
         return ModelInstance(self.model, one, self.fields)
 
@@ -254,6 +261,8 @@ class RestModel(rest.RestModel):
                     data = str(data)
                 except Exception:
                     continue
+            except ObjectDeletedError:
+                raise ModelNotAvailable from None
             except Exception:
                 if not safe:
                     request.logger.exception(
@@ -317,6 +326,8 @@ class RestModel(rest.RestModel):
         def _set_field(field):
             if field.name in fields.hidden:
                 field.hidden = True
+            if is_rel_field(field) and field.field:
+                fields.add_exclude(field.field)
             rest[field.name] = field
 
         # process input columns first

@@ -25,7 +25,7 @@ class WsRpc:
 
     @property
     def methods(self):
-        """A cache object to store session persistent data
+        """Mapping of rpc method names to rpc methods
         """
         return self.ws.handler.rpc_methods
 

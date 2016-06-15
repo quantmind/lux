@@ -48,9 +48,9 @@ class WsModelRpc:
         check_permission = wsrequest.resource(
             model.identifier, 'read', model.fields())
         request = wsrequest.wsgi_request
-        return model.get_list(request,
-                              check_permission=check_permission,
-                              **wsrequest.params)
+        return model.query_data(request,
+                                check_permission=check_permission,
+                                **wsrequest.params)
 
     def ws_model_create(self, wsrequest):
         """Create a new model

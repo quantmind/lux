@@ -2,7 +2,7 @@ from pulsar.apps.wsgi import route
 
 from .commands import ConsoleParser, CommandError, LuxCommand, Setting
 from .extension import LuxExtension, Parameter, app_attribute
-from .models import LuxModel, Query, ModelInstance
+from .models import LuxModel, Query, ModelInstance, ModelNotAvailable
 from .app import (App, Application, execute_from_config,
                   execute_app, extend_config)
 from .wrappers import (WsgiRequest, Router, HtmlRouter,
@@ -32,6 +32,7 @@ __all__ = ['ConsoleParser',
            'LuxModel',
            'Query',
            'ModelInstance',
+           'ModelNotAvailable',
            #
            'App',
            'Application',
