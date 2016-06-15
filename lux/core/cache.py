@@ -11,8 +11,6 @@ from pulsar.utils.importer import module_attribute
 from pulsar.utils.string import to_string
 from pulsar import ImproperlyConfigured
 
-from .wrappers import WsgiRequest
-
 
 logger = logging.getLogger('lux.cache')
 
@@ -250,7 +248,7 @@ class CacheObject:
 
     def cache_key(self, arg):
         key = self.key or ''
-        if isinstance(arg, WsgiRequest):
+        if hasattr(arg, 'environ'):
             if not key:
                 key = arg.path
             if self.user:

@@ -15,7 +15,6 @@ from lux.core import Parameter, LuxExtension
 
 from .mapper import Mapper, model_base
 from .models import RestModel, RestField, odm_models
-from .ws import WsModelRpc
 
 
 __all__ = ['model_base',
@@ -27,7 +26,7 @@ __all__ = ['model_base',
 sql_to_broadcast = {'insert': 'create'}
 
 
-class Extension(LuxExtension, WsModelRpc):
+class Extension(LuxExtension):
     """Object data mapper extension
 
     Uses pulsar-odm for sychronous & asynchronous data mappers

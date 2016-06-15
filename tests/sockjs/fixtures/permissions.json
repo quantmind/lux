@@ -1,0 +1,11 @@
+{
+    "users": [
+        {
+            "username": "pippo",
+            "password": "pippo",
+            "email": "littlepippo@pippo.com",
+            "first_name": "Little Pippo",
+            "active": true
+        }
+    ]
+}

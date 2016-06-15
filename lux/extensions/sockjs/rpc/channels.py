@@ -1,7 +1,6 @@
-from .auth import check_ws_permission
 
 
-class Channels:
+class WsChannelsRpc:
     """Mixin for publish/subscribe websocket RPC calls
     """
     def ws_publish(self, wsrequest):
@@ -14,6 +13,8 @@ class Channels:
                                    'data': data})
         """
         channel = wsrequest.required_param('channel')
+        wsrequest.check_permission(channel, 'update')
+        #
         event = wsrequest.required_param('event')
         channels = wsrequest.ws.channels
         data = wsrequest.params.get('data')
@@ -29,8 +30,9 @@ class Channels:
                                      'event': 'myevent'})
         """
         channel = wsrequest.required_param('channel')
+        wsrequest.check_permission(channel, 'read')
+        #
         event = wsrequest.required_param('event')
-        check_ws_permission(wsrequest, channel, 'read')
         ws = wsrequest.ws
         channels = ws.channels
         return channels.register(channel, event, ws.write_message)

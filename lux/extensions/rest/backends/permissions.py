@@ -11,6 +11,8 @@ class PemissionsMixin:
     def get_permission_policies(self, request):
         """Returns a list of permission policy documents for the
         current request
+
+        Cache results on a user basis
         """
         user = request.cache.user
         users = request.app.models.get('users')
@@ -28,7 +30,7 @@ class PemissionsMixin:
                     perms.extend(policy)
         return perms
 
-    def has_permission(self, request, resource, level):
+    def has_permission(self, request, resource, action):
         user = request.cache.user
         # Superuser, always true
         if user.is_superuser():
@@ -36,7 +38,7 @@ class PemissionsMixin:
         else:
             # Get permissions list for the current request
             policies = self.get_permission_policies(request)
-            return has_permission(request, policies, resource, level)
+            return has_permission(request, policies, resource, action)
 
     def get_permissions(self, request, resources, actions=None):
         if not actions:

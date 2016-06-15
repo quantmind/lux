@@ -14,7 +14,8 @@ FIELDS = [
     RestField('order', sortable=True, type='int'),
     RestField('slug', sortable=True),
     RestField('group', sortable=True),
-    RestField('title')]
+    RestField('title')
+]
 
 
 class ContentModel(RestModel):

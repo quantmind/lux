@@ -2,6 +2,15 @@ from pulsar.apps import rpc
 
 from lux.utils.async import maybe_green
 
+from .auth import WsAuthRpc, WsResource
+from .channels import WsChannelsRpc
+from .model import WsModelRpc
+
+__all__ = ['WsRpc',
+           'WsAuthRpc',
+           'WsChannelsRpc',
+           'WsModelRpc']
+
 
 rpc_version = '1.0'
 
@@ -124,5 +133,12 @@ class RpcWsMethodRequest:
         """
         try:
             return self.params.pop(name, *default)
-        except KeyError as exc:
-            raise rpc.InvalidParams('missing %s' % name) from exc
+        except KeyError:
+            raise rpc.InvalidParams('missing %s' % name) from None
+
+    def resource(self, resource, action, *args):
+        return WsResource(resource, action, *args)
+
+    def check_permission(self, resource, action, *args, **kwargs):
+        resource = self.resource(resource, action, *args)
+        return resource(self.wsgi_request, **kwargs)

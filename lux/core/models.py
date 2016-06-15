@@ -116,7 +116,7 @@ class LuxModel:
         """
         query = self.get_query(session)
         if check_permission:
-            fields = check_permission(request, load_only)
+            fields = check_permission(request, load_only=load_only)
             query = query.load_only(*fields)
         elif load_only:
             query = query.load_only(*load_only)
