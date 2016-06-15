@@ -1,3 +1,4 @@
+from tests.auth.utils import deadline
 
 
 class PermissionsMixin:
@@ -55,25 +56,25 @@ class PermissionsMixin:
             '/objectives/{}'.format(objective['id']))
         data = self.json(request.response, 200)
         self.assertTrue('id' in data)
-        self.assertFalse('subject' in data)
+        self.assertFalse('deadline' in data)
 
         request = await self.client.get('/objectives')
         data = self.json(request.response, 200)
         self.assertTrue('result' in data)
         for item in data['result']:
             self.assertTrue('id' in item)
-            self.assertFalse('subject' in item)
+            self.assertFalse('deadline' in item)
 
         request = await self.client.get('/objectives/metadata')
         data = self.json(request.response, 200)
         self.assertFalse(
-            any(field['name'] == 'subject' for field in data['columns']))
+            any(field['name'] == 'deadline' for field in data['columns']))
 
         request = await self.client.get(
             '/objectives/{}'.format(objective['id']), token=su_token)
         data = self.json(request.response, 200)
         self.assertTrue('id' in data)
-        self.assertTrue('subject' in data)
+        self.assertTrue('deadline' in data)
 
         request = await self.client.get(
             '/objectives', token=su_token)
@@ -82,13 +83,13 @@ class PermissionsMixin:
         for item in data['result']:
             self.assertTrue('id' in item)
             if item['id'] == objective['id']:
-                self.assertTrue('subject' in item)
+                self.assertTrue('deadline' in item)
 
         request = await self.client.get(
             '/objectives/metadata', token=su_token)
         data = self.json(request.response, 200)
         self.assertTrue(
-            any(field['name'] == 'subject' for field in data['columns']))
+            any(field['name'] == 'deadline' for field in data['columns']))
 
     async def test_column_permissions_update_create(self):
         """
@@ -98,24 +99,21 @@ class PermissionsMixin:
         su_token = await self._token('testuser')
 
         objective = await self._create_objective(su_token,
-                                                 deadline="next week",
                                                  outcome="under achieved")
         self.assertTrue('deadline' in objective)
         self.assertTrue('outcome' in objective)
 
         request = await self.client.post(
             '/objectives/{}'.format(objective['id']),
-            content_type='application/json',
-            body={
-                'deadline': 'end of May',
+            json={
+                'deadline': deadline(20),
                 'outcome': 'exceeded'
             })
         data = self.json(request.response, 200)
         self.assertTrue('id' in data)
         self.assertTrue('outcome' in data)
-        self.assertEqual(data['outcome'], "under achieved")
-        self.assertTrue('deadline' in data)
-        self.assertEqual(data['deadline'], "end of May")
+        self.assertEqual(data['outcome'], "exceeded")
+        self.assertFalse('deadline' in data)
 
         request = await self.client.get(
             '/objectives/{}'.format(objective['id']), token=su_token)
@@ -124,8 +122,8 @@ class PermissionsMixin:
         self.assertTrue('subject' in data)
         self.assertTrue('outcome' in data)
         self.assertTrue('deadline' in data)
-        self.assertEqual(data['deadline'], "end of May")
-        self.assertEqual(data['outcome'], "under achieved")
+        self.assertEqual(data['deadline'], deadline(10))
+        self.assertEqual(data['outcome'], "exceeded")
 
     async def test_column_permissions_policy(self):
         """
@@ -133,7 +131,6 @@ class PermissionsMixin:
         level 0
         """
         user_token = await self._token('pippo')
-
         objective = await self._create_objective(user_token)
 
         request = await self.client.get(
@@ -154,15 +151,17 @@ class PermissionsMixin:
             '/objectives/metadata', token=user_token)
         data = self.json(request.response, 200)
         self.assertTrue(
-            any(field['name'] == 'subject' for field in data['columns']))
+            any(field['name'] == 'deadline' for field in data['columns']))
 
         request = await self.client.post(
             '/objectives/{}'.format(objective['id']),
             token=user_token,
-            json={'subject': 'subject changed'}
+            json={'subject': 'subject changed',
+                  'deadline': deadline(20)}
         )
 
         data = self.json(request.response, 200)
         self.assertTrue('id' in data)
-        self.assertTrue('subject' in data)
+        self.assertTrue('deadline' in data)
+        self.assertEqual(data['deadline'], deadline(20))
         self.assertEqual(data['subject'], "subject changed")

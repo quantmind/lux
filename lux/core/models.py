@@ -334,11 +334,3 @@ class Query:
                 continue
             result.append(data)
         return result
-
-
-def permission_args(action):
-    args = ()
-    if isinstance(action, dict):
-        args = action.get('args', args)
-        action = action.get('action', 'read')
-    return action, args

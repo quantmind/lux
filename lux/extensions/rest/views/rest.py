@@ -66,7 +66,8 @@ class RestRouter(JsonRouter):
         """
         params.update(request.urlargs)
         if 'id' in params:
-            params[self.model.id_field] = params.pop('id')
+            model = self.get_model(request)
+            params[model.id_field] = params.pop('id')
         return filters, params
 
     def get_model(self, request):
@@ -116,13 +117,16 @@ class MetadataMixin:
         if request.method == 'OPTIONS':
             request.app.fire('on_preflight', request, methods=GET_HEAD)
             return request.response
+        filters, params = self.filters_params(request)
         model = self.get_model(request)
 
         meta = model.meta(
             request,
+            *filters,
             check_permission=Resource.rest(request, 'read',
                                            model.fields(),
-                                           pop=1, list=True)
+                                           pop=1, list=True),
+            **params
         )
         return self.json_response(request, meta)
 
@@ -158,7 +162,7 @@ class CRUD(MetadataMixin, RestRouter):
 
         instance = model.instance(fields=fields)
         data, files = request.data_and_files()
-        form = form_class(request, data=data, files=files)
+        form = form_class(request, data=data, files=files, model=model)
         if form.is_valid():
             with model.session(request) as session:
                 try:
@@ -212,7 +216,7 @@ class CRUD(MetadataMixin, RestRouter):
                 )
                 data, files = request.data_and_files()
                 form = form_class(request, data=data, files=files,
-                                  previous_state=instance)
+                                  previous_state=instance, model=model)
                 if form.is_valid(exclude_missing=True):
                     instance = model.update_model(request,
                                                   instance,

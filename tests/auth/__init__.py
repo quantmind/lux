@@ -26,8 +26,9 @@ DEFAULT_POLICY = [
     },
     {
         "resource": "objectives:*:deadline",
-        "action": "update",
-        "effect": "deny"
+        "action": "*",
+        "effect": "deny",
+        "condition": "user.is_anonymous()"
     }
 ]
 

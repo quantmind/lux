@@ -150,15 +150,20 @@ async def load_fixtures(app, path=None):
 
     client = TestClient(app)
     test = TestCase()
-    request = await client.post('/authorizations',
-                                json=dict(username='testuser',
-                                          password='testuser'))
-    test_token = test.json(request.response, 201)['token']
+    test_tokens = {}
 
     for model, items in fixtures.items():
         logger.info('Creating %d fixtures for "%s"', len(items), model)
         for params in items:
             url = params.pop('api_url', '/%s' % model)
+            user = params.pop('api_user', 'testuser')
+            if user not in test_tokens:
+                request = await client.post('/authorizations',
+                                            json=dict(username=user,
+                                                      password=user))
+                token = test.json(request.response, 201)['token']
+                test_tokens[user] = token
+            test_token = test_tokens[user]
             request = await client.post(url,
                                         json=params,
                                         token=test_token)

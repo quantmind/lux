@@ -98,8 +98,7 @@ class Resource:
             return perms
 
     def _permissions(self, request):
-        """Dictionary of permissions for this :class:`.Resource`
-        """
+        """Permissions for this :class:`.Resource`"""
         has = request.cache.auth_backend.has_permission
         root_perm = has(request, self.resource, self.action)
         if not root_perm:

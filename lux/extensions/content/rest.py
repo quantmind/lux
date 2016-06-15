@@ -19,10 +19,6 @@ def check_permission_dict(group, action):
 class ContentCRUD(CRUD):
     """REST API view for content
     """
-    def get_list(self, request, *filters, **params):
-        params['priority:gt'] = 0
-        return super().get_list(request, *filters, **params)
-
     @route('_links', method=('get', 'head', 'options'), position=-1)
     def _links(self, request):
         if request.method == 'OPTIONS':
@@ -35,6 +31,6 @@ class ContentCRUD(CRUD):
             check_permission=Resource.rest(request, 'read',
                                            self.model.fields(),
                                            pop=1, list=True),
-            **{'order:gt': 0}
+            **{'order:gt': 0, 'priority:gt': 0}
         )
         return self.json_response(request, data)

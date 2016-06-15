@@ -34,7 +34,7 @@ class RestField:
         self.filter = filter
         self.type = type or ('object' if model else 'string')
         self.displayName = displayName or nicename(name)
-        self.field = field or name
+        self.field = field
         self.hidden = hidden
         self.model = model
 
@@ -278,7 +278,7 @@ class RestModel(LuxModel, RestClient):
             return request.app.pagination(request, data, total, limit, offset)
 
     def meta(self, request, *filters, exclude=None, session=None,
-             check_permission=None):
+             check_permission=None, **params):
         """Return an object representing the metadata for the model
         served by this router
         """
@@ -312,7 +312,7 @@ class RestModel(LuxModel, RestClient):
             meta['permissions'] = permissions
 
         with self.session(request, session=session) as session:
-            query = self.query(request, session).filter(*filters)
+            query = self.query(request, session, *filters, **params)
             meta['total'] = query.count()
         return meta
 
@@ -339,6 +339,8 @@ class RestModel(LuxModel, RestClient):
 
         for info in fields.include:
             col = RestField.make(info)
+            if col.name in rest:
+                continue
             if col.name in fields.hidden:
                 col.hidden = True
             rest[col.name] = col

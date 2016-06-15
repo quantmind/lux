@@ -5,6 +5,7 @@ from pulsar.utils.httpurl import remove_double_slash
 from lux.core import cached
 from lux.extensions.rest import RestModel, RestField, Query
 from lux.utils.files import skipfile
+from lux.utils.data import as_tuple
 
 from .contents import get_reader
 
@@ -87,20 +88,19 @@ class QuerySession(Query, Session):
         super().__init__(model, request)
         self._groups = []
 
+    def filter_field(self, field, op, value):
+        if field == 'group' and op == 'eq':
+            self._groups.extend(as_tuple(value))
+        super().filter_field(field, op, value)
+
     #  INTERNALS
     def _get_data(self):
-        model = self.model
-        if self._filtered_data is None:
-            if self._data is None:
-                self._data = []
-                for group in self._groups:
-                    cache = cached(app=self.app, key='contents:%s' % group)
-                    self._data.extend(cache(self._all)(group))
-            self._filtered_data = data = []
-            for content in self._data:
-                if self._filter(content):
-                    data.append(model.instance(content, self.fields))
-        return self._filtered_data
+        if self._data is None:
+            self._data = []
+            for group in self._groups:
+                cache = cached(app=self.app, key='contents:%s' % group)
+                self._data.extend(cache(self._all)(group))
+        return self._data
 
     def _filter(self, content):
         for field, op, value in self._filters:

@@ -1,3 +1,5 @@
+from pulsar.utils.html import nicename
+
 from copy import copy
 
 
@@ -34,6 +36,13 @@ class FormSet:
     @property
     def is_bound(self):
         return self.related_form.is_bound if self.related_form else False
+
+    def metadata(self):
+        return {
+            'name': self.name,
+            'displayName': self.label or nicename(self.name),
+            'type': 'array'
+        }
 
     def is_valid(self, exclude_missing=False):
         self._unwind()

@@ -8,8 +8,8 @@ POLICY = dict(effect=(str, frozenset(('allow', 'deny'))),
               # A resource can be a string or a list of resources.
               # A resource is object/model we are checking permission
               resource=((str, list), None),
-              # Additional condition (not yet used)
-              condition=(dict, None))
+              # Additional condition to evaluate
+              condition=(str, None))
 
 EFFECTS = {'allow': True,
            'deny': False}
@@ -30,42 +30,62 @@ def has_permission(request, policies, resource, action):
         resources = policy.get('resource')
         if resources and _has_policy_actions(action, policy.get('action')):
             effect = EFFECTS.get(policy.get('effect', 'allow'))
+            condition = policy.get('condition')
             if not isinstance(resources, list):
                 resources = (resources,)
             for available_resource in resources:
                 bits = available_resource.split(':')
                 if len(bits) > len(namespaces):
                     continue
-                available_policies.append((bits, effect))
+                available_policies.append((bits, effect, condition))
 
     if not available_policies:
         return False
 
+    context = {
+        "user": request.cache.user
+    }
+
     while namespaces:
         has = {}
-        for policy, effect in available_policies:
+        for policy, effect, condition in available_policies:
             if len(policy) != len(namespaces):
                 continue
 
-            match = 0
+            match = {}
+            count = 0
             for a, b in zip(namespaces, policy):
                 if a == b:
-                    match += 1
-                elif b != '*':
+                    continue
+                elif b == '*':
+                    match[count] = a
+                    count += 1
+                else:
                     match = False
                     break
 
             if match is False:  # No match
                 continue
 
-            if match == len(namespaces) and not effect:
+            if condition:
+                local = {'match': match}
+                try:
+                    if not eval(condition, context, local):
+                        continue
+                except Exception as exc:
+                    request.logger.error(
+                        'Could not evaluate policy condition "%s": %s',
+                        condition, exc)
+                    return False
+
+            if not match and not effect:
                 return False
 
-            if has.get(match) is not False:
-                has[match] = effect
+            if has.get(len(match)) is not False:
+                has[len(match)] = effect
 
         if has:
-            return has[sorted(has)[-1]]
+            return has[sorted(has)[0]]
 
         namespaces.pop()
 

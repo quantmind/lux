@@ -16,8 +16,7 @@ from pulsar import Http404
 
 from odm.utils import get_columns
 
-from lux.core import (app_attribute, ModelInstance, ModelNotAvailable,
-                      Query as BaseQuery)
+from lux.core import app_attribute, ModelNotAvailable, Query as BaseQuery
 from lux.extensions import rest
 
 
@@ -58,15 +57,15 @@ class Query(BaseQuery):
         except (DataError, NoResultFound):
             raise Http404
         except MultipleResultsFound:
-            self.logger.error('Multiple result found for model %s.'
-                              'returning the first' % self.name)
+            self.logger.error('Multiple result found for model %s. '
+                              'Returning the first' % self.name)
             one = query.first()
-        return ModelInstance(self.model, one, self.fields)
+        return self.model.instance(one, self.fields)
 
     def all(self):
         model = self.model
         fields = self.fields
-        return [ModelInstance(model, o, fields) for o in self._query().all()]
+        return [model.instance(o, fields) for o in self._query().all()]
 
     def limit(self, limit):
         self.sql_query = self.sql_query.limit(limit)

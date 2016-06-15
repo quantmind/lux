@@ -1,4 +1,10 @@
+from datetime import date, timedelta
+
 from lux.utils import test
+
+
+def deadline(days):
+    return (date.today() + timedelta(days=days)).isoformat()
 
 
 class AuthUtils:
@@ -6,12 +12,14 @@ class AuthUtils:
     """
     async def _create_objective(self, token, subject='My objective', **data):
         data['subject'] = subject
+        data['deadline'] = deadline(10)
         request = await self.client.post('/objectives', json=data, token=token)
         data = self.json(request.response, 201)
         self.assertIsInstance(data, dict)
         self.assertTrue('id' in data)
         self.assertEqual(data['subject'], subject)
         self.assertTrue('created' in data)
+        self.assertTrue('deadline' in data)
         return data
 
     @test.green

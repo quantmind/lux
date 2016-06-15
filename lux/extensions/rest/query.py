@@ -1,7 +1,6 @@
 from pulsar import Http404
 
 from lux.core import Query as BaseQuery
-from lux.utils.data import as_tuple
 
 
 OPERATORS = {
@@ -62,10 +61,7 @@ class Query(BaseQuery):
     def filter_field(self, field, op, value):
         self._filtered_data = None
         if op in OPERATORS:
-            op = OPERATORS[op]
-            if field == 'group':
-                self._groups.extend(as_tuple(value))
-            self._filters.append((field, op, value))
+            self._filters.append((field, OPERATORS[op], value))
         else:
             self.request.logger.error('Could not apply filter %s to %s',
                                       op, self)
@@ -74,7 +70,14 @@ class Query(BaseQuery):
         self._sortby.append((field, direction))
 
     def all(self):
-        data = self._get_data()
+        data = self._filtered_data
+        if data is None:
+            model = self.model
+            self._filtered_data = data = []
+            for entry in self._get_data():
+                if self._filter(entry):
+                    data.append(model.instance(entry, self.fields))
+
         for field, direction in self._sortby:
             if direction == 'desc':
                 data = [desc(d, field) for d in data]
@@ -88,6 +91,16 @@ class Query(BaseQuery):
         return data
 
     #  INTERNALS
+    def _filter(self, entry):
+        for field, op, value in self._filters:
+            val = entry.get(field)
+            try:
+                if not op(val, value):
+                    return False
+            except Exception:
+                return False
+        return True
+
     def _get_data(self):
         raise NotImplementedError
 
