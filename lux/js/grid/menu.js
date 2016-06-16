@@ -47,7 +47,7 @@ export default function ($luxProvider) {
             info: 'Click buttons to toggle visibility of columns',
             template: visibilityTpl
         }
-    }
+    };
 }
 
 function gridMenu (grid) {

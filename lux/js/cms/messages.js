@@ -53,4 +53,4 @@ const messageTpl = `<div>
         <i ng-if="message.icon" ng-class="message.icon"></i>
         <span ng-bind-html="message.text"></span>
     </div>
-</div>`
+</div>`;

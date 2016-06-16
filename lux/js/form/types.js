@@ -28,7 +28,7 @@ export default function (ngModule) {
                     placeholder: defaultPlaceholder(field),
                     disabled: false,
                     value: ''
-                }
+                };
             }
         });
 
@@ -100,7 +100,7 @@ export default function (ngModule) {
                     label: field.name,
                     type: 'submit',
                     value: field.name
-                }
+                };
             }
         });
 
@@ -112,7 +112,7 @@ export default function (ngModule) {
             defaultOptions: function (field) {
                 return {
                     title: field.href || ''
-                }
+                };
             }
         });
 
@@ -163,7 +163,7 @@ ng-readonly="${field.readonly}"
 ng-disabled="${field.disabled}"
 ng-minlength="${field.minlength}"
 ng-maxlength="${field.maxlength}"
->`
+>`;
 }
 
 function selectTpl (field) {
@@ -177,7 +177,7 @@ ng-required="${field.required}"
 ng-readonly="${field.readonly}"
 ng-disabled="${field.disabled}"
 >
-</select>`
+</select>`;
 }
 
 function textareaTpl (field) {
@@ -220,7 +220,7 @@ const radioTpl = `
     </label>
   </div>
 </div>
-`
+`;
 
 
 function fieldsetTpl (field) {
@@ -233,7 +233,7 @@ const rowTpl = `<div class="row"></div>`;
 
 
 function colTpl(field) {
-    return `<div class="col-sm-${field.size}"></div>`
+    return `<div class="col-sm-${field.size}"></div>`;
 }
 
 

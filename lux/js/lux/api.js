@@ -28,7 +28,7 @@ export function windowContext ($window) {
     }
     if (user) {
         context.userToken = user;
-        context.user = decodeJWToken(user)
+        context.user = decodeJWToken(user);
     }
     return context;
 }

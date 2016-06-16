@@ -204,7 +204,7 @@ function filter () {
     _.forEach(api.columns, function (value) {
         // Clear data in order to refresh icons
         if (value.filter.type === 'select')
-            api.options.data = []
+            api.options.data = [];
 
         if (value.filters[0].term) {
             if (value.colDef.type === 'string') {

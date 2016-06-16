@@ -25,4 +25,4 @@ export default function ($window, $document, luxFormConfig) {
 const messageTpl = function (message) {
     return `<br>
 <p class="lead">${message}</p>`;
-}
+};

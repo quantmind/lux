@@ -12,3 +12,4 @@ extends:
 rules:
   no-cond-assign: 0
   no-floating-decimal: 2
+  semi: 2

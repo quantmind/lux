@@ -4,7 +4,7 @@ import {compile, asHtml, mergeOptions, mergeArray, fieldDirectives} from './util
 
 
 export function fieldInnerTemplate (formName) {
-    return `<lux-field ng-repeat="child in field.children" field="child" luxform="luxform" form="${formName}"></lux-field>`
+    return `<lux-field ng-repeat="child in field.children" field="child" luxform="luxform" form="${formName}"></lux-field>`;
 }
 
 
@@ -216,7 +216,7 @@ export class Field extends FormElement {
     }
 
     get value () {
-        return this.model[this.name]
+        return this.model[this.name];
     }
 
     set value (value) {

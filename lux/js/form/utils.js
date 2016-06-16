@@ -17,7 +17,7 @@ export function selectOptions (field) {
         field.$lux.api(options).get().then((response) => {
             if (response.status === 200)
                 parseOptions(field, response.data);
-        })
+        });
     } else {
         parseOptions(field, options);
     }
@@ -33,7 +33,7 @@ export function parseOptions (field, items, objParser) {
             opt = {
                 value: opt[0],
                 label: opt[1] || opt[0]
-            }
+            };
         } else if (_.isObject(opt))
             opt = objParser ? objParser(opt) : opt;
         else

@@ -26,7 +26,7 @@ const labelTpl = function (inner) {
     {{field.required ? '*' : ''}}
   </label>
   ${inner}`;
-}
+};
 
 
 const statusTpl = function (inner) {
@@ -34,4 +34,4 @@ const statusTpl = function (inner) {
 ${inner}
 <p ng-if="field.error" class="text-danger error-block">{{ field.error }}</p>
 </div>`;
-}
+};

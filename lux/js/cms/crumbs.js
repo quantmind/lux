@@ -33,7 +33,7 @@ function crumbs (loc) {
             last = {
                 label: name.split(/[-_]+/).map(capitalize).join(' '),
                 href: urlJoin(last.href, name)
-            }
+            };
             steps.push(last);
         }
     });

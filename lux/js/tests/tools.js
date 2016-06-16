@@ -3,7 +3,7 @@ import angular from '../ng';
 import 'angular-mocks';
 import 'angular-ui-grid/ui-grid';
 import 'ui-select';
-import mock_data from './mock'
+import mock_data from './mock';
 
 
 export const inject = angular.mock.inject;

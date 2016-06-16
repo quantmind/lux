@@ -133,7 +133,7 @@ function build (grid) {
 
         grid.options.onRegisterApi = function (api) {
             grid.$onRegisterApi(api);
-            if (onRegisterApi) onRegisterApi(api)
+            if (onRegisterApi) onRegisterApi(api);
         };
         grid.$dataProvider.connect();
     }
