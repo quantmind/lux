@@ -11,6 +11,7 @@ describe('lux form input', function() {
     it('Test $lux', () => {
 
         var json = _.toJson({
+            type: 'form',
             children: [
                 {
                     type: 'text',
@@ -24,9 +25,9 @@ describe('lux form input', function() {
 
         var element = compile(`<div><lux-form json=${json}></lux-form></div>`),
             form = getForm(element),
-            scope = form.isolateScope(),
+            scope = form.scope(),
             input = lux.querySelector(form, 'input'),
-            dfield = scope.info.fields['slug'];
+            dfield = scope.luxform.fields.slug;
 
         expect(_.isObject(dfield)).toBe(true);
         expect(input.length).toBe(1);

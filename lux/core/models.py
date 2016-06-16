@@ -119,6 +119,8 @@ class LuxModel:
         :param params: key-valued filters
         """
         query = self.get_query(session)
+        if load_only and isinstance(load_only, str):
+            load_only = (load_only,)
         if check_permission:
             fields = check_permission(request, load_only=load_only)
             query = query.load_only(*fields)

@@ -1,6 +1,8 @@
 import _ from '../ng';
 import reverseMerge from '../core/reversemerge';
 
+const directiveFieldAttributes = ['required', 'readonly', 'disabled', 'minlength', 'maxlength'];
+
 
 export function defaultPlaceholder (field) {
     return field.label || field.title || field.name;
@@ -25,6 +27,7 @@ export function selectOptions (field) {
 
 export function parseOptions (field, items, objParser) {
     if (!_.isArray(items)) items = [];
+
     field.options = items.map((opt) => {
         if (_.isArray(opt)) {
             opt = {
@@ -71,4 +74,17 @@ export function mergeArray (array1, array2) {
             array1[index] = value;
         });
     return array1;
+}
+
+
+export function fieldDirectives (field) {
+    let value;
+
+    _.forEach(directiveFieldAttributes, (attr) => {
+        value = field[attr];
+        if (!_.isString(value)) {
+            field[attr] = 'field.$' + attr;
+            field['$' + attr] = value;
+        }
+    });
 }

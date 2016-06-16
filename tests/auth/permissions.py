@@ -46,6 +46,29 @@ class PermissionsMixin:
         self.assertValidationError(request.response, '',
                                    text='"resource" must be defined')
 
+    async def test_policy_invalid_entry(self):
+        """Test permissions CREATE/UPDATE/DELETE"""
+        token = await self._token('testuser')
+        #
+        data = dict(name='blabla', description='hgv hh',
+                    policy=dict(foo='blabla'))
+        request = await self.client.post('/permissions',
+                                         json=data,
+                                         token=token)
+        self.assertValidationError(request.response, '')
+
+    async def test_policy_invalid_type(self):
+        """Test permissions CREATE/UPDATE/DELETE"""
+        token = await self._token('testuser')
+        #
+        data = dict(name='blabla', description='hgv hh',
+                    policy=dict(condition=['blabla']))
+        request = await self.client.post('/permissions',
+                                         json=data,
+                                         token=token)
+        self.assertValidationError(request.response, '',
+                                   'not a valid condition statement')
+
     async def test_column_permissions_read(self):
         """Tests read requests against columns with permission level 0"""
         su_token = await self._token('testuser')

@@ -161,8 +161,8 @@ ng-model="field.value"
 ng-required="${field.required}"
 ng-readonly="${field.readonly}"
 ng-disabled="${field.disabled}"
-ng-minlength="field.minlength"
-ng-maxlength="field.maxlength"
+ng-minlength="${field.minlength}"
+ng-maxlength="${field.maxlength}"
 >`
 }
 
@@ -262,7 +262,8 @@ ng-hide="${field.hide}"
 
 
 function uiSelectTpl(field) {
-    return `<ui-select
+    return `<div class="input-group">
+<ui-select
 id="${field.id}"
 name="${field.name}"
 ${field.directives}
@@ -271,13 +272,19 @@ ng-model="field.value"
 ng-required="${field.required}"
 ng-readonly="${field.readonly}"
 ng-disabled="${field.disabled}"
->
+allow-clear>
 <ui-select-match placeholder="${field.placeholder}">{{$select.selected.label}}</ui-select-match>
 <ui-select-choices repeat="item.value as item in field.options | filter: $select.search">
   <div ng-bind-html="item.label | highlight: $select.search"></div>
   <small ng-if="item.description" ng-bind-html="item.description | highlight: $select.search"></small>
 </ui-select-choices>
-</ui-select>`
+</ui-select>
+<span class="input-group-btn">
+  <button type="button" ng-click="field.value = undefined" class="btn btn-default">
+    <span class="glyphicon glyphicon-trash"></span>
+  </button>
+</span>
+</div>`;
 }
 
 

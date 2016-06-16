@@ -35,9 +35,11 @@ class RelationshipField(MultipleMixin, forms.Field):
                          self, self.model)
             return attrs
 
+        params = self.params or {}
+        params['load_only'] = [model.id_field, model.repr_field]
         target = model.get_target(request,
                                   path=self.path,
-                                  params=self.params)
+                                  params=params)
         attrs['lux-remote'] = json.dumps(target)
         return attrs
 

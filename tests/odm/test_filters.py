@@ -96,6 +96,17 @@ class TestFiltersPsql(OdmUtils, test.AppTestCase):
             self.assertTrue(entry['id'])
             self.assertTrue(entry['subject'])
 
+    async def test_load_only_1(self):
+        request = await self.client.get(
+            '/tasks?load_only=id&load_only=id')
+        data = self.json(request.response, 200)
+        result = data['result']
+        self.assertIsInstance(result, list)
+        self.assertEqual(len(result), 3)
+        for entry in result:
+            self.assertEqual(len(entry), 1)
+            self.assertTrue(entry['id'])
+
     async def test_load_only_with_url(self):
         request = await self.client.get(
             '/tasks?load_only=api_url&load_only=subject')

@@ -1,6 +1,6 @@
 import _ from '../ng';
 import LuxComponent from '../lux/component';
-import {compile, asHtml, mergeOptions, mergeArray} from './utils';
+import {compile, asHtml, mergeOptions, mergeArray, fieldDirectives} from './utils';
 
 
 export function fieldInnerTemplate (formName) {
@@ -194,6 +194,7 @@ export class Field extends FormElement {
 
     constructor ($scope, $lux, $cfg, field, type, tag) {
         super($scope, $lux, $cfg, field, type, tag);
+        fieldDirectives(this);
         this.$form = $scope.form;
         this.$luxform.$setField(this);
     }

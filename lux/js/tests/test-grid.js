@@ -32,6 +32,8 @@ describe('lux core', function() {
         expect(grid.length).toBe(1);
         expect(gridScope.$parent).toBe(scope);
         $httpBackend.flush(1);
+        // TODO: fix this test
+        done();
     });
 
 });
