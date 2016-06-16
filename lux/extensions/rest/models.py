@@ -1,3 +1,4 @@
+from copy import copy
 from itertools import chain
 from collections import Mapping, OrderedDict
 from urllib.parse import urljoin
@@ -8,6 +9,12 @@ from pulsar.utils.httpurl import is_absolute_uri
 from lux.core import LuxModel
 
 from .client import url_path
+
+
+CONVERTERS = {
+    'int': lambda value: int(value),
+    'float': lambda value: float(value)
+}
 
 
 class RestField:
@@ -32,8 +39,8 @@ class RestField:
         self.name = name
         self.sortable = sortable
         self.filter = filter
-        self.type = type
-        self.displayName = displayName
+        self.type = type or ('object' if model else 'string')
+        self.displayName = displayName or nicename(name)
         self.field = field
         self.hidden = hidden
         self.model = model
@@ -58,31 +65,26 @@ class RestField:
 
     __str__ = __repr__
 
-    def tojson(self, model=None, defaults=True):
-        if self.model:
-            if self.field:
-                model._fields.add_exclude(self.field)
-            if not self.type:
-                self.type = 'object'
-        return dict(self._as_dict(defaults))
+    def tojson(self):
+        return dict(self._as_dict())
 
-    def _as_dict(self, defaults):
+    def value(self, value):
+        converter = CONVERTERS.get(self.type)
+        try:
+            return converter(value)
+        except Exception:
+            return value
+
+    def _as_dict(self):
         for k, v in self.__dict__.items():
             if k.startswith('_'):
                 continue
-            if v is None and defaults:
-                if k == 'displayName':
-                    v = nicename(self.name)
-                elif k == 'field':
-                    v = self.name
-                elif k == 'type':
-                    v = 'string'
             if v is not None:
                 yield k, v
 
 
 URL_FIELDS = (
-    RestField('api_url', displayName='Url', type='url', hidden=True).tojson(),
+    RestField('api_url', type='url', hidden=True).tojson(),
     RestField('html_url', type='url', hidden=True).tojson()
 )
 
@@ -134,11 +136,12 @@ class RestClient:
 class FieldsInfo:
     map = None
 
-    def __init__(self, urls, include, exclude, hidden):
+    def __init__(self, urls, include, exclude, hidden, list_exclude):
         self.urls = urls
         self.include = include
         self.hidden = hidden
         self._exclude = exclude
+        self._list_exclude = list_exclude
 
     def exclude(self, exclude=None, exclude_urls=False):
         exclude = set(exclude or ())
@@ -200,7 +203,7 @@ class RestModel(LuxModel, RestClient):
 
     def __init__(self, name, form=None, updateform=None, fields=None,
                  url=None, exclude=None, html_url=None, id_field=None,
-                 repr_field=None, hidden=None):
+                 repr_field=None, hidden=None, list_exclude=None):
         assert name, 'model name not available'
         self.name = name
         self.form = form
@@ -214,12 +217,23 @@ class RestModel(LuxModel, RestClient):
             urls=tuple((f['name'] for f in URL_FIELDS)),
             include=list(chain(fields or (), URL_FIELDS)),
             exclude=set(exclude or ()),
-            hidden=set(hidden or ())
+            hidden=set(hidden or ()),
+            list_exclude=set(list_exclude or ())
         )
 
     def __repr__(self):
         return self.name
     __str__ = __repr__
+
+    def copy(self):
+        return self.__copy__()
+
+    def __copy__(self):
+        cls = self.__class__
+        field = cls.__new__(cls)
+        field.__dict__ = self.__dict__.copy()
+        field._fields = copy(self._fields)
+        return field
 
     @property
     def identifier(self):
@@ -228,18 +242,18 @@ class RestModel(LuxModel, RestClient):
     def fields(self):
         return self._fields.load(self).map
 
-    def column_fields(self, fields, field=None):
+    def column_fields(self, fields):
         """Return a list column fields from the list of fields object
         """
-        field = field or 'field'
-        fields = set()
-        for c in fields:
-            value = c[field]
-            if isinstance(value, (tuple, list)):
-                fields.update(value)
-            else:
-                fields.add(value)
-        return tuple(fields)
+        field_names = set()
+        for name in fields:
+            field = self.field(name)
+            if field:
+                if isinstance(field.field, (tuple, list)):
+                    field_names.update(field.field)
+                elif field.field:
+                    field_names.add(field.field)
+        return tuple(field_names)
 
     def limit(self, request, limit=None, max_limit=None):
         """The maximum number of items to return when fetching list of data
@@ -260,15 +274,6 @@ class RestModel(LuxModel, RestClient):
         return min(limit, max_limit)
 
     def instance_urls(self, request, instance, data):
-        """
-        Makes a model instance JSON-friendly. Removes fields that the
-        user does not have read access to.
-
-        :param request:     WSGI request
-        :param obj:         model instance
-        :param load_only:   Optional list of fields to load
-        :return:            dict
-        """
         if self.id_field not in data:
             id_value = instance.id
         else:
@@ -276,7 +281,9 @@ class RestModel(LuxModel, RestClient):
         for url_name in self._fields.urls:
             method = getattr(self, url_name, None)
             if method and (not instance.fields or url_name in instance.fields):
-                data[url_name] = method(request, id_value)
+                url = method(request, id_value)
+                if url:
+                    data[url_name] = url
         return data
 
     def query_data(self, request, *filters, limit=None, offset=None,
@@ -295,17 +302,21 @@ class RestModel(LuxModel, RestClient):
             return request.app.pagination(request, data, total, limit, offset)
 
     def meta(self, request, *filters, exclude=None, session=None,
-             check_permission=None):
+             check_permission=None, **params):
         """Return an object representing the metadata for the model
         served by this router
         """
         fields = self.fields()
-        field_names = self.fields_with_permission(request, 'read')
+
+        if check_permission:
+            fnames = check_permission(request)
+        else:
+            fnames = tuple(fields)
         #
         # Don't include fields which are excluded from meta
         exclude = self._fields.exclude(exclude)
         if exclude:
-            field_names = [c for c in field_names if c not in exclude]
+            fnames = [c for c in fnames if c not in exclude]
 
         backend = request.cache.auth_backend
         permissions = backend.get_permissions(request, self.name)
@@ -319,13 +330,13 @@ class RestModel(LuxModel, RestClient):
                 'url': self.api_url(request),
                 'id': self.id_field,
                 'repr': self.repr_field,
-                'columns': [fields[name].tojson(self) for name in field_names],
+                'columns': [fields[name].tojson() for name in fnames],
                 'default-limit': request.config['API_LIMIT_DEFAULT']}
         if permissions:
             meta['permissions'] = permissions
 
-        with self.session(session) as session:
-            query = self.query(request, session).filter(*filters)
+        with self.session(request, session=session) as session:
+            query = self.query(request, session, *filters, **params)
             meta['total'] = query.count()
         return meta
 
@@ -352,8 +363,12 @@ class RestModel(LuxModel, RestClient):
 
         for info in fields.include:
             col = RestField.make(info)
+            if col.name in rest:
+                continue
             if col.name in fields.hidden:
                 col.hidden = True
+            if not col.field:
+                col.field = col.name
             rest[col.name] = col
 
         return rest

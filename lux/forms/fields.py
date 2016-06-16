@@ -12,7 +12,7 @@ from pulsar.utils.pep import to_string
 from pulsar.utils.slugify import slugify
 
 from .options import Options
-from .errors import *  # noqa
+from .errors import ValidationError
 
 
 standard_validation_error = 'Not a valid value'

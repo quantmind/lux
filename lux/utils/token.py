@@ -15,6 +15,8 @@ from datetime import date
 
 encode = jwt.encode
 decode = jwt.decode
+ExpiredSignature = jwt.ExpiredSignature
+DecodeError = jwt.DecodeError
 
 
 def encode_json(payload, secret, **kw):

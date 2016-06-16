@@ -15,17 +15,22 @@ EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.auth']
 
 API_URL = ''
+DEFAULT_PERMISSION_LEVEL = 'none'
 AUTHENTICATION_BACKENDS = ['lux.extensions.auth.TokenBackend']
-DEFAULT_PERMISSION_LEVELS = {
-    'group': 'none',
-    'registration': 'none',
-    'secret': 'none',
-    'objective': '*',
-    'objective:subject': 'none',
-    'objective:deadline': ('read', 'update'),
-    'objective:outcome': 'read'
-}
 COMING_SOON_URL = 'coming-soon'
+DATASTORE = 'postgresql+green://lux:luxtest@127.0.0.1:5432/luxtests'
+DEFAULT_POLICY = [
+    {
+        "resource": "objectives:*",
+        "action": "*"
+    },
+    {
+        "resource": "objectives:*:deadline",
+        "action": "*",
+        "effect": "deny",
+        "condition": "user.is_anonymous()"
+    }
+]
 
 Model = odm.model_base('odmtest')
 

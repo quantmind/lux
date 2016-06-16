@@ -2,7 +2,7 @@ from pulsar.apps.wsgi import route
 
 from .commands import ConsoleParser, CommandError, LuxCommand, Setting
 from .extension import LuxExtension, Parameter, app_attribute
-from .models import LuxModel, Query, ModelInstance
+from .models import LuxModel, Query, ModelInstance, ModelNotAvailable
 from .app import (App, Application, execute_from_config,
                   execute_app, extend_config)
 from .wrappers import (WsgiRequest, Router, HtmlRouter,
@@ -14,7 +14,7 @@ from .cms import CMS
 from .mail import EmailBackend
 from .cache import cached, Cache, register_cache, create_cache
 from .exceptions import raise_http_error, ShellError
-from .auth import AuthBase, backend_action, auth_backend_actions
+from .auth import AuthBase, backend_action, auth_backend_actions, Resource
 
 
 GET_HEAD = frozenset(('GET', 'HEAD'))
@@ -32,6 +32,7 @@ __all__ = ['ConsoleParser',
            'LuxModel',
            'Query',
            'ModelInstance',
+           'ModelNotAvailable',
            #
            'App',
            'Application',
@@ -51,6 +52,7 @@ __all__ = ['ConsoleParser',
            'ShellError',
            #
            'AuthBase',
+           'Resource',
            'backend_action',
            'auth_backend_actions',
            #

@@ -6,16 +6,16 @@ from pulsar.utils.importer import module_attribute
 
 from .socketio import SocketIO
 from .ws import LuxWs
-from .auth import WsModelRpc, check_ws_permission, get_model
-from .channels import Channels
+from . import rpc
 
 
-__all__ = ['LuxWs',
-           'check_ws_permission',
-           'get_model']
+__all__ = ['LuxWs']
 
 
-class Extension(LuxExtension, Channels, WsModelRpc):
+class Extension(LuxExtension,
+                rpc.WsChannelsRpc,
+                rpc.WsAuthRpc,
+                rpc.WsModelRpc):
 
     _config = [
         Parameter('WS_URL', '/ws', 'Websocket base url'),

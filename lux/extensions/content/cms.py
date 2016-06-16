@@ -9,6 +9,9 @@ from lux import core
 from .contents import get_reader
 
 
+CONTEXT_URL = 'contents/context?load_only=slug&load_only=body'
+
+
 class CMSRouter(core.HtmlRouter):
     """Fallback CMS Router
     """
@@ -89,7 +92,11 @@ class CMS(core.CMS):
 
     @cached(key='cms:context')
     def context_data(self, request):
-        return request.api.get('contents/context').json()['result']
+        try:
+            return request.api.get(CONTEXT_URL).json()['result']
+        except Http404:
+            request.logger.error('Cannot find context at %s', CONTEXT_URL)
+            return []
 
     def html_content(self, request, path, context):
         """Render the inner html
@@ -139,11 +146,13 @@ class LazyContext:
             context = self.context
             entry = self.entry
             engine = self.app.template_engine(entry.get('template_engine'))
-            body = engine(entry['body'], self.context)
-            template = entry.get('template')
-            if template:
-                context['html_main'] = body
-                body = self.app.cms.render(template, context)
+            body = entry.get('body', '')
+            if body:
+                body = engine(body, self.context)
+                template = entry.get('template')
+                if template:
+                    context['html_main'] = body
+                    body = self.app.cms.render(template, context)
             self.context = body
             context[self.key] = body
         return self.context

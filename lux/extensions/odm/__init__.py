@@ -15,7 +15,6 @@ from lux.core import Parameter, LuxExtension
 
 from .mapper import Mapper, model_base
 from .models import RestModel, RestField, odm_models
-from .ws import WsModelRpc
 
 
 __all__ = ['model_base',
@@ -25,9 +24,10 @@ __all__ = ['model_base',
 
 
 sql_to_broadcast = {'insert': 'create'}
+sql_delete = 'delete'
 
 
-class Extension(LuxExtension, WsModelRpc):
+class Extension(LuxExtension):
     """Object data mapper extension
 
     Uses pulsar-odm for sychronous & asynchronous data mappers
@@ -49,6 +49,19 @@ class Extension(LuxExtension, WsModelRpc):
         self.require(app, 'lux.extensions.rest')
         app.odm = Odm(app)
 
+    def on_before_commit(self, app, session, changes):
+        request = session.request
+        if not request:
+            return
+        for instance, event in changes.values():
+            name = instance.__class__.__name__.lower()
+            model = odm_models(app).get(name)
+            if model:
+                event = sql_to_broadcast.get(event, event)
+                if event == sql_delete:
+                    instance._json = model.tojson(
+                        request, instance, in_list=True, safe=True)
+
     def on_after_commit(self, app, session, changes):
         """
         Called after SQLAlchemy commit, broadcast models events into channels
@@ -65,7 +78,11 @@ class Extension(LuxExtension, WsModelRpc):
             model = odm_models(app).get(name)
             if model:
                 event = sql_to_broadcast.get(event, event)
-                data = model.tojson(request, instance, in_list=True, safe=True)
+                if not hasattr(instance, '_json'):
+                    data = model.tojson(
+                        request, instance, in_list=True, safe=True)
+                else:
+                    data = instance._json
                 app.channels.publish(model.identifier, event, data)
 
 

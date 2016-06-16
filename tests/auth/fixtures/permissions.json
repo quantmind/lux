@@ -1,0 +1,98 @@
+{
+    "users": [
+        {
+            "username": "pippo",
+            "password": "pippo",
+            "email": "littlepippo@pippo.com",
+            "first_name": "Little Pippo",
+            "active": true
+        },
+        {
+            "username": "pluto",
+            "password": "pluto",
+            "email": "pluto@pluto.com",
+            "first_name": "Plutone",
+            "active": true
+        },
+        {
+            "username": "toni",
+            "password": "toni",
+            "email": "toni@toni.com",
+            "active": true
+        }
+    ],
+    "permissions": [
+        {
+            "name": "view-users",
+            "description": "View users",
+            "policy": [
+                {
+                    "resource": "users:*",
+                    "action": "read"
+                },
+                {
+                    "resource": [
+                        "users:*:groups",
+                        "users:*:superuser"
+                    ],
+                    "action": "*",
+                    "effect": "deny"
+                }
+            ]
+        },
+        {
+            "name": "read-secrets-users-groups",
+            "policy": {
+                "resource": [
+                    "secrets:*",
+                    "users:*",
+                    "groups:*"
+                ],
+                "action": "read"
+            }
+        },
+        {
+            "name": "policy-maker",
+            "policy": {
+                "resource": "permissions:*",
+                "action": ["read", "create", "update"]
+            }
+        }
+    ],
+    "groups": [
+        {
+            "name": "users",
+            "permissions": ["view-users"]
+        },
+        {
+            "name": "power-users",
+            "permissions": ["read-secrets-users-groups"]
+        },
+        {
+            "name": "policy-makers",
+            "permissions": ["policy-maker"]
+        }
+    ],
+    "objectives": [
+        {
+            "subject": "A simple test objective"
+        },
+        {
+            "subject": "Another simple one"
+        }
+    ],
+    "api": [
+        {
+            "api_url": "/users/pippo",
+            "groups": ["users"]
+        },
+        {
+            "api_url": "/users/pluto",
+            "groups": ["power-users"]
+        },
+        {
+            "api_url": "/users/toni",
+            "groups": ["policy-makers"]
+        }
+    ]
+}

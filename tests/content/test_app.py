@@ -1,5 +1,3 @@
-from pulsar import Http404
-
 from lux.utils import test
 from lux.extensions.content.github import github_signature
 
@@ -28,9 +26,7 @@ class TestContentViews(test.AppTestCase):
 
     async def test_404(self):
         request = await self.client.get('/blog/bla')
-        response = request.response
-        self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.content_type, 'text/html; charset=utf-8')
+        self.html(request.response, 404)
         handler = request.app_handler
         self.assertTrue(handler)
 

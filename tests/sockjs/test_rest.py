@@ -6,29 +6,6 @@ from lux.utils import test
 
 class TestSockJSRestApp(test.AppTestCase):
     config_file = 'tests.sockjs'
-    credentials = dict(username='bigpippo', password='bigpippo')
-
-    @classmethod
-    def populatedb(cls):
-        backend = cls.app.auth_backend
-        backend.create_superuser(cls.app.wsgi_request(),
-                                 email='bigpippo@pluto.com',
-                                 first_name='Big Pippo',
-                                 **cls.credentials)
-
-    async def _token(self):
-        '''Return a token for a new superuser
-        '''
-
-        # Get new token
-        request = await self.client.post('/authorizations',
-                                         content_type='application/json',
-                                         body=self.credentials)
-        user = request.cache.user
-        self.assertFalse(user.is_authenticated())
-        data = self.json(request.response, 201)
-        self.assertTrue('token' in data)
-        return data['token']
 
     async def ws(self):
         request = await self.client.wsget('/testws/websocket')
@@ -118,14 +95,14 @@ class TestSockJSRestApp(test.AppTestCase):
         self.assertEqual(msg['error']['message'], 'bad authToken')
 
     async def test_ws_authenticate(self):
-        token = await self._token()
+        token = await self._token('testuser')
         websocket = await self.ws()
         msg = self.ws_message(method='authenticate', id="dfg",
                               params=dict(authToken=token))
         await websocket.handler.on_message(websocket, msg)
         msg = self.get_ws_message(websocket)
         self.assertTrue(msg['result'])
-        self.assertEqual(msg['result']['username'], 'bigpippo')
+        self.assertEqual(msg['result']['username'], 'testuser')
         return websocket
 
     async def test_ws_publish_fails(self):
@@ -248,6 +225,4 @@ class TestSockJSRestApp(test.AppTestCase):
         self.assertTrue(msg)
         self.assertEqual(msg['event'], 'create')
         self.assertEqual(msg['channel'], 'lux-tasks')
-        # no url in the websocket data
-        data.pop('url')
         self.assertEqual(msg['data'], data)

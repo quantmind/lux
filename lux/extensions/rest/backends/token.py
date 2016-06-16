@@ -3,13 +3,17 @@ from pulsar.utils.pep import to_string
 
 from .mixins import TokenBackendMixin
 from .registration import RegistrationMixin
+from .permissions import PemissionsMixin
 from .. import AuthBackend, Authorization
 
 # Cross-Origin Resource Sharing header
 CORS = 'Access-Control-Allow-Origin'
 
 
-class TokenBackend(TokenBackendMixin, RegistrationMixin, AuthBackend):
+class TokenBackend(TokenBackendMixin,
+                   RegistrationMixin,
+                   PemissionsMixin,
+                   AuthBackend):
     """Toekn Backend
     """
     def api_sections(self, app):
@@ -78,4 +82,6 @@ class TokenBackend(TokenBackendMixin, RegistrationMixin, AuthBackend):
         response[CORS] = origin
         if headers:
             response['Access-Control-Allow-Headers'] = headers
+        if not isinstance(methods, (str, list)):
+            methods = list(methods)
         response['Access-Control-Allow-Methods'] = methods

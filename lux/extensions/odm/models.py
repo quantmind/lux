@@ -9,14 +9,14 @@ from sqlalchemy.orm import class_mapper, load_only
 from sqlalchemy.orm.base import instance_state
 from sqlalchemy.sql.expression import func, cast
 from sqlalchemy.exc import DataError
-from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
+from sqlalchemy.orm.exc import (NoResultFound, MultipleResultsFound,
+                                ObjectDeletedError)
 
 from pulsar import Http404
-from pulsar.utils.html import nicename
 
 from odm.utils import get_columns
 
-from lux.core import app_attribute, ModelInstance, Query as BaseQuery
+from lux.core import app_attribute, ModelNotAvailable, Query as BaseQuery
 from lux.extensions import rest
 
 
@@ -40,7 +40,12 @@ class Query(BaseQuery):
 
     def __init__(self, model, session):
         super().__init__(model, session)
+        self.request = session.request
         self.sql_query = session.query(model.db_model())
+
+    @property
+    def logger(self):
+        return self.request.logger
 
     def count(self):
         return self._query().count()
@@ -52,15 +57,15 @@ class Query(BaseQuery):
         except (DataError, NoResultFound):
             raise Http404
         except MultipleResultsFound:
-            self.app.logger.error('Multiple result found for model %s.'
-                                  'returning the first' % self.name)
+            self.logger.error('Multiple result found for model %s. '
+                              'Returning the first' % self.name)
             one = query.first()
-        return ModelInstance(self.model, one, self.fields)
+        return self.model.instance(one, self.fields)
 
     def all(self):
         model = self.model
         fields = self.fields
-        return (ModelInstance(model, o, fields) for o in self._query().all())
+        return [model.instance(o, fields) for o in self._query().all()]
 
     def limit(self, limit):
         self.sql_query = self.sql_query.limit(limit)
@@ -106,7 +111,13 @@ class Query(BaseQuery):
         """
         app = self.app
         odm = app.odm()
-        field = getattr(odm[self.name], field)
+        if not isinstance(field.field, str):
+            return
+
+        field = getattr(self.model.db_model(), field.field, None)
+        if not field:
+            return
+
         multiple = isinstance(value, (list, tuple))
         query = self.sql_query
 
@@ -206,7 +217,8 @@ class RestModel(rest.RestModel):
         if columns is None:
             return tuple(dbc)
         else:
-            return [c for c in columns if c in dbc.values()]
+            columns = self.column_fields(columns)
+            return [c for c in columns if c in dbc]
 
     def tojson(self, request, instance, in_list=False, exclude=None,
                exclude_related=None, safe=False, **kw):
@@ -255,6 +267,8 @@ class RestModel(rest.RestModel):
                     data = str(data)
                 except Exception:
                     continue
+            except ObjectDeletedError:
+                raise ModelNotAvailable from None
             except Exception:
                 if not safe:
                     request.logger.exception(
@@ -290,16 +304,15 @@ class RestModel(rest.RestModel):
         if is_rel_field(col):
             rel_model = self.app.models.get(col.model)
             if isinstance(current_value, (list, set)):
-                idfield = rel_model.id_field
-                all = set((getattr(v, idfield) for v in value))
+                value = tuple((rel_model.instance(v) for v in value))
+                all_ids = tuple((item.id for item in value))
                 avail = set()
                 for item in tuple(current_value):
                     item = rel_model.instance(item)
-                    pk = item.id
-                    if item.id not in all:
-                        current_value.remove(pk)
+                    if item.id not in all_ids:
+                        current_value.remove(item.id)
                     else:
-                        avail.add(pk)
+                        avail.add(item.id)
                 for item in value:
                     if item.id not in avail:
                         current_value.append(item.obj)
@@ -319,6 +332,8 @@ class RestModel(rest.RestModel):
         def _set_field(field):
             if field.name in fields.hidden:
                 field.hidden = True
+            if is_rel_field(field) and field.field:
+                fields.add_exclude(field.field)
             rest[field.name] = field
 
         # process input columns first
@@ -329,7 +344,7 @@ class RestModel(rest.RestModel):
                 # If a database column
                 if isinstance(dbcol, Column):
                     info = column_info(col.name, dbcol)
-                    info.update(col.tojson(self, defaults=False))
+                    info.update(col.tojson(self))
                     col = RestField.make(info)
                 _set_field(col)
 
@@ -363,7 +378,7 @@ def column_info(name, col):
 
     info = {'name': name,
             'field': col.name,
-            'displayName': col.doc or nicename(name),
+            'displayName': col.doc,
             'sortable': sortable,
             'filter': filter,
             'type': type}

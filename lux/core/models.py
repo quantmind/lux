@@ -1,6 +1,10 @@
 from copy import copy
 
-from pulsar import ImproperlyConfigured, Http404, PermissionDenied
+from pulsar import ImproperlyConfigured
+
+
+class ModelNotAvailable(Exception):
+    pass
 
 
 class ModelContainer(dict):
@@ -13,6 +17,9 @@ class ModelContainer(dict):
     def register(self, model):
         '''Register a new Lux Model to the application
         '''
+        if not model:
+            return
+
         if not isinstance(model, LuxModel):
             model = model()
 
@@ -37,6 +44,7 @@ class LuxModel:
     """
     name = None
     identifier = None
+    """Unique string that identifies the model"""
     _app = None
 
     @property
@@ -46,12 +54,15 @@ class LuxModel:
         return self._app
 
     # ABSTRACT METHODS
-    def session(self, session=None):
-        '''Return a session for aggregating a query.
+    def session(self, request, session=None):
+        """Return a session for aggregating a query.
 
-        The returned object should be context manager and support the query
-        method.
-        '''
+        A session must be a context manager and support these methods:
+
+        * ``query(model)``: to create a model :class:`.Query`
+        * ``add(model)``: add a model to the session
+        * ``delete(model)`: delete a model
+        """
         raise NotImplementedError
 
     def get_query(self, session):
@@ -74,12 +85,12 @@ class LuxModel:
         """
         raise NotImplementedError
 
+    # API
     def field(self, name):
         """Get the field object for field ``name``
         """
         return self.fields().get(name)
 
-    # API
     def instance(self, o=None, fields=None):
         """Return a :class:`.ModelInstance`
 
@@ -94,6 +105,7 @@ class LuxModel:
             o = self.create_instance()
         return ModelInstance.create(self, o, fields)
 
+    # QUERY API
     def query(self, request, session, *filters, check_permission=None,
               load_only=None, **params):
         """Get a :class:`.Query` object
@@ -108,20 +120,27 @@ class LuxModel:
         """
         query = self.get_query(session)
         if check_permission:
-            fields = self.fields_with_permission(request, check_permission,
-                                                 load_only)
+            fields = check_permission(request, load_only=load_only)
             query = query.load_only(*fields)
         elif load_only:
             query = query.load_only(*load_only)
         return query.filter(*filters, **params)
 
-    def get_instance(self, request, *args, session=None, **kwargs):
-        if not args and not kwargs:  # pragma    nocover
-            raise Http404
+    def get_instance(self, request, *filters, session=None, **kwargs):
+        """Get a single instance from positional and keyed-valued filters
+        """
         with self.session(request, session=session) as session:
-            query = self.query(request, session, *args, **kwargs)
+            query = self.query(request, session, *filters, **kwargs)
             return query.one()
 
+    def get_list(self, request, *filters, session=None, **kwargs):
+        """Get a list of instances from positional and keyed-valued filters
+        """
+        with self.session(request, session=session) as session:
+            query = self.query(request, session, *filters, **kwargs)
+            return query.all()
+
+    # CRUD API
     def create_model(self, request, instance, data, session=None):
         """Create a model ``instance``"""
         return self.update_model(request, instance, data,
@@ -148,69 +167,6 @@ class LuxModel:
 
     def get_instance_value(self, instance, name):
         return getattr(instance.obj, name, None)
-
-    def check_permission(self, request, action, *args):
-        """
-        Checks whether the user has the requested level of access to
-        the model, raising PermissionDenied if not
-
-        :param request:     request object
-        :param level:       access level
-        :param args:        additional namespaces for resource
-        :raise:             PermissionDenied
-        """
-        resource = self.name
-        if args:
-            resource = '%s:%s' % (resource, ':'.join(args))
-        backend = request.cache.auth_backend
-        if not backend.has_permission(request, resource, action):
-            raise PermissionDenied
-
-    def has_permission_for_field(self, request, field_name, action):
-        try:
-            self.check_permission(request, action, field_name)
-            return True
-        except PermissionDenied:
-            return False
-
-    def fields_with_permission(self, request, action, load_only=None):
-        """Return a tuple of fields with valid permissions for ``action``
-
-        If the user cannot perform ``action`` on any field this method should
-        raise PermissionDenied
-        """
-        action, args = permission_args(action)
-        self.check_permission(request, action, *args)
-        fields = self.load_only_fields(load_only)
-        perms = self.permissions(request, action)
-        return tuple((field for field in fields if perms.get(field)))
-
-    def permissions(self, request, action, *args):
-        """
-        Gets whether the user has the quested access level on
-        each field in the model.
-
-        Results are cached for future function calls
-
-        :param request:     request object
-        :param action:      access level
-        :return:            dict, with column names as keys,
-                            Booleans as values
-        """
-        ret = None
-        cache = request.cache
-        if 'model_permissions' not in cache:
-            cache.model_permissions = {}
-        if self.name not in cache.model_permissions:
-            cache.model_permissions[self.name] = {}
-        elif action in cache.model_permissions[self.name]:
-            ret = cache.model_permissions[self.name][action]
-
-        if not ret:
-            perm = self.has_permission_for_field
-            ret = {name: perm(request, name, action) for name in self.fields()}
-            cache.model_permissions[self.name][action] = ret
-        return ret
 
     # INTERNALS
     def register(self, app):
@@ -243,7 +199,10 @@ class ModelInstance:
         self.model = model
         self.obj = obj
         self.fields = fields
-        obj.model_instance = self
+        try:
+            obj._model_instance = self
+        except Exception:
+            pass
 
     @property
     def id(self):
@@ -263,8 +222,8 @@ class ModelInstance:
 
     @classmethod
     def create(cls, model, obj, fields=None):
-        if hasattr(obj, 'model_instance'):
-            return obj.model_instance
+        if hasattr(obj, '_model_instance'):
+            return obj._model_instance
         return cls(model, obj, fields)
 
     def has(self, field):
@@ -331,18 +290,16 @@ class Query:
 
     def filter(self, *filters, search=None, **params):
         if filters:
-            self.filter_args(filters)
+            self.filter_args(*filters)
 
         fields = self.model.fields()
 
         for key, value in params.items():
             bits = key.split(':')
             field = bits[0]
-            if field in fields.values():
+            if field in fields:
                 op = bits[1] if len(bits) == 2 else 'eq'
-                field = field.field
-                if field:
-                    self.filter_field(field, op, value)
+                self.filter_field(fields[field], op, value)
 
         if search:
             self.search(search)
@@ -367,12 +324,11 @@ class Query:
         """
         model = self.model
         kw['in_list'] = True
-        return [model.tojson(request, o, **kw) for o in self.all()]
-
-
-def permission_args(action):
-    args = ()
-    if isinstance(action, dict):
-        args = action.get('args', args)
-        action = action.get('action', 'read')
-    return action, args
+        result = []
+        for o in self.all():
+            try:
+                data = model.tojson(request, o, **kw)
+            except ModelNotAvailable:
+                continue
+            result.append(data)
+        return result

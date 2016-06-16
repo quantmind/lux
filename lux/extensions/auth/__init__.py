@@ -23,8 +23,6 @@ __all__ = ['TokenBackend',
 
 class Extension(LuxExtension):
     _config = [
-        Parameter('ANONYMOUS_GROUP', 'anonymous',
-                  'Name of the group for all anonymous users'),
         Parameter('GENERAL_MAILING_LIST_TOPIC', 'general',
                   "topic for general mailing list"),
         Parameter('COMING_SOON_URL', None, "server the coming-soon page")

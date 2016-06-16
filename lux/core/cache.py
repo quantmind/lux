@@ -11,8 +11,6 @@ from pulsar.utils.importer import module_attribute
 from pulsar.utils.string import to_string
 from pulsar import ImproperlyConfigured
 
-from .wrappers import WsgiRequest
-
 
 logger = logging.getLogger('lux.cache')
 
@@ -242,14 +240,15 @@ class CacheObject:
     instance = None
     callable = None
 
-    def __init__(self, user=False, timeout=None, key=None):
+    def __init__(self, user=False, timeout=None, key=None, app=None):
         self.user = user
         self.timeout = timeout
         self.key = key
+        self.app = app
 
     def cache_key(self, arg):
         key = self.key or ''
-        if isinstance(arg, WsgiRequest):
+        if hasattr(arg, 'environ'):
             if not key:
                 key = arg.path
             if self.user:
@@ -280,10 +279,11 @@ class CacheObject:
                 else:
                     raise AttributeError
             except AttributeError:
-                arg = None
-                logger.error('Could not obtain application from first '
-                             'parameter nor from bound instance. '
-                             'Cannot use cache.')
+                arg = self.app
+                if not arg:
+                    logger.error('Could not obtain application from first '
+                                 'parameter nor from bound instance. '
+                                 'Cannot use cache.')
 
         if arg:
             key = self.cache_key(arg)

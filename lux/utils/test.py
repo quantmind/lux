@@ -24,7 +24,7 @@ from lux.core import App
 from lux.extensions.rest import ApiClient
 from lux.core.commands.generate_secret_key import generate_secret
 
-logger = logging.getLogger('lux.test')
+logger = logging.getLogger('pulsar.test')
 
 
 __all__ = ['TestClient',
@@ -108,39 +108,73 @@ def get_params(*names):
     return cfg
 
 
-def load_fixtures(app, path=None):
-    if not path:
-        path = os.path.join(app.meta.path, 'fixtures')
+@green
+def create_users(app, items):
+    items.insert(0, {
+        "username": "testuser",
+        "password": "testuser",
+        "superuser": True,
+        "active": True
+    })
+    logger.debug('Creating %d users', len(items))
+    request = app.wsgi_request()
+    auth = app.auth_backend
+    processed = set()
+    for params in items:
+        if params.get('username') in processed:
+            continue
+        user = auth.create_user(request, **params)
+        processed.add(user.username)
+    return len(processed)
+
+
+async def load_fixtures(app, path=None):
+    if not hasattr(app.auth_backend, 'create_user'):
+        return
+
+    fpath = path if path else os.path.join(app.meta.path, 'fixtures')
 
     fixtures = OrderedDict()
-    if os.path.isdir(path):
-        for filename in os.listdir(path):
+    if os.path.isdir(fpath):
+        for filename in os.listdir(fpath):
             if filename.endswith('.json'):
-                with open(os.path.join(path, filename), 'r') as file:
+                with open(os.path.join(fpath, filename), 'r') as file:
                     fixtures.update(_json.load(file,
                                                object_pairs_hook=OrderedDict))
     else:
-        logger.error('Could not find %s path for fixtures', path)
+        if path:
+            logger.error('Could not find %s path for fixtures', path)
+        return 0
 
-    total = 0
+    total = await create_users(app, fixtures.pop('users', []))
+
+    client = TestClient(app)
+    test = TestCase()
+    test_tokens = {}
 
     for model, items in fixtures.items():
-        logger.debug('Creating %d fixtures for "%s"', len(items), model)
-        if model == 'user':
-            request = app.wsgi_request()
-            auth = app.auth_backend
-            for params in items:
-                auth.create_user(request, **params)
-                total += 1
-        else:
-            odm = app.odm()
-            model = odm[model]
-            with odm.begin() as session:
-                for params in items:
-                    session.add(model(**params))
-                total += 1
+        logger.info('Creating %d fixtures for "%s"', len(items), model)
+        for params in items:
+            url = params.pop('api_url', '/%s' % model)
+            user = params.pop('api_user', 'testuser')
+            if user not in test_tokens:
+                request = await client.post('/authorizations',
+                                            json=dict(username=user,
+                                                      password=user))
+                token = test.json(request.response, 201)['token']
+                test_tokens[user] = token
+            test_token = test_tokens[user]
+            request = await client.post(url,
+                                        json=params,
+                                        token=test_token)
+            data = test.json(request.response)
+            code = request.response.status_code
+            if code > 201:
+                raise AssertionError('%s api call got %d: %s' %
+                                     (url, code, data))
+            total += 1
 
-    logger.info('Created %s objects from %d models', total, len(fixtures))
+    logger.info('Created %s objects from %d models', total, 1 + len(fixtures))
 
 
 class TestClient:
@@ -447,6 +481,7 @@ class AppTestCase(unittest.TestCase, TestMixin):
             # Store the original odm for removing the new databases
             cls.odm = cls.app.odm
             await cls.setupdb()
+        await as_coroutine(cls.populatedb())
         await as_coroutine(cls.beforeAll())
 
     @classmethod
@@ -490,7 +525,6 @@ class AppTestCase(unittest.TestCase, TestMixin):
                             cls.datastore[key] = new_url
         cls.app.config['DATASTORE'] = cls.datastore
         odm.table_create()
-        cls.populatedb()
 
     @classmethod
     @green
@@ -500,7 +534,7 @@ class AppTestCase(unittest.TestCase, TestMixin):
 
     @classmethod
     def populatedb(cls):
-        load_fixtures(cls.app)
+        return load_fixtures(cls.app)
 
     @classmethod
     def api_url(cls, path):
@@ -532,6 +566,22 @@ class AppTestCase(unittest.TestCase, TestMixin):
                                        ['--username', username,
                                         '--email', email,
                                         '--password', password])
+
+    async def _token(self, credentials):
+        '''Return a token for a user
+        '''
+        if isinstance(credentials, str):
+            credentials = {"username": credentials,
+                           "password": credentials}
+
+        # Get new token
+        request = await self.client.post('/authorizations',
+                                         json=credentials)
+        user = request.cache.user
+        self.assertFalse(user.is_authenticated())
+        data = self.json(request.response, 201)
+        self.assertTrue('token' in data)
+        return data['token']
 
 
 class WebApiTestCase(AppTestCase):

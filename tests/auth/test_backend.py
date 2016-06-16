@@ -1,7 +1,14 @@
 from lux.utils import test
 
+from tests.auth.utils import AuthUtils
 
-class OdmMixin:
+
+class TestBackend(test.AppTestCase, AuthUtils):
+    config_file = 'tests.auth'
+
+    @classmethod
+    def populatedb(cls):
+        pass
 
     def test_backend(self):
         backend = self.app.auth_backend
@@ -19,27 +26,8 @@ class OdmMixin:
         user = backend.get_user(request, username='dhvfvhsdfgvhfd')
         self.assertEqual(user, None)
 
-    @test.green
     def test_create_user(self):
-        backend = self.app.auth_backend
-        request = self.app.wsgi_request()
-
-        user = backend.create_user(request,
-                                   username='pippo',
-                                   email='pippo@pippo.com',
-                                   password='pluto',
-                                   first_name='Pippo')
-        self.assertTrue(user.id)
-        self.assertEqual(user.first_name, 'Pippo')
-        self.assertFalse(user.is_superuser())
-        self.assertFalse(user.is_active())
-
-        # make it active
-        with self.app.odm().begin() as session:
-            user.active = True
-            session.add(user)
-
-        self.assertTrue(user.is_active())
+        return self._new_credentials()
 
     @test.green
     def test_create_superuser(self):

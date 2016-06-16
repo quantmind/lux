@@ -1,8 +1,5 @@
 from example.cfg import *   # noqa
 
-EXTENSIONS = EXTENSIONS + (
-    'lux.extensions.admin',
-)
 
 DEFAULT_CONTENT_TYPE = 'text/html'
 API_URL = 'http://webapi.com'

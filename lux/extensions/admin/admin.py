@@ -1,7 +1,7 @@
 import json
 from inspect import isclass
 
-from pulsar import Http404
+from pulsar import Http404, PermissionDenied
 from pulsar.apps.wsgi import Html
 from pulsar.utils.html import nicename
 
@@ -47,11 +47,11 @@ class AdminRouter(HtmlRouter):
     '''Base class for all Admin Routers
     '''
     def response_wrapper(self, callable, request):
-        backend = request.cache.auth_backend
-        if backend.has_permission(request, 'site:admin', 'read'):
-            return callable(request)
-        else:
-            raise Http404
+        try:
+            self.check_permission(request)
+        except PermissionDenied:
+            raise Http404 from None
+        return callable(request)
 
     def context(self, request):
         '''Override to add the admin navigation to the javascript context.
@@ -151,8 +151,7 @@ class AdminModel(AdminRouter):
         '''Information for admin navigation
         '''
         model = self.get_model(request)
-        url = model.url
-        name = nicename(url)
+        name = nicename(model.identifier)
         info = {'title': name,
                 'name': name,
                 'href': self.full_route.path,
@@ -215,8 +214,6 @@ class CRUDAdmin(AdminModel):
         target = self.get_target(request, path=id, action=action, model=model)
         if id:
             request.api.head(target)
-        else:
-            self.get_model(request).check_permission(request, action)
 
         form = form(request, initial=initial, model=model)
         if 'json' in request.url_data:

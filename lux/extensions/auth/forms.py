@@ -80,19 +80,18 @@ class TokenModel(RestModel):
 # FORMS
 class PermissionForm(forms.Form):
     model = 'permissions'
-    id = forms.HiddenField(required=False)
     name = forms.CharField()
-    description = forms.TextField()
+    description = forms.TextField(required=False)
     policy = forms.JsonField(text_edit=json.dumps({'mode': 'json'}))
 
     def clean(self):
-        policy = self.cleaned_data['policy']
-        self.cleaned_data['policy'] = validate_policy(policy)
+        if 'policy' in self.cleaned_data:
+            policy = self.cleaned_data['policy']
+            self.cleaned_data['policy'] = validate_policy(policy)
 
 
 class GroupForm(forms.Form):
     model = 'groups'
-    id = forms.HiddenField(required=False)
     name = forms.SlugField(validator=UniqueField())
     permissions = RelationshipField('permissions',
                                     multiple=True,
@@ -108,7 +107,7 @@ class UserForm(forms.Form):
     superuser = forms.BooleanField()
     active = forms.BooleanField()
     joined = forms.DateTimeField(readonly=True, required=False)
-    # groups = RelationshipField('groups', multiple=True, required=False)
+    groups = RelationshipField('groups', multiple=True, required=False)
 
 
 class ChangePasswordForm(PasswordForm):

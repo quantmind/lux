@@ -4,11 +4,10 @@ from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm import joinedload
 from datetime import datetime
 
-from lux.core import cached, json_message
+from lux.core import json_message
 from lux.utils.crypt import digest
 from lux.utils.auth import normalise_email
 from lux.extensions.rest import PasswordMixin, backends, AuthenticationError
-from lux.extensions.rest.policy import has_permission
 
 from .mail import MalingListBackendMixin, Authorization
 
@@ -89,40 +88,6 @@ class AuthMixin(PasswordMixin, MalingListBackendMixin):
                 raise AuthenticationError('Invalid email or password')
             else:
                 raise AuthenticationError('Invalid credentials')
-
-    def has_permission(self, request, resource, level):
-        user = request.cache.user
-        # Superuser, always true
-        if user.is_superuser():
-            return True
-        else:
-            permissions = self.get_permission_objects(request)
-            return has_permission(request, permissions, resource, level)
-
-    def get_permissions(self, request, resources, actions=None):
-        if not actions:
-            actions = ('read', 'update', 'create', 'delete')
-        if not isinstance(actions, (list, tuple)):
-            actions = (actions,)
-        if not isinstance(resources, (list, tuple)):
-            resources = (resources,)
-
-        obj = {}
-
-        if not request.cache.user.is_superuser():
-            permissions = self.get_permission_objects(request)
-            for resource in resources:
-                perms = {}
-                for action in actions:
-                    perms[action] = has_permission(request, permissions,
-                                                   resource, action)
-                obj[resource] = perms
-
-        else:
-            for resource in resources:
-                obj[resource] = dict(((a, True) for a in actions))
-
-        return obj
 
     def create_user(self, request, username=None, password=None, email=None,
                     first_name=None, last_name=None, active=False,
@@ -240,23 +205,6 @@ class AuthMixin(PasswordMixin, MalingListBackendMixin):
                     return user
                 return True
         return False
-
-    @cached(user=True)
-    def get_permission_objects(self, request):
-        odm = request.app.odm()
-        user = request.cache.user
-        perms = {}
-        with odm.begin() as session:
-            if user.is_authenticated():
-                session.add(user)
-                groups = set(user.groups)
-            else:
-                cfg = request.config
-                query = session.query(odm.group)
-                groups = set(query.filter_by(name=cfg['ANONYMOUS_GROUP']))
-            for group in groups:
-                perms.update(((p.name, p.policy) for p in group.permissions))
-        return perms
 
 
 class TokenBackend(AuthMixin, backends.TokenBackend):

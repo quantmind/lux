@@ -1,7 +1,6 @@
 from functools import partial
 
 from pulsar.utils.importer import module_attribute
-from pulsar.utils.structures import AttributeDictionary
 
 from lux.core import AuthBase, backend_action, auth_backend_actions
 from lux.forms import ValidationError
