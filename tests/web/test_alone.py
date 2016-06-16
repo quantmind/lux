@@ -1,9 +1,7 @@
 from lux.utils import test
 
-import tests
 
-
-class ContentTest(tests.AuthFixtureMixin, test.AppTestCase):
+class ContentTest(test.AppTestCase):
     config_file = 'example.webalone.config'
 
     async def test_media_404(self):

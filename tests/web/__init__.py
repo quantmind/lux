@@ -29,8 +29,7 @@ class WebsiteTest(tests.AuthFixtureMixin, test.WebApiTestCase):
         # Get new token
         request = await self.webclient.post(
             '/auth/login',
-            content_type='application/json',
-            body=credentials,
+            json=credentials,
             cookie=cookie)
         data = self.json(request.response, status)
         if status == 201:

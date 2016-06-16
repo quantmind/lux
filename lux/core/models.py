@@ -299,9 +299,7 @@ class Query:
             field = bits[0]
             if field in fields:
                 op = bits[1] if len(bits) == 2 else 'eq'
-                field = fields[field].field
-                if isinstance(field, str):
-                    self.filter_field(field, op, value)
+                self.filter_field(fields[field], op, value)
 
         if search:
             self.search(search)

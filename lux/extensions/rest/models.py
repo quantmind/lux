@@ -1,3 +1,4 @@
+from copy import copy
 from itertools import chain
 from collections import Mapping, OrderedDict
 from urllib.parse import urljoin
@@ -8,6 +9,12 @@ from pulsar.utils.httpurl import is_absolute_uri
 from lux.core import LuxModel
 
 from .client import url_path
+
+
+CONVERTERS = {
+    'int': lambda value: int(value),
+    'float': lambda value: float(value)
+}
 
 
 class RestField:
@@ -61,6 +68,13 @@ class RestField:
     def tojson(self):
         return dict(self._as_dict())
 
+    def value(self, value):
+        converter = CONVERTERS.get(self.type)
+        try:
+            return converter(value)
+        except Exception:
+            return value
+
     def _as_dict(self):
         for k, v in self.__dict__.items():
             if k.startswith('_'):
@@ -70,7 +84,7 @@ class RestField:
 
 
 URL_FIELDS = (
-    RestField('api_url', displayName='Url', type='url', hidden=True).tojson(),
+    RestField('api_url', type='url', hidden=True).tojson(),
     RestField('html_url', type='url', hidden=True).tojson()
 )
 
@@ -211,6 +225,16 @@ class RestModel(LuxModel, RestClient):
         return self.name
     __str__ = __repr__
 
+    def copy(self):
+        return self.__copy__()
+
+    def __copy__(self):
+        cls = self.__class__
+        field = cls.__new__(cls)
+        field.__dict__ = self.__dict__.copy()
+        field._fields = copy(self._fields)
+        return field
+
     @property
     def identifier(self):
         return self._url
@@ -218,18 +242,18 @@ class RestModel(LuxModel, RestClient):
     def fields(self):
         return self._fields.load(self).map
 
-    def column_fields(self, fields, field=None):
+    def column_fields(self, fields):
         """Return a list column fields from the list of fields object
         """
-        field = field or 'field'
-        fields = set()
-        for c in fields:
-            value = c[field]
-            if isinstance(value, (tuple, list)):
-                fields.update(value)
-            else:
-                fields.add(value)
-        return tuple(fields)
+        field_names = set()
+        for name in fields:
+            field = self.field(name)
+            if field:
+                if isinstance(field.field, (tuple, list)):
+                    field_names.update(field.field)
+                elif field.field:
+                    field_names.add(field.field)
+        return tuple(field_names)
 
     def limit(self, request, limit=None, max_limit=None):
         """The maximum number of items to return when fetching list of data
@@ -343,6 +367,8 @@ class RestModel(LuxModel, RestClient):
                 continue
             if col.name in fields.hidden:
                 col.hidden = True
+            if not col.field:
+                col.field = col.name
             rest[col.name] = col
 
         return rest

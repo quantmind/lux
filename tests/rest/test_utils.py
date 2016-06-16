@@ -5,7 +5,7 @@ from lux.extensions.rest import RestField
 class TestUtils(test.TestCase):
 
     def test_rest_column(self):
-        col = RestField('bla')
+        col = RestField('bla', field='bla')
         info = col.tojson()
         self.assertEqual(info['name'], 'bla')
         self.assertEqual(info['field'], 'bla')

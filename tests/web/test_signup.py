@@ -66,14 +66,16 @@ class AuthTest(web.WebsiteTest):
 
     async def test_reset_password_success(self):
         cookie, data = await self._cookie_csrf('/auth/reset-password')
-        data['email'] = 'toni@foo.com'
+        #
+        # Post Reset password request
+        data['email'] = 'toni@test.com'
         request = await self.webclient.post('/auth/reset-password',
                                             json=data, cookie=cookie)
         data = self.json(request.response, 200)
-        self.assertTrue(data['email'], 'toni@foo.com')
+        self.assertTrue(data['email'], 'toni@test.com')
         mail = None
         for msg in self.app._outbox:
-            if msg.to == 'toni@foo.com':
+            if msg.to == 'toni@test.com':
                 mail = msg
                 break
         self.assertTrue(mail)

@@ -1,4 +1,4 @@
-from pulsar import MethodNotAllowed
+from pulsar import MethodNotAllowed, Http404
 from pulsar.apps.wsgi import route
 
 from lux.core import JsonRouter, GET_HEAD, POST_PUT, Resource
@@ -22,7 +22,7 @@ class RestRoot(JsonRouter):
     def apis(self, request):
         routes = {}
         for router in self.routes:
-            url = '%s%s' % (request.absolute_uri(), router.route.rule)
+            url = '%s%s' % (request.absolute_uri('/'), router.route.rule)
             if isinstance(router, RestRouter) and router.model:
                 routes[router.model.api_name] = url
             else:
@@ -31,6 +31,13 @@ class RestRoot(JsonRouter):
 
     def get(self, request):
         return self.json_response(request, self.apis(request))
+
+
+class Rest404(JsonRouter):
+    response_content_types = REST_CONTENT_TYPES
+
+    def get(self, request):
+        raise Http404
 
 
 class RestRouter(JsonRouter):

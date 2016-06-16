@@ -11,9 +11,17 @@ class ApiTest(web.WebsiteTest):
 
     # CONTENT API
     async def test_article_list(self):
-        request = await self.client.get('/contents/articles')
+        request = await self.client.get('/contents/articles?priority:gt=0')
         data = self.json(request.response, 200)['result']
         self.assertEqual(len(data), 3)
+
+    async def test_article_list_priority_query(self):
+        request = await self.client.get(
+            '/contents/articles?priority=3&priority=2')
+        data = self.json(request.response, 200)['result']
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]['priority'], 2)
+        self.assertEqual(data[0]['title'], 'Just a test')
 
     async def test_options_article_links(self):
         request = await self.client.options('/contents/articles/_links')

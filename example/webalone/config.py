@@ -7,3 +7,10 @@ AUTHENTICATION_BACKENDS = ['lux.extensions.auth.SessionBackend',
                            'lux.extensions.rest.backends.BrowserBackend']
 
 HTML_SCRIPTS = ['website/website']
+
+DEFAULT_POLICY = [
+    {
+        "resource": "api:contents:*",
+        "action": "read"
+    }
+]

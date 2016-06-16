@@ -1,5 +1,6 @@
 import os
 
+from pulsar import Http404
 from pulsar.utils.httpurl import remove_double_slash
 
 from lux.core import cached
@@ -15,7 +16,9 @@ FIELDS = [
     RestField('order', sortable=True, type='int'),
     RestField('slug', sortable=True),
     RestField('group', sortable=True),
-    RestField('title')
+    RestField('title'),
+    RestField('description'),
+    RestField('body')
 ]
 
 
@@ -41,7 +44,7 @@ class ContentModel(RestModel):
 
     def tojson(self, request, instance, in_list=False, **kw):
         data = instance.obj
-        if in_list:
+        if in_list and (not instance.fields or 'body' not in instance.fields):
             data.pop('body', None)
         return data
 
@@ -89,7 +92,7 @@ class QuerySession(Query, Session):
         self._groups = []
 
     def filter_field(self, field, op, value):
-        if field == 'group' and op == 'eq':
+        if field.name == 'group' and op == 'eq':
             self._groups.extend(as_tuple(value))
         super().filter_field(field, op, value)
 
@@ -102,21 +105,18 @@ class QuerySession(Query, Session):
                 self._data.extend(cache(self._all)(group))
         return self._data
 
-    def _filter(self, content):
-        for field, op, value in self._filters:
-            val = content.get(field)
-            try:
-                if not op(val, value):
-                    return False
-            except Exception:
-                return False
-        return True
-
     def _all(self, group):
         """Contents in this model group
         """
         model = self.model
+        content = self.app.config['CONTENT_GROUPS'].get(group)
+        default_meta = content.get('meta', {}) if content else {}
         directory = os.path.join(model.directory, group)
+        if not os.path.isdir(directory):
+            if content:
+                return []
+            else:
+                raise Http404
         ext = '.%s' % model.ext
         reader = get_reader(self.app, ext)
         data = []
@@ -132,8 +132,9 @@ class QuerySession(Query, Session):
                 if filename.endswith(ext):
                     slug = filename[:-len(ext)]
                     src = os.path.join(directory, filename)
-                    meta = dict(path='/%s/%s' % (group, slug),
-                                group=group,
-                                slug=slug)
+                    meta = default_meta.copy()
+                    meta.update({'path': '/%s/%s' % (group, slug),
+                                 'group': group,
+                                 'slug': slug})
                     data.append(reader.read(src, meta).tojson())
         return data

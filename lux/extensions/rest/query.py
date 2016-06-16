@@ -52,7 +52,7 @@ class Query(BaseQuery):
         return self
 
     def count(self):
-        return len(self._get_data())
+        return len(self.all())
 
     def filter_args(self, args):
         self.request.logger.error('Cannot filter positional arguments for '
@@ -93,9 +93,11 @@ class Query(BaseQuery):
     #  INTERNALS
     def _filter(self, entry):
         for field, op, value in self._filters:
-            val = entry.get(field)
             try:
-                if not op(val, value):
+                val = field.value(entry.get(field.name))
+                if not isinstance(value, (list, tuple)):
+                    value = (value,)
+                if not any((op(val, field.value(v)) for v in value)):
                     return False
             except Exception:
                 return False

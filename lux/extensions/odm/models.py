@@ -111,7 +111,13 @@ class Query(BaseQuery):
         """
         app = self.app
         odm = app.odm()
-        field = getattr(odm[self.name], field)
+        if not isinstance(field.field, str):
+            return
+
+        field = getattr(self.model.db_model(), field.field, None)
+        if not field:
+            return
+
         multiple = isinstance(value, (list, tuple))
         query = self.sql_query
 
@@ -211,7 +217,8 @@ class RestModel(rest.RestModel):
         if columns is None:
             return tuple(dbc)
         else:
-            return [c for c in columns if c in dbc.values()]
+            columns = self.column_fields(columns)
+            return [c for c in columns if c in dbc]
 
     def tojson(self, request, instance, in_list=False, exclude=None,
                exclude_related=None, safe=False, **kw):

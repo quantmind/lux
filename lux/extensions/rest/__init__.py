@@ -17,7 +17,7 @@ from collections import OrderedDict
 
 from pulsar import ImproperlyConfigured
 from pulsar.utils.importer import module_attribute
-from pulsar.utils.httpurl import is_absolute_uri
+from pulsar.utils.httpurl import is_absolute_uri, remove_double_slash
 from pulsar.apps.wsgi import wsgi_request
 
 from lux.core import Parameter
@@ -27,7 +27,7 @@ from .models import RestModel, RestField, ModelMixin, is_rel_field
 from .client import ApiClient
 from .views.actions import (AuthenticationError, check_username, login,
                             logout, user_permissions)
-from .views.rest import RestRoot, RestRouter, MetadataMixin, CRUD
+from .views.rest import RestRoot, RestRouter, MetadataMixin, CRUD, Rest404
 from .views.auth import Authorization
 from .pagination import Pagination, GithubPagination
 from .forms import RelationshipField, UniqueField
@@ -227,14 +227,15 @@ class Extension(MultiAuthBackend):
             yield key, cfg[key]
 
     def middleware(self, app):
+        url = app.config['API_URL']
         middleware = [self]
         for backend in self.backends:
             middleware.extend(backend.middleware(app) or ())
 
-        if app.config['API_URL'] is None:
+        if url is None:
             return middleware
 
-        self.api_router = RestRoot(app.config['API_URL'])
+        self.api_router = RestRoot(url)
 
         # Add routers and models
         routes = OrderedDict()
@@ -269,6 +270,11 @@ class Extension(MultiAuthBackend):
         #
         # Add API root-router to middleware
         middleware.append(self.api_router)
+        if url != '/':
+            # when the api is served by a path, make sure 404 is raised
+            # when no suitable routes are found
+            middleware.append(
+                Rest404(remove_double_slash('%s/<path:path>' % url)))
         #
         # Add the preflight and token events
         events = ('on_preflight', 'on_token')
