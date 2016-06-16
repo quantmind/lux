@@ -5,7 +5,7 @@ from lux.extensions.oauth import request_oauths
 
 from example.webalone.config import *  # noqa
 
-EXTENSIONS += ('lux.extensions.oauth',)
+EXTENSIONS += ('lux.extensions.oauth',)     # noqa
 SESSION_COOKIE_NAME = 'test-oauth'
 
 # Just some dummy values for testing
