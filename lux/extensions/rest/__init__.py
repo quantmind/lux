@@ -23,7 +23,7 @@ from pulsar.apps.wsgi import wsgi_request
 from lux.core import Parameter
 
 from .auth import AuthBackend, MultiAuthBackend, backend_action
-from .models import RestModel, RestField, ModelMixin, is_rel_field
+from .models import RestModel, RestField, is_rel_field
 from .client import ApiClient
 from .views.actions import (AuthenticationError, check_username, login,
                             logout, user_permissions)
@@ -39,7 +39,6 @@ from .user import (MessageMixin, UserMixin, SessionMixin, PasswordMixin,
 __all__ = ['RestModel',
            'RestField',
            'is_rel_field',
-           'ModelMixin',
            #
            'Authorization',
            #

@@ -11,7 +11,7 @@ from lux.utils.token import decode
 from .mixins import SessionBackendMixin
 from .registration import RegistrationMixin
 from .. import (AuthenticationError, AuthBackend, session_backend,
-                User, Session, ModelMixin)
+                User, Session)
 from ..auth import ProxyBackend
 from ..views.browser import Login, Logout, SignUp, ForgotPassword
 
@@ -43,7 +43,6 @@ class BrowserBackend(RegistrationMixin, AuthBackend):
 
 class ApiSessionBackend(ProxyBackend,
                         SessionBackendMixin,
-                        ModelMixin,
                         BrowserBackend):
     """A browser backend which is a proxy for a RESTful HTTP API backend.
 

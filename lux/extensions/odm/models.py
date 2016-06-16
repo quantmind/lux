@@ -361,10 +361,6 @@ class RestModel(rest.RestModel):
             return model.id_repr(request, obj, in_list)
 
 
-class ModelMixin(rest.ModelMixin):
-    RestModel = RestModel
-
-
 def column_info(name, col):
     sortable = True
     filter = True

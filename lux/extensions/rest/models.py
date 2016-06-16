@@ -385,11 +385,6 @@ class RestModel(LuxModel, RestClient):
         return url_path(url, path)
 
 
-class ModelMixin:
-    """Mixin for accessing Rest models from the application object
-    """
-
-
 def get_offset(offset=None):
     try:
         offset = int(offset)
