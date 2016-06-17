@@ -280,7 +280,7 @@ allow-clear>
 </ui-select-choices>
 </ui-select>
 <span class="input-group-btn">
-  <button type="button" ng-click="field.value = ''" class="btn btn-default">
+  <button type="button" ng-click="field.value = '" class="btn btn-default">
     <span class="glyphicon glyphicon-trash"></span>
   </button>
 </span>

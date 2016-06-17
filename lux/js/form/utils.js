@@ -69,10 +69,15 @@ export function compile(lazy, html, scope, cloneAttachFunc) {
 
 
 export function mergeArray (array1, array2) {
-    if (_.isArray(array1) && _.isArray(array2))
-        array2.forEach((value, index) => {
-            array1[index] = value;
+    if (_.isArray(array1) && _.isArray(array2)) {
+        var initials = array1.splice(0, array1.length);
+        array2.forEach((value) => {
+            array1.push(value);
         });
+        initials.forEach((value) => {
+            array1.push(value);
+        });
+    }
     return array1;
 }
 

@@ -29,7 +29,7 @@ export class FormElement extends LuxComponent {
         mergeOptions(this, type.defaultOptions, $scope);
     }
 
-    $compile ($scope, $element) {
+    $compile ($scope, $element, replace) {
         var field = this,
             cfg = this.$cfg,
             $log = this.$log,
@@ -62,13 +62,16 @@ export class FormElement extends LuxComponent {
             else $log.error(`Could not locate lux-form wrapper "${wrapper}" in "${field.name}" field`);
         });
 
-        //$element.html(asHtml(template));
-        //var compileHtml = fieldType.compile || compile;
-        //var $el = $element.contents();
+        var $el;
 
-        var $el = _.element(template);
-        $element.replaceWith($el);
-        $element = $el;
+        if (replace === false) {
+            $element.html(asHtml(template));
+            $el = $element.contents();
+        } else {
+            $el = _.element(template);
+            $element.replaceWith($el);
+            $element = $el;
+        }
 
         var compileHtml = fieldType.compile || compile;
         compileHtml(this.$lux, $el, $scope);
@@ -145,6 +148,10 @@ export class Form extends FormElement {
         });
 
         super.addMessages(formMessage, level);
+    }
+
+    $compile ($scope, $element) {
+        super.$compile($scope, $element, false);
     }
 
     $postCompile ($element) {
@@ -258,7 +265,7 @@ export class Formset extends FormElement {
     $compile ($scope, $element) {
         $scope.field = this.$formset;
         $scope.formset = this;
-        super.$compile($scope, $element);
+        super.$compile($scope, $element, false);
     }
 
     $newForm () {
