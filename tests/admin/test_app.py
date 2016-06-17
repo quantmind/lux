@@ -24,7 +24,7 @@ class AdminTest(test.AppTestCase):
         items = {}
         for site in sitemap:
             items.update(((item['title'], item) for item in site['items']))
-        self.assertEqual(len(items), 5)
+        self.assertEqual(len(items), 6)
         blog = items['Blog']
         self.assertEqual(blog['icon'], 'fa fa-book')
         self.assertEqual(blog['title'], 'Blog')

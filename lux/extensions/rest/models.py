@@ -416,7 +416,17 @@ class DictModel(RestModel):
         return self.instance(instance).obj
 
     def set_instance_value(self, instance, name, value):
-        instance.obj[name] = value
+        field = self.field(name)
+        if field and name != 'application':
+            if field.model:
+                model = self.app.models.get(field.model)
+                if model:
+                    value = model.instance(value).id
+                else:
+                    self.app.logger.error('Related model "%s" not found in %s',
+                                          field.model, self)
+                    return
+            instance.obj[name] = value
 
     def get_instance_value(self, instance, name):
         return instance.obj.get(name)
