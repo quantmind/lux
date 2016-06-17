@@ -19,6 +19,9 @@
             "password": "toni",
             "email": "toni@toni.com",
             "active": true
+        },
+        {
+            "username": "pippo"
         }
     ],
     "permissions": [

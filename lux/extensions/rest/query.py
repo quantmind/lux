@@ -13,6 +13,28 @@ OPERATORS = {
 }
 
 
+class RestSession:
+
+    def __init__(self, model, request):
+        self.model = model
+        self.request = request
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        pass
+
+    def add(self, instance):
+        pass
+
+    def delete(self, instance):
+        pass
+
+    def flush(self):
+        pass
+
+
 class Query(BaseQuery):
     _data = None
     _limit = None
@@ -42,6 +64,9 @@ class Query(BaseQuery):
             return data[0]
         else:
             raise Http404
+
+    def delete(self):
+        pass
 
     def limit(self, v):
         self._limit = v
@@ -104,7 +129,7 @@ class Query(BaseQuery):
         return True
 
     def _get_data(self):
-        raise NotImplementedError
+        return []
 
 
 class asc:

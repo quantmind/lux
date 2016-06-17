@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from copy import copy
 
 from pulsar import ImproperlyConfigured
@@ -39,7 +40,7 @@ class ModelContainer(dict):
         return super().get(name, default)
 
 
-class LuxModel:
+class LuxModel(ABC):
     """Base class for models
     """
     name = None
@@ -54,36 +55,35 @@ class LuxModel:
         return self._app
 
     # ABSTRACT METHODS
+    @abstractmethod
     def session(self, request, session=None):
         """Return a session for aggregating a query.
 
-        A session must be a context manager and support these methods:
+        THis method must return a context manager with the following methods:
 
-        * ``query(model)``: to create a model :class:`.Query`
         * ``add(model)``: add a model to the session
         * ``delete(model)`: delete a model
         """
-        raise NotImplementedError
 
+    @abstractmethod
     def get_query(self, session):
         '''Create a new :class:`.Query` from a session
         '''
-        raise NotImplementedError
 
+    @abstractmethod
     def tojson(self, request, instance, **kw):
         """Convert a ``instance`` into a JSON serialisable dictionary
         """
-        raise NotImplementedError
 
+    @abstractmethod
     def create_instance(self):
         """Create the underlying instance for this model
         """
-        raise NotImplementedError
 
+    @abstractmethod
     def fields(self):
         """Return a Mapping name-Field of all fields in this model
         """
-        raise NotImplementedError
 
     # API
     def field(self, name):
@@ -238,11 +238,12 @@ class ModelInstance:
         return self.model.get_instance_value(self, name)
 
 
-class Query:
+class Query(ABC):
     "Interface for a Query"
 
     def __init__(self, model, session=None):
         self.model = model
+        self.session = session
         self.fields = None
 
     @property
@@ -256,14 +257,19 @@ class Query:
     def one(self):
         raise NotImplementedError
 
+    @abstractmethod
     def all(self):
         """Aggregate results of this query.
 
         :return: an iterable over :class:`.ModelInstance`"""
-        raise NotImplementedError
 
+    @abstractmethod
     def count(self):
-        raise NotImplementedError
+        """Return the number of elements in this query"""
+
+    @abstractmethod
+    def delete(self):
+        """Delete all elements in this query"""
 
     def limit(self, limit):
         raise NotImplementedError

@@ -97,17 +97,6 @@ def test_app(test, config_file=None, config_params=True, argv=None,
     return app
 
 
-def get_params(*names):
-    cfg = {}
-    for name in names:
-        value = os.environ.get(name)
-        if value:
-            cfg[name] = value
-        else:
-            return
-    return cfg
-
-
 @green
 def create_users(app, items):
     items.insert(0, {

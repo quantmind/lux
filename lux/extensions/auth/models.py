@@ -111,13 +111,13 @@ class Token(Model, SessionMixin):
 
     @declared_attr
     def user_id(cls):
-        return Column(Integer, ForeignKey('user.id'))
+        return Column(Integer, ForeignKey('user.id', ondelete='CASCADE'))
 
     @declared_attr
     def user(cls):
         return relationship(
             'User',
-            backref=backref("tokens", cascade="all, delete-orphan"))
+            backref=backref("tokens", cascade="all,delete"))
 
     def get_key(self):
         return self.id.hex
@@ -130,7 +130,7 @@ class Registration(Model):
 
     @declared_attr
     def user_id(cls):
-        return Column(Integer, ForeignKey('user.id'))
+        return Column(Integer, ForeignKey('user.id', ondelete='CASCADE'))
 
     @declared_attr
     def user(cls):
@@ -146,7 +146,7 @@ class MailingList(Model):
 
     @declared_attr
     def user_id(cls):
-        return Column(Integer, ForeignKey('user.id'))
+        return Column(Integer, ForeignKey('user.id', ondelete='CASCADE'))
 
     @declared_attr
     def user(cls):

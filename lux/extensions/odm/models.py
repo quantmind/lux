@@ -67,6 +67,9 @@ class Query(BaseQuery):
         fields = self.fields
         return [model.instance(o, fields) for o in self._query().all()]
 
+    def delete(self):
+        return self._query().delete()
+
     def limit(self, limit):
         self.sql_query = self.sql_query.limit(limit)
         return self
@@ -184,41 +187,16 @@ class RestModel(rest.RestModel):
         super().register(app)
         odm_models(app)[self.name] = self
 
+    # LuxModel VIRTUAL METHODS
     def session(self, request, session=None):
-        '''Obtain a session
-        '''
         return self.app.odm().begin(request=request, session=session)
 
     def get_query(self, session):
-        """
-        Returns a :class:`.Query` object for the model.
-
-        The loading of columns the user does not have read
-        access to is deferred. This is only a performance enhancement.
-
-        :param session:     SQLAlchemy session
-        :return:            query object
-        """
         return Query(self, session)
 
     def create_instance(self):
         """Return an instance of the Sql model"""
         return self.db_model()()
-
-    def db_model(self):
-        '''Database model
-        '''
-        return self.app.odm()[self.name]
-
-    def db_columns(self, columns=None):
-        '''Return a list of columns available in the database table
-        '''
-        dbc = self._fields.load(self).db_columns
-        if columns is None:
-            return tuple(dbc)
-        else:
-            columns = self.column_fields(columns)
-            return [c for c in columns if c in dbc]
 
     def tojson(self, request, instance, in_list=False, exclude=None,
                exclude_related=None, safe=False, **kw):
@@ -281,20 +259,6 @@ class RestModel(rest.RestModel):
                 fields[name] = data
         return self.instance_urls(request, instance, fields)
 
-    def id_repr(self, request, obj, in_list=True):
-        if obj:
-            if in_list:
-                data = {'id': getattr(obj, self.id_field)}
-            else:
-                data = self.tojson(request, obj, exclude_related=True)
-                data['id'] = data.pop(self.id_field)
-
-            if self.repr_field != self.id_field:
-                repr = getattr(obj, self.repr_field)
-                if repr != data['id']:
-                    data['repr'] = repr
-            return data
-
     def set_instance_value(self, instance, name, value):
         '''Set the the attribute ``name`` to ``value`` in a model ``instance``
         '''
@@ -320,6 +284,36 @@ class RestModel(rest.RestModel):
                 setattr(obj, name, value.obj)
         else:
             setattr(obj, name, value)
+
+    # ADDITIONAL PUBLIC METHODS
+    def id_repr(self, request, obj, in_list=True):
+        if obj:
+            if in_list:
+                data = {'id': getattr(obj, self.id_field)}
+            else:
+                data = self.tojson(request, obj, exclude_related=True)
+                data['id'] = data.pop(self.id_field)
+
+            if self.repr_field != self.id_field:
+                repr = getattr(obj, self.repr_field)
+                if repr != data['id']:
+                    data['repr'] = repr
+            return data
+
+    def db_model(self):
+        '''Database model
+        '''
+        return self.app.odm()[self.name]
+
+    def db_columns(self, columns=None):
+        '''Return a list of columns available in the database table
+        '''
+        dbc = self._fields.load(self).db_columns
+        if columns is None:
+            return tuple(dbc)
+        else:
+            columns = self.column_fields(columns)
+            return [c for c in columns if c in dbc]
 
     # INTERNALS
     def _load_fields_map(self, rest):

@@ -38,7 +38,7 @@ class AccessToken(Model):
 
     @declared_attr
     def user_id(cls):
-        return Column(Integer, ForeignKey('user.id'))
+        return Column(Integer, ForeignKey('user.id', ondelete='CASCADE'))
 
     @declared_attr
     def user(cls):

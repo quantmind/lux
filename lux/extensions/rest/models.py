@@ -9,6 +9,7 @@ from pulsar.utils.httpurl import is_absolute_uri
 from lux.core import LuxModel
 
 from .client import url_path
+from .query import Query, RestSession
 
 
 CONVERTERS = {
@@ -383,6 +384,21 @@ class RestModel(LuxModel, RestClient):
                 base = request.absolute_uri('/')
                 url = urljoin(base, url)
         return url_path(url, path)
+
+
+class DummyModel(RestModel):
+
+    def session(self, request, session=None):
+        return session or RestSession(self, request)
+
+    def get_query(self, session):
+        return Query(self, session.request)
+
+    def create_instance(self):
+        return {}
+
+    def tojson(self, request, instance, **kw):
+        return self.instance(instance).obj
 
 
 def get_offset(offset=None):

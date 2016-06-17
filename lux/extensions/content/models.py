@@ -4,7 +4,7 @@ from pulsar import Http404
 from pulsar.utils.httpurl import remove_double_slash
 
 from lux.core import cached
-from lux.extensions.rest import RestModel, RestField, Query
+from lux.extensions.rest import RestModel, RestField, Query, RestSession
 from lux.utils.files import skipfile
 from lux.utils.data import as_tuple
 
@@ -37,10 +37,13 @@ class ContentModel(RestModel):
         super().__init__(name, fields=fields, **kw)
 
     def session(self, request, session=None):
-        return QuerySession(self, request)
+        return session or RestSession(self, request)
 
     def get_query(self, session):
-        return session
+        return ContentQuery(self, session)
+
+    def create_instance(self):
+        return {}
 
     def tojson(self, request, instance, in_list=False, **kw):
         data = instance.obj
@@ -67,28 +70,10 @@ class ContentModel(RestModel):
         return body
 
 
-class Session:
+class ContentQuery(Query):
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, type, value, traceback):
-        pass
-
-    def add(self, instance):
-        pass
-
-    def delete(self, instance):
-        pass
-
-    def flush(self):
-        pass
-
-
-class QuerySession(Query, Session):
-
-    def __init__(self, model, request):
-        super().__init__(model, request)
+    def __init__(self, model, session):
+        super().__init__(model, session.request)
         self._groups = []
 
     def filter_field(self, field, op, value):
