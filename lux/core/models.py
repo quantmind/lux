@@ -15,7 +15,7 @@ class ModelContainer(dict):
         super().__init__()
         self._app = app
 
-    def register(self, model):
+    def register(self, model, clone=True):
         '''Register a new Lux Model to the application
         '''
         if not model:
@@ -27,7 +27,9 @@ class ModelContainer(dict):
         if model.identifier in self:
             return self[model.identifier]
 
-        model = copy(model)
+        if clone:
+            model = copy(model)
+
         model.register(self._app)
         if model.identifier:
             self[model.identifier] = model

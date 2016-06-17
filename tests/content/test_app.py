@@ -1,3 +1,5 @@
+from urllib.parse import urlsplit
+
 from lux.utils import test
 from lux.extensions.content.github import github_signature
 
@@ -34,6 +36,13 @@ class TestContentViews(test.AppTestCase):
         request = await self.client.get('/blog/foo')
         bs = self.bs(request.response, 200)
         self.assertEqual(str(bs.title), '<title>This is Foo</title>')
+
+    async def test_api_read(self):
+        path = '/api/contents/blog/foo'
+        request = await self.client.get(path)
+        data = self.json(request.response, 200)
+        self.assertTrue('api_url' in data)
+        self.assertEqual(urlsplit(data['api_url']).path, path)
 
     async def test_github_hook_400(self):
         payload = dict(zen='foo', hook_id='457356234')

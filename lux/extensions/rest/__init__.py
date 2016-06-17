@@ -23,7 +23,7 @@ from pulsar.apps.wsgi import wsgi_request
 from lux.core import Parameter
 
 from .auth import AuthBackend, MultiAuthBackend, backend_action
-from .models import RestModel, RestField, is_rel_field
+from .models import RestModel, DictModel, RestField, is_rel_field
 from .client import ApiClient
 from .views.actions import (AuthenticationError, check_username, login,
                             logout, user_permissions)
@@ -39,6 +39,7 @@ from .user import (MessageMixin, UserMixin, SessionMixin, PasswordMixin,
 __all__ = ['RestModel',
            'RestField',
            'is_rel_field',
+           'DictModel',
            #
            'Authorization',
            #
@@ -94,11 +95,13 @@ def api_url(request, location=None):
     return url
 
 
-def api_path(request, model, *args):
+def api_path(request, model, *args, **params):
     model = request.app.models.get(model)
     if model:
-        path = urlparse(model.api_url(request)).path
-        return '%s/%s' % (path, '/'.join(args)) if args else path
+        path = model.api_url(request, **params)
+        if path:
+            path = urlparse(path).path
+            return '%s/%s' % (path, '/'.join(args)) if args else path
 
 
 class Extension(MultiAuthBackend):
@@ -250,6 +253,8 @@ class Extension(MultiAuthBackend):
             if isinstance(router, RestRouter):
                 # Register model
                 router.model = app.models.register(router.model)
+                if router.model:
+                    router.model.api_route = router.route
             # Add router to API root-router
             self.api_router.add_child(router)
 

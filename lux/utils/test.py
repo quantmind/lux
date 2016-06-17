@@ -17,7 +17,7 @@ from pulsar.utils.string import random_string
 from pulsar.utils.websocket import (SUPPORTED_VERSIONS, websocket_key,
                                     frame_parser)
 from pulsar.apps.wsgi import WsgiResponse
-from pulsar.apps.http import JSON_CONTENT_TYPES
+from pulsar.apps.http import JSON_CONTENT_TYPES, full_url
 from pulsar.apps.test import test_timeout, sequential
 
 from lux.core import App
@@ -179,9 +179,9 @@ class TestClient:
         return cmd(argv, **kwargs)
 
     def request_start_response(self, method, path, HTTP_ACCEPT=None,
-                               headers=None, body=None, json=None,
+                               headers=None, data=None, json=None,
                                content_type=None, token=None, cookie=None,
-                               **extra):
+                               params=None, **extra):
         method = method.upper()
         extra['REQUEST_METHOD'] = method.upper()
         path = path or '/'
@@ -192,8 +192,8 @@ class TestClient:
             heads.extend(headers)
         if json is not None:
             content_type = 'application/json'
-            assert not body
-            body = json
+            assert not data
+            data = json
         if content_type:
             heads.append(('content-type', content_type))
         if token:
@@ -201,17 +201,20 @@ class TestClient:
         if cookie:
             heads.append(('Cookie', cookie))
 
-        # Encode body
-        if (method in ENCODE_BODY_METHODS and body is not None and
-                not isinstance(body, bytes)):
+        if params:
+            path = full_url(path, params)
+
+        # Encode data
+        if (method in ENCODE_BODY_METHODS and data is not None and
+                not isinstance(data, bytes)):
             content_type = Headers(heads).get('content-type')
             if content_type is None:
-                body, content_type = encode_multipart_formdata(body)
+                data, content_type = encode_multipart_formdata(data)
                 heads.append(('content-type', content_type))
             elif content_type == 'application/json':
-                body = _json.dumps(body).encode('utf-8')
+                data = _json.dumps(data).encode('utf-8')
 
-        request = self.app.wsgi_request(path=path, headers=heads, body=body,
+        request = self.app.wsgi_request(path=path, headers=heads, body=data,
                                         **extra)
         request.environ['SERVER_NAME'] = 'localhost'
         start_response = mock.MagicMock()
@@ -252,11 +255,10 @@ class TestClient:
 class TestHttpApiClient(TestClient):
     """Api client test handler
     """
-    def request(self, method, path, data=None, **params):
+    def request(self, method, path, **params):
         """Override :meth:`TestClient.request` for testing Api clients
         inside a lux application
         """
-        params['body'] = data
         request, sr = self.request_start_response(method, path, **params)
         response = self.app(request.environ, sr)
         green_pool = self.app.green_pool
@@ -617,10 +619,7 @@ class WebApiTestCase(AppTestCase):
                 'password_repeat': password,
                 'email': email}
         data.update(csrf)
-        request = await self.webclient.post(url,
-                                            body=data,
-                                            cookie=cookie,
-                                            content_type='application/json')
+        request = await self.webclient.post(url, json=data, cookie=cookie)
         return self.json(request.response, 201)
 
     @green

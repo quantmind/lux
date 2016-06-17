@@ -9,9 +9,6 @@ from lux import core
 from .contents import get_reader
 
 
-CONTEXT_URL = 'contents/context?load_only=slug&load_only=body'
-
-
 class CMSRouter(core.HtmlRouter):
     """Fallback CMS Router
     """
@@ -74,7 +71,7 @@ class CMS(core.CMS):
             if not page.name:
                 raise Http404
             path = page.urlargs.get('path') or 'index'
-            path = api_path(request, 'contents', page.name, path)
+            path = api_path(request, 'contents', path, group=page.name)
             data = request.api.get(path).json()
             inner_html = self.data_to_html(page, data, inner_html)
         except Http404:
@@ -92,11 +89,14 @@ class CMS(core.CMS):
 
     @cached(key='cms:context')
     def context_data(self, request):
-        try:
-            return request.api.get(CONTEXT_URL).json()['result']
-        except Http404:
-            request.logger.error('Cannot find context at %s', CONTEXT_URL)
-            return []
+        path = api_path(request, 'contents', group='context')
+        if path:
+            try:
+                params = {'load_only': ['slug', 'body']}
+                return request.api.get(path, params=params).json()['result']
+            except Http404:
+                request.logger.error('Cannot find context at %s', path)
+        return []
 
     def html_content(self, request, path, context):
         """Render the inner html
@@ -128,9 +128,13 @@ class CMS(core.CMS):
             if data:
                 setattr(page, attr, Template(data))
 
-    def all(self, request, name):
-        path = api_path(request, 'contents', name)
-        return request.api.get(path).json()['result']
+    def all(self, request, group):
+        path = api_path(request, 'contents', group=group)
+        if path:
+            return request.api.get(path, params={'priority:gt': 0}
+                                   ).json()['result']
+        else:
+            return []
 
 
 class LazyContext:

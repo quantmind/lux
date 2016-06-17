@@ -95,7 +95,7 @@ class AuthTest(web.WebsiteTest):
         data.update({'password': password, 'password_repeat': password})
 
         request = await self.webclient.post('/auth/reset-password/%s' % code,
-                                            body=data,
+                                            data=data,
                                             cookie=cookie)
         data = self.json(request.response, 200)
         self.assertEqual(data['message'], 'password changed')

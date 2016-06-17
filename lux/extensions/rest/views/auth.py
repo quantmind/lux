@@ -13,7 +13,7 @@ from pulsar import MethodNotAllowed, Http404
 from lux.core import route, JsonRouter
 from lux.forms import get_form_class
 
-from ..models import DummyModel
+from ..models import DictModel
 from .rest import RestRouter
 from . import actions
 
@@ -65,7 +65,7 @@ class ResetPassword(JsonRouter):
 class Authorization(RestRouter):
     """Authentication views for Restful APIs
     """
-    model = DummyModel('authorization')
+    model = DictModel('authorization')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

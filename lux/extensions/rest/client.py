@@ -1,4 +1,5 @@
 import threading
+from urllib.parse import urlsplit, urlunsplit
 
 from pulsar.utils.httpurl import is_absolute_uri
 
@@ -73,13 +74,13 @@ class ApiClientRequest:
         return self.request('HEAD', path, **kw)
 
     def request(self, method, path=None, token=None, headers=None, **kw):
-        url = self.url
+        base = self.url
         # Allow to pass an api target dict as path
         if isinstance(path, dict):
-            url = path.get('url', url)
+            base = path.get('url', base)
             path = path.get('path')
         request = self._request
-        url = url_path(url, path)
+        url = url_path(base, path)
         req_headers = self._headers[:]
         req_headers.extend(headers or ())
         agent = request.get('HTTP_USER_AGENT', request.config['APP_NAME'])
@@ -95,13 +96,16 @@ class ApiClientRequest:
         return response
 
 
-def url_path(url, path):
+def url_path(base, path):
     if path:
+        url = list(urlsplit(base))
         path = str(path)
         if path.startswith('/'):
-            path = path[1:]
-        if path:
-            if not url.endswith('/'):
-                url = '%s/' % url
-            url = '%s%s' % (url, path)
-    return url
+            url[2] = path
+        elif path:
+            p = url[2]
+            if not p.endswith('/'):
+                p = '%s/' % p
+            url[2] = '%s%s' % (p, path)
+        return urlunsplit(url)
+    return base

@@ -1,10 +1,9 @@
 import os
 
 from pulsar import Http404
-from pulsar.utils.httpurl import remove_double_slash
 
 from lux.core import cached
-from lux.extensions.rest import RestModel, RestField, Query, RestSession
+from lux.extensions.rest import DictModel, RestField, Query
 from lux.utils.files import skipfile
 from lux.utils.data import as_tuple
 
@@ -22,7 +21,7 @@ FIELDS = [
 ]
 
 
-class ContentModel(RestModel):
+class ContentModel(DictModel):
     '''A Content model with file-system backend
 
     This model provide read-only operations
@@ -36,38 +35,15 @@ class ContentModel(RestModel):
         kw['id_field'] = 'slug'
         super().__init__(name, fields=fields, **kw)
 
-    def session(self, request, session=None):
-        return session or RestSession(self, request)
-
     def get_query(self, session):
         return ContentQuery(self, session)
 
-    def create_instance(self):
-        return {}
-
     def tojson(self, request, instance, in_list=False, **kw):
+        instance = self.instance(instance)
         data = instance.obj
         if in_list and (not instance.fields or 'body' not in instance.fields):
             data.pop('body', None)
-        return data
-
-    def asset(self, filename):
-        if self.html_url:
-            path = '%s/%s' % (self.html_url, filename)
-        else:
-            path = filename
-        src = os.path.join(self.directory, filename)
-        return dict(src=src, path=path)
-
-    # INTERNALS
-    def _path(self, request, path):
-        '''relative pathof content
-        '''
-        return remove_double_slash('/%s/%s' % (self.url, path))
-
-    def content(self, data):
-        body = data['body']
-        return body
+        return self.instance_urls(request, instance, data)
 
 
 class ContentQuery(Query):

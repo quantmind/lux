@@ -36,6 +36,13 @@ class PermissionAdmin(AccountAdmin):
 
 @admin.register('tokens')
 class TokenAdmin(AccountAdmin):
-    '''Admin views for permissions
+    '''Admin views for tokens
     '''
     icon = 'fa fa-user-secret'
+
+
+@admin.register('mailinglist')
+class MailingListAdmin(AccountAdmin):
+    '''Admin views for Mailing lists
+    '''
+    icon = 'fa fa-envelope'

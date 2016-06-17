@@ -199,19 +199,19 @@ class CRUDAdmin(AdminModel):
             return self.html_response(request, data)
 
     def get_form(self, request, form=None, id=None, model=None,
-                 initial=None):
+                 initial=None, **params):
         if id:
-            action = 'update'
+            params['action'] = 'update'
             form = form or self.updateform or self.form
         else:
-            action = 'create'
+            params['action'] = 'create'
             form = form or self.form
 
         form = get_form_layout(request, form)
         if not form:
             raise Http404
 
-        target = self.get_target(request, path=id, action=action, model=model)
+        target = self.get_target(request, path=id, model=model, **params)
         if id:
             request.api.head(target)
 

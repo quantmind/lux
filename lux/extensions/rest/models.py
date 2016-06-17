@@ -99,15 +99,29 @@ def is_rel_field(col):
 class RestClient:
     """Implements the method accessed by clients of lux Rest API
     """
-    def api_url(self, request, id=None):
-        base = request.config.get('API_URL')
-        if base:
+    def api_url(self, request, instance=None, **kwargs):
+        if self.api_route:
+            base = request.config.get('API_URL')
             if not is_absolute_uri(base):
-                base = request.absolute_uri('/')
+                base = request.absolute_uri(base)
             if base.endswith('/'):
                 base = base[:-1]
-            base = '%s/%s' % (base, self._url)
-            return '%s/%s' % (base, id) if id else base
+            params = {}
+            for name in self.api_route.variables:
+                if name not in kwargs:
+                    if instance:
+                        value = self.get_instance_value(instance, name)
+                    else:
+                        value = request.urlargs.get(name)
+                    if not value:
+                        request.logger.error('Could not evaluate url for %s',
+                                             self)
+                        return
+                else:
+                    value = kwargs[name]
+                params[name] = value
+            base = '%s%s' % (base, self.api_route.url(**params))
+            return '%s/%s' % (base, instance.id) if instance else base
 
     def get_target(self, request, **params):
         """Get a target object for this model
@@ -115,9 +129,12 @@ class RestClient:
         Used by HTML Router to get information about the LUX REST API
         of this Rest Model
         """
-        api_url = self.api_url(request)
+        api_url = self.api_url(request, **params)
         if not api_url:
             return
+        for name in self.api_route.variables:
+            params.pop(name, None)
+
         target = {
             'id_field': self.id_field,
             'repr_field': self.repr_field,
@@ -201,6 +218,7 @@ class RestModel(LuxModel, RestClient):
         set to True in the :class:`.RestField` metadata
     """
     _fields = FieldsInfo
+    api_route = None
 
     def __init__(self, name, form=None, updateform=None, fields=None,
                  url=None, exclude=None, html_url=None, id_field=None,
@@ -231,10 +249,11 @@ class RestModel(LuxModel, RestClient):
 
     def __copy__(self):
         cls = self.__class__
-        field = cls.__new__(cls)
-        field.__dict__ = self.__dict__.copy()
-        field._fields = copy(self._fields)
-        return field
+        model = cls.__new__(cls)
+        model.__dict__ = self.__dict__.copy()
+        model.api_route = None
+        model._fields = copy(self._fields)
+        return model
 
     @property
     def identifier(self):
@@ -275,14 +294,10 @@ class RestModel(LuxModel, RestClient):
         return min(limit, max_limit)
 
     def instance_urls(self, request, instance, data):
-        if self.id_field not in data:
-            id_value = instance.id
-        else:
-            id_value = data[self.id_field]
         for url_name in self._fields.urls:
             method = getattr(self, url_name, None)
             if method and (not instance.fields or url_name in instance.fields):
-                url = method(request, id_value)
+                url = method(request, instance)
                 if url:
                     data[url_name] = url
         return data
@@ -351,9 +366,9 @@ class RestModel(LuxModel, RestClient):
         field = RestField(name, field=field, model=model, **kw)
         fields.add_include(field)
 
-    def html_url(self, request, path):
+    def html_url(self, request, instance):
         return self._build_url(request,
-                               path,
+                               instance,
                                self._html_url,
                                request.config.get('WEB_SITE_URL'))
 
@@ -386,7 +401,7 @@ class RestModel(LuxModel, RestClient):
         return url_path(url, path)
 
 
-class DummyModel(RestModel):
+class DictModel(RestModel):
 
     def session(self, request, session=None):
         return session or RestSession(self, request)
@@ -399,6 +414,12 @@ class DummyModel(RestModel):
 
     def tojson(self, request, instance, **kw):
         return self.instance(instance).obj
+
+    def set_instance_value(self, instance, name, value):
+        instance.obj[name] = value
+
+    def get_instance_value(self, instance, name):
+        return instance.obj.get(name)
 
 
 def get_offset(offset=None):

@@ -19,9 +19,7 @@ class ContactRouterTestCase(test.TestCase):
             name='Pinco Pallino',
             email='pinco@pallino.com',
             body='Hi this is a test')
-        request = await client.post('/contact',
-                                    body=data,
-                                    content_type='application/json')
+        request = await client.post('/contact', json=data)
         data = self.json(request.response, 200)
         self.assertEqual(data['message'],
                          "Your message was sent! Thank You for your interest")
@@ -33,7 +31,5 @@ class ContactRouterTestCase(test.TestCase):
         data = dict(
             name='Pinco Pallino',
             email='pinco@pallino.com')
-        request = await client.post('/contact',
-                                    body=data,
-                                    content_type='application/json')
+        request = await client.post('/contact', json=data)
         self.assertValidationError(request.response, 'body')
