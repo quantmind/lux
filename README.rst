@@ -9,7 +9,6 @@
 :Badges: |license|  |pyversions| |status|
 :Python CI: |master-build| |coverage-master|
 :Javascript CI: |jsci| |jsdep| |jsdevdep| jscoverage_
-:Python dev CI: |dev-build| |coverage-dev|
 :Documentation: http://quantmind.github.io/lux/
 :Downloads: https://pypi.python.org/pypi/lux
 :Source: https://github.com/quantmind/lux
