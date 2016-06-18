@@ -70,3 +70,8 @@ class TestBackend(test.AppTestCase, AuthUtils):
                                         description='Can access the admin',
                                         policy={})
             group.permissions.append(permission)
+
+    def test_rest_user(self):
+        """Check that the RestField was overwritten properly"""
+        model = self.app.models['users']
+        self.assertEqual(model.field('email').type, 'email')

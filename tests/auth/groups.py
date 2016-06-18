@@ -37,3 +37,33 @@ class GroupsMixin:
                                         token=token)
         data = self.json(request.response, 200)
         self.assertTrue('groups[]' in data)
+
+    async def test_add_user_to_group_updated(self):
+        credentials = await self._new_credentials()
+        username = credentials['username']
+        token = await self._token('testuser')
+        request = await self.client.put('/users/%s' % username,
+                                        json={'groups': ['users']},
+                                        token=token)
+        data = self.json(request.response, 200)
+        self.assertTrue('groups[]' in data)
+        self.assertEqual(data['groups[]'], [{'id': 'users'}])
+        #
+        request = await self.client.put(
+            '/users/%s' % username,
+            json={'groups': ['users', 'power-users']},
+            token=token
+        )
+        data = self.json(request.response, 200)
+        self.assertTrue('groups[]' in data)
+        self.assertEqual(data['groups[]'],
+                         [{'id': 'users'}, {'id': 'power-users'}])
+        #
+        request = await self.client.put(
+            '/users/%s' % username,
+            json={'groups': []},
+            token=token
+        )
+        data = self.json(request.response, 200)
+        self.assertTrue('groups[]' in data)
+        self.assertEqual(data['groups[]'], [])

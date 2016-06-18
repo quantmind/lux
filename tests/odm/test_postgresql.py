@@ -277,3 +277,39 @@ class TestPostgreSql(OdmUtils, test.AppTestCase):
         result = data['result']
         self.assertIsInstance(result, list)
         self.assertTrue(len(result) >= 2)
+
+    async def test_update_related_field(self):
+        token = await self._token('testuser')
+        person1 = await self._create_person(token, 'abcdfg1')
+        person2 = await self._create_person(token, 'abcdfg2')
+        task = await self._create_task(token,
+                                       'climb a wall a day',
+                                       person1)
+        self.assertTrue('assigned' in task)
+        request = await self.client.get('/tasks/%s' % task['id'])
+        data = self.json(request.response, 200)
+        self.assertEqual(data['assigned']['id'], person1['id'])
+        #
+        # Updated with same assigned person
+        request = await self.client.post('/tasks/%s' % task['id'],
+                                         json={'assigned': person1['id']},
+                                         token=token)
+        data = self.json(request.response, 200)
+        self.assertEqual(data['assigned']['id'], person1['id'])
+        #
+        # Change the assigned person
+        request = await self.client.post('/tasks/%s' % task['id'],
+                                         json={'assigned': person2['id']},
+                                         token=token)
+        data = self.json(request.response, 200)
+        self.assertEqual(data['assigned']['id'], person2['id'])
+        #
+        # Change to non assigned
+        request = await self.client.post('/tasks/%s' % task['id'],
+                                         json={'assigned': ''},
+                                         token=token)
+        data = self.json(request.response, 200)
+        self.assertTrue('assigned' not in data)
+        request = await self.client.get('/tasks/%s' % task['id'])
+        data = self.json(request.response, 200)
+        self.assertTrue('assigned' not in data)

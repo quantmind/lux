@@ -275,7 +275,7 @@ class RestModel(rest.RestModel):
                     for item in tuple(current_value):
                         item = rel_model.instance(item)
                         if item.id not in all_ids:
-                            current_value.remove(item.id)
+                            current_value.remove(item.obj)
                         else:
                             avail.add(item.id)
                     for item in value:
@@ -283,14 +283,13 @@ class RestModel(rest.RestModel):
                             current_value.append(item.obj)
                 else:
                     if value is not None:
-                        value = rel_model.instance(value)
+                        value = rel_model.instance(value).obj
                         if current_value is not None:
                             current_value = rel_model.instance(current_value)
-                            if value.id == current_value.id:
+                            if is_same_model(value, current_value.obj):
                                 return
-                        value = value.obj
                     setattr(obj, name, value)
-            except Exception as exc:
+            except Exception as exc:    # pragma    nocover
                 self.app.logger.error(
                     'Could not replace related field %s in model '
                     '%s: %s', col.name, self, exc)
@@ -350,7 +349,7 @@ class RestModel(rest.RestModel):
                 # If a database column
                 if isinstance(dbcol, Column):
                     info = column_info(col.name, dbcol)
-                    info.update(col.tojson(self))
+                    info.update(col.tojson())
                     col = RestField.make(info)
                 _set_field(col)
 
