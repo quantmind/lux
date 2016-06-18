@@ -1,7 +1,7 @@
 
 export default function (ngModule) {
     ngModule.config(addWrappers);
-    
+
     // @ngInject
     function addWrappers(luxFormConfigProvider) {
         var p = luxFormConfigProvider;
@@ -20,10 +20,12 @@ export default function (ngModule) {
 }
 
 
-const labelTpl = function (inner) {
-    return `<label for="{{field.id}}" class="control-label {{field.labelSrOnly ? 'sr-only' : ''}}" ng-if="field.label">
+const labelTpl = function (inner, field) {
+    return `<label for="{{field.id}}"
+class="control-label {{field.labelSrOnly ? 'sr-only' : ''}}"
+ng-class="{'required': ${field.required}}"
+ng-if="field.label">
     {{field.label}}
-    {{field.required ? '*' : ''}}
   </label>
   ${inner}`;
 };

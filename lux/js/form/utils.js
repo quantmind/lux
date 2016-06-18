@@ -44,14 +44,8 @@ export function parseOptions (field, items, objParser) {
 
 
 export function mergeOptions(field, defaults, $scope) {
-    var cfg = field.$cfg;
     if (_.isFunction(defaults)) defaults = defaults(field, $scope);
     reverseMerge(field, defaults);
-    if (field.$luxform && field.$luxform !== field)
-        _.forEach(cfg.inheritAttributes, (attr) => {
-            if (_.isUndefined(field[attr]))
-                field[attr] = field.$luxform[attr];
-        });
     if (field.type === 'hidden')
         field.labelSrOnly = true;
 }
@@ -89,7 +83,8 @@ export function fieldDirectives (field) {
         value = field[attr];
         if (!_.isString(value)) {
             field[attr] = 'field.$' + attr;
-            field['$' + attr] = value;
+            if (value)
+                field['$' + attr] = value;
         }
     });
 }

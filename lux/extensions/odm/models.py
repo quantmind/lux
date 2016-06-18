@@ -266,22 +266,34 @@ class RestModel(rest.RestModel):
         current_value = getattr(obj, name, None)
         col = self.field(name)
         if is_rel_field(col):
-            rel_model = self.app.models.get(col.model)
-            if isinstance(current_value, (list, set)):
-                value = tuple((rel_model.instance(v) for v in value))
-                all_ids = tuple((item.id for item in value))
-                avail = set()
-                for item in tuple(current_value):
-                    item = rel_model.instance(item)
-                    if item.id not in all_ids:
-                        current_value.remove(item.id)
-                    else:
-                        avail.add(item.id)
-                for item in value:
-                    if item.id not in avail:
-                        current_value.append(item.obj)
-            else:
-                setattr(obj, name, value.obj)
+            try:
+                rel_model = self.app.models.get(col.model)
+                if isinstance(current_value, (list, set)):
+                    value = tuple((rel_model.instance(v) for v in value))
+                    all_ids = tuple((item.id for item in value))
+                    avail = set()
+                    for item in tuple(current_value):
+                        item = rel_model.instance(item)
+                        if item.id not in all_ids:
+                            current_value.remove(item.id)
+                        else:
+                            avail.add(item.id)
+                    for item in value:
+                        if item.id not in avail:
+                            current_value.append(item.obj)
+                else:
+                    if value is not None:
+                        value = rel_model.instance(value)
+                        if current_value is not None:
+                            current_value = rel_model.instance(current_value)
+                            if value.id == current_value.id:
+                                return
+                        value = value.obj
+                    setattr(obj, name, value)
+            except Exception as exc:
+                self.app.logger.error(
+                    'Could not replace related field %s in model '
+                    '%s: %s', col.name, self, exc)
         else:
             setattr(obj, name, value)
 

@@ -147,8 +147,17 @@ class Row(Fieldset):
 class Col(Fieldset):
     type = 'col'
 
-    def __init__(self, field, size):
-        super().__init__(field, size=size)
+    def __init__(self, *children, **kwargs):
+        size = kwargs.pop('size', 12)
+        if len(children) > 1:
+            try:
+                size = int(children[-1])
+            except Exception:
+                pass
+            else:
+                children = children[:-1]
+        kwargs['size'] = size
+        super().__init__(*children, **kwargs)
 
 
 class Layout(Fieldset):

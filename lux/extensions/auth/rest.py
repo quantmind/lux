@@ -17,7 +17,8 @@ class PermissionCRUD(CRUD):
         'permission',
         'permission',
         'permission',
-        id_field='name'
+        id_field='name',
+        hidden=('id', 'policy')
     )
 
 

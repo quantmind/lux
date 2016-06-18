@@ -279,10 +279,8 @@ allow-clear>
   <small ng-if="item.description" ng-bind-html="item.description | highlight: $select.search"></small>
 </ui-select-choices>
 </ui-select>
-<span class="input-group-btn">
-  <button type="button" ng-click="field.value = '" class="btn btn-default">
-    <span class="glyphicon glyphicon-trash"></span>
-  </button>
+<span ng-click="field.value = ''" class="input-group-addon">
+    <i class="fa fa-trash"></i>
 </span>
 </div>`;
 }

@@ -81,8 +81,8 @@ class TokenModel(RestModel):
 class PermissionForm(forms.Form):
     model = 'permissions'
     name = forms.CharField()
-    description = forms.TextField(required=False)
-    policy = forms.JsonField(text_edit=json.dumps({'mode': 'json'}))
+    description = forms.TextField(required=False, rows=2)
+    policy = forms.JsonField(lux_ace=json.dumps({'mode': 'json'}))
 
     def clean(self):
         if 'policy' in self.cleaned_data:

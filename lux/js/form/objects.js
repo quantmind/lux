@@ -46,6 +46,14 @@ export class FormElement extends LuxComponent {
         var children = field.children;
 
         if (_.isArray(children) && children.length) {
+            _.forEach(cfg.inheritAttributes, (attr) => {
+                var value = field[attr];
+                if (_.isDefined(value))
+                    _.forEach(children, (child) => {
+                        if (_.isUndefined(child[attr]))
+                            child[attr] = value;
+                    });
+            });
             //field.children = makeChildren(children);
             var inner = fieldInnerTemplate($scope.luxform.name);
             if (template) {
@@ -58,7 +66,7 @@ export class FormElement extends LuxComponent {
 
         _.forEach(fieldType.wrapper, (wrapper) => {
             w = cfg.getWrapper(wrapper);
-            if (w) template = w.template(template) || template;
+            if (w) template = w.template(template, field) || template;
             else $log.error(`Could not locate lux-form wrapper "${wrapper}" in "${field.name}" field`);
         });
 
