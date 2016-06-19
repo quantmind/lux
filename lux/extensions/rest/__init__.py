@@ -306,3 +306,7 @@ class Extension(MultiAuthBackend):
 
     def __call__(self, environ, start_response):
         return self.request(wsgi_request(environ))
+
+    def context(self, request, context):
+        """Add user to the Html template context"""
+        context['user'] = request.cache.user
