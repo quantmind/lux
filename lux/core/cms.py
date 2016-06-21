@@ -31,7 +31,8 @@ class Page:
 
     .. attribute:: meta
 
-        dictionary of page metadata
+        dictionary of page metadata. This dictionary will be made available
+        in the context dictionary at the key ``page``
     """
     def __init__(self, name=None, path=None, body_template=None,
                  inner_template=None, meta=None, urlargs=None, **kw):
@@ -157,6 +158,7 @@ class CMS:
                 doc.meta.set(key, meta[key])
 
         doc.jscontext['page'] = meta
+        context['page'] = meta
         html_main = self.replace_html_main(page.body_template,
                                            page.inner_template)
         return html_main.render(self.app, context)

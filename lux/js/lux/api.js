@@ -40,6 +40,7 @@ export class Lux {
     constructor (core, plugins) {
         _.extend(this, core, plugins);
         this.$apis = map();
+        this.$lazyBootstrap = 0;
         this.router = luxRouter(this);
     }
 
@@ -115,6 +116,21 @@ export class Lux {
         }, function () {
             self.messages.error('Error while logging out');
         });
+    }
+
+    // Increase the lazy bootstrap counter
+    bootstrap () {
+        if (this.$lazyBootstrap === null) return;
+        return ++this.$lazyBootstrap;
+    }
+
+    bootstrapDone () {
+        if (this.$lazyBootstrap === null) return;
+        this.$lazyBootstrap -= 1;
+        if (this.$lazyBootstrap <= 0) {
+            this.$lazyBootstrap = null;
+            this.$rootScope.$broadcast('lux-ready');
+        }
     }
 }
 

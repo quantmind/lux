@@ -2,7 +2,7 @@ import _ from '../ng';
 
 const defaults = {
     // Animation time
-    time: 1000,
+    time: 200,
     // Offset relative to hash links
     offset: 0,
     // Number of frames to use in the router transition
