@@ -680,12 +680,18 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         doc = request.html_document
         if jscontext:
             doc.jscontext.update(jscontext)
-        head = doc.head
+
         if title:
-            head.title = title
+            doc.head.title = title
+
         if status_code:
             request.response.status_code = status_code
         context = self.context(request, context)
+        page = self.cms.as_page(page)
+        body = self.cms.render_body(request, page, context)
+
+        doc.body.append(body)
+
         if not request.config['MINIFIED_MEDIA']:
             doc.head.embedded_js.insert(
                 0, 'window.minifiedMedia = false;')
@@ -695,9 +701,6 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
             doc.head.embedded_js.insert(
                 0, 'var lux = "%s";\n' % encoded)
 
-        page = self.cms.as_page(page)
-        body = self.cms.render_body(request, page, context)
-        doc.body.append(body)
         return doc.http_response(request)
 
     def site_url(self, path=None):

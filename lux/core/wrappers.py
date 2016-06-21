@@ -163,6 +163,7 @@ class HtmlRouter(JsonRouter):
             request.response.content = page.render_inner(request)
             response = request.response
         else:
+
             response = app.html_response(request, page, self.context(request))
 
         self.cache_control(response)

@@ -2,6 +2,7 @@ import {map} from 'd3-collection';
 import {decodeJWToken, LuxException} from '../core/utils';
 import {urlIsSameOrigin, urlResolve, urlIsAbsolute, urlJoin} from '../core/urls';
 import paginator from './paginator';
+import luxRouter from './router';
 import _ from '../ng';
 
 
@@ -39,6 +40,7 @@ export class Lux {
     constructor (core, plugins) {
         _.extend(this, core, plugins);
         this.$apis = map();
+        this.router = luxRouter(this);
     }
 
     // Return the csrf key-value token to post in forms
@@ -52,6 +54,10 @@ export class Lux {
 
     get userToken () {
         return this.context.userToken;
+    }
+
+    get currentYPosition () {
+        return this.$window.pageYOffset;
     }
 
     api (action, ApiClass) {

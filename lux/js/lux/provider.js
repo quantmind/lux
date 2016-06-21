@@ -4,7 +4,7 @@ import {Lux, windowContext} from './api';
 
 // @ngInject
 export default function ($controllerProvider, $provide, $compileProvider, $filterProvider,
-                         $locationProvider, $injector) {
+                         $locationProvider, $anchorScrollProvider, $injector) {
 
     var loading = false,
         loadingQueue = [],
@@ -22,8 +22,10 @@ export default function ($controllerProvider, $provide, $compileProvider, $filte
     $locationProvider.html5Mode({
         enabled: true,
         requireBase: false,
-        rewriteLinks: false
-    });
+        rewriteLinks: true
+    }).hashPrefix('!');
+
+    $anchorScrollProvider.disableAutoScrolling();
 
     _.extend(this, {
         // Required for angular providers
@@ -33,7 +35,7 @@ export default function ($controllerProvider, $provide, $compileProvider, $filte
 
     // @ngInject
     function lux ($injector, $location, $window, $http, $log, $timeout,
-                  $compile, $rootScope, luxMessage) {
+                  $compile, $rootScope, $document, luxMessage) {
         var core = {
             $injector: $injector,
             $location: $location,
@@ -43,10 +45,12 @@ export default function ($controllerProvider, $provide, $compileProvider, $filte
             $timeout: $timeout,
             $compile: $compile,
             $rootScope: $rootScope,
+            $document: $document,
             $require: require,
             require: _require,
             messages: luxMessage,
             context: windowContext($window),
+            providers: providers,
             moduleLoaded: moduleLoaded
         };
         return new Lux(core, plugins);
