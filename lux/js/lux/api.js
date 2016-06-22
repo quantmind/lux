@@ -124,13 +124,15 @@ export class Lux {
         return ++this.$lazyBootstrap;
     }
 
-    bootstrapDone () {
-        if (this.$lazyBootstrap === null) return;
+    bootstrapDone (force) {
+        if (this.$lazyBootstrap === null) return true;
         this.$lazyBootstrap -= 1;
-        if (this.$lazyBootstrap <= 0) {
+        if (this.$lazyBootstrap <= 0 || force) {
             this.$lazyBootstrap = null;
             this.$rootScope.$broadcast('lux-ready');
+            return true;
         }
+        return false;
     }
 }
 

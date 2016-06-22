@@ -1,11 +1,6 @@
 import _ from '../ng';
 import LuxComponent from '../lux/component';
-import {compile, asHtml, mergeOptions, mergeArray, fieldDirectives} from './utils';
-
-
-export function fieldInnerTemplate (formName) {
-    return `<lux-field ng-repeat="child in field.children" field="child" luxform="luxform" form="${formName}"></lux-field>`;
-}
+import {compile, asHtml, mergeOptions, mergeArray, makeChildren, fieldDirectives} from './utils';
 
 
 export class FormElement extends LuxComponent {
@@ -45,17 +40,9 @@ export class FormElement extends LuxComponent {
 
         var children = field.children;
 
-        if (_.isArray(children) && children.length) {
-            _.forEach(cfg.inheritAttributes, (attr) => {
-                var value = field[attr];
-                if (_.isDefined(value))
-                    _.forEach(children, (child) => {
-                        if (_.isUndefined(child[attr]))
-                            child[attr] = value;
-                    });
-            });
-            //field.children = makeChildren(children);
-            var inner = fieldInnerTemplate($scope.luxform.name);
+        if (_.isArray(children) && children.length && fieldType.childTpl) {
+            field.children = makeChildren(field, children);
+            var inner = fieldType.childTpl($scope.luxform.name);
             if (template) {
                 var tel = _.element(template);
                 tel.append(inner);
@@ -210,6 +197,7 @@ export class Field extends FormElement {
     constructor ($scope, $lux, $cfg, field, type, tag) {
         super($scope, $lux, $cfg, field, type, tag);
         fieldDirectives(this);
+        this.$scope = $scope;
         this.$form = $scope.form;
         this.$luxform.$setField(this);
     }
@@ -243,7 +231,8 @@ export class Field extends FormElement {
     }
 
     get displayStatus () {
-        if (this.disabled || this.readonly) return false;
+        var scope = this.$scope;
+        if (scope.$eval(this.disabled) || scope.$eval(this.readonly)) return false;
         var ngField = this.ngField;
         return ngField && (this.$form.$submitted || ngField.$dirty);
     }

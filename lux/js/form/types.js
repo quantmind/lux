@@ -10,12 +10,6 @@ export default function (ngModule) {
     function addTypes(luxFormConfigProvider) {
         var p = luxFormConfigProvider;
 
-        p.setType({
-            name: 'form',
-            template: formTemplate,
-            class: Form
-        });
-
         // Inputs
         p.setType({
             name: 'input',
@@ -116,37 +110,69 @@ export default function (ngModule) {
             }
         });
 
+        // Containers
+
+        p.setType({
+            name: 'form',
+            template: formTemplate,
+            class: Form,
+            childTpl: fieldInnerTemplate
+        });
+
         // Fieldset
         p.setType({
             name: 'fieldset',
             class: FormElement,
-            template: fieldsetTpl
+            template: fieldsetTpl,
+            childTpl: fieldInnerTemplate
         });
 
         // Div
         p.setType({
             name: 'row',
             class: FormElement,
-            template: rowTpl
+            template: rowTpl,
+            childTpl: fieldInnerTemplate
         });
 
         p.setType({
             name: 'col',
             class: FormElement,
             template: colTpl,
+            childTpl: fieldInnerTemplate,
             defaultOptions: {
                 size: 12
             }
+        });
+
+        p.setType({
+            name: 'tabs',
+            class: FormElement,
+            template: `<uib-tabset active="active"></uib-tabset>`,
+            childTpl: tabFieldsTpl
         });
 
         // formset
         p.setType({
             name: 'formset',
             class: Formset,
-            template: formsetTemplate
+            template: formsetTemplate,
+            childTpl: fieldInnerTemplate
         });
     }
 }
+
+function fieldInnerTemplate (formName) {
+    return `<lux-field ng-repeat="child in field.children" field="child" luxform="luxform" form="${formName}"></lux-field>`;
+}
+
+function tabFieldsTpl (formName) {
+    return `<uib-tab ng-repeat="child in field.children" index="$index" heading="{{ child.label || child.name }}">
+<br>
+<lux-field field="child" luxform="luxform" form="${formName}"></lux-field>
+</uib-tab>`;
+}
+
 
 function inputTpl(field) {
     return `<input class="form-control" 
@@ -230,7 +256,6 @@ function fieldsetTpl (field) {
 }
 
 const rowTpl = `<div class="row"></div>`;
-
 
 function colTpl(field) {
     return `<div class="col-sm-${field.size}"></div>`;

@@ -20,18 +20,6 @@ from lux.core import app_attribute, ModelNotAvailable, Query as BaseQuery
 from lux.extensions import rest
 
 
-def is_same_model(model1, model2):
-    if type(model1) == type(model2):
-        if model1 is not None:
-            for pk in class_mapper(type(model1)).primary_key:
-                if getattr(model1, pk.name) != getattr(model2, pk.name):
-                    return False
-            return True
-        else:
-            return True
-    return False
-
-
 RestField = rest.RestField
 is_rel_field = rest.is_rel_field
 
@@ -286,7 +274,7 @@ class RestModel(rest.RestModel):
                         value = rel_model.instance(value).obj
                         if current_value is not None:
                             current_value = rel_model.instance(current_value)
-                            if is_same_model(value, current_value.obj):
+                            if self.same_instance(value, current_value):
                                 return
                     setattr(obj, name, value)
             except Exception as exc:    # pragma    nocover
@@ -327,6 +315,17 @@ class RestModel(rest.RestModel):
             return [c for c in columns if c in dbc]
 
     # INTERNALS
+    def _same_instance(self, obj1, obj2):
+        if type(obj1) == type(obj2):
+            if obj1 is not None:
+                for pk in class_mapper(type(obj1)).primary_key:
+                    if getattr(obj1, pk.name) != getattr(obj2, pk.name):
+                        return False
+                return True
+            else:
+                return True
+        return False
+
     def _load_fields_map(self, rest):
         '''List of column definitions
         '''

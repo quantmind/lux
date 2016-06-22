@@ -78,6 +78,9 @@ export default function ($controllerProvider, $provide, $compileProvider, $filte
     function _require(libNames, modules, onLoad) {
         var $lux = this;
 
+        // Increase waiting flag during bootstrap
+        $lux.bootstrap();
+
         if (arguments.length === 2) {
             onLoad = modules;
             modules = null;
@@ -101,6 +104,8 @@ export default function ($controllerProvider, $provide, $compileProvider, $filte
             if (modules) loadModule(modules);
 
             onLoad.apply(null, arguments);
+
+            $lux.bootstrapDone();
 
             $lux.$timeout(consumeQueue);
         }

@@ -172,7 +172,23 @@ class LuxModel(ABC):
     def get_instance_value(self, instance, name):
         return getattr(instance.obj, name, None)
 
+    def value_from_data(self, name, data, instance=None):
+        if name in data:
+            return data[name]
+        elif instance is not None:
+            return self.get_instance_value(self.instance(instance), name)
+
+    def same_instance(self, instance1, instance2):
+        if instance1 is not None and instance2 is not None:
+            obj1 = self.instance(instance1).obj
+            obj2 = self.instance(instance2).obj
+            return self._same_instance(obj1, obj2)
+        return False
+
     # INTERNALS
+    def _same_instance(self, obj1, obj2):
+        return obj1 == obj2
+
     def register(self, app):
         self._app = app
 

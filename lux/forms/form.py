@@ -142,11 +142,12 @@ class Form(metaclass=FormType):
 
         Includes any subforms. It returns a coroutine.'''
         if not self._check_unwind(False):
-            self._unwind(exclude_missing)
+            self._unwind_fields(exclude_missing)
             if not bool(self._errors):
                 for fset in self.form_sets.values():
                     if not fset.is_valid(exclude_missing):
                         break
+            self._unwind_form()
         return not bool(self._errors) if self.is_bound else False
 
     @property
@@ -192,12 +193,7 @@ class Form(metaclass=FormType):
         fields for example. It doesn't need to return anything, just throw a
         :class:`.ValidationError` in case the cleaning is not successful.
         '''
-        if self.request:
-            model = self.request.app.models.get(self.model)
-            if model:
-                model.validate_fields(self.request,
-                                      self.previous_state,
-                                      self.cleaned_data)
+        pass
 
     def add_error_message(self, message, field=None):
         '''Add an error message to the form'''
@@ -251,7 +247,7 @@ class Form(metaclass=FormType):
                 return False
         return True
 
-    def _unwind(self, exclude_missing=False):
+    def _unwind_fields(self, exclude_missing=False):
         self._exclude_missing = exclude_missing
         is_bound = self.is_bound
         if is_bound:
@@ -259,11 +255,19 @@ class Form(metaclass=FormType):
             self._errors = {}
         rawdata = self.rawdata
         self._clean_fields(rawdata)
-        if is_bound:
+
+    def _unwind_form(self):
+        if self.is_bound:
             if not self._errors:
-                # Invoke the form clean method.
-                # Useful for cross fields checking
                 try:
+                    if self.request:
+                        model = self.request.app.models.get(self.model)
+                        if model:
+                            model.validate_fields(self.request,
+                                                  self.previous_state,
+                                                  self.cleaned_data)
+                    # Invoke the form clean method.
+                    # Useful for cross fields checking
                     self.clean()
                 except ValidationError as err:
                     self.add_error_message(err)

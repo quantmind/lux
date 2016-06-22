@@ -88,3 +88,20 @@ export function fieldDirectives (field) {
         }
     });
 }
+
+
+export function makeChildren(field, children) {
+    const cfg = field.$cfg;
+    let value;
+
+    _.forEach(children, (child, index) => {
+        child.index = index;
+        child.wrapper = field.$fieldType.childWrapper;
+        _.forEach(cfg.inheritAttributes, (attr) => {
+            value = field[attr];
+            if (_.isDefined(value) && _.isUndefined(child[attr]))
+                child[attr] = value;
+        });
+    });
+    return children;
+}
