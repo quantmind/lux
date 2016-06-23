@@ -39,6 +39,8 @@ class RouterMap(Sitemap):
         cms = request.app.cms
         for item in cms.all(request, self.name):
             html_url = request.absolute_uri(item['path'])
+            if html_url.endswith('/index'):
+                html_url = html_url[:-6]
             yield AttributeDictionary(loc=html_url,
                                       lastmod=item.get('modified'),
                                       priority=item.get('priority', 1))
@@ -71,8 +73,8 @@ class CMS(core.CMS):
             if not page.name:
                 raise Http404
             path = page.urlargs.get('path') or 'index'
-            path = api_path(request, 'contents', path, group=page.name)
-            data = request.api.get(path).json()
+            target = api_path(request, 'contents', path, group=page.name)
+            data = request.api.get(target).json()
             inner_html = self.data_to_html(page, data, inner_html)
         except Http404:
             if request.cache.cms_router:

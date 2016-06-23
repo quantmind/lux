@@ -93,6 +93,9 @@ class ContentQuery(Query):
                 if filename.endswith(ext):
                     slug = filename[:-len(ext)]
                     src = os.path.join(directory, filename)
+                    bits = slug.split('/')
+                    if len(bits) > 1 and bits[-1] == 'index':
+                        slug = '/'.join(bits[:-1])
                     meta = default_meta.copy()
                     meta.update({'path': '/%s/%s' % (group, slug),
                                  'group': group,

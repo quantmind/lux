@@ -19,7 +19,12 @@ def check_permission_dict(group, action):
 class ContentCRUD(CRUD):
     """REST API view for content
     """
-    @route('_links', method=('get', 'head', 'options'), position=-1)
+    @route('<path:slug>',
+           method=('get', 'post', 'put', 'delete', 'head', 'options'))
+    def read_update_delete(self, request):
+        return super().read_update_delete(request)
+
+    @route('_links', method=('get', 'head', 'options'))
     def _links(self, request):
         if request.method == 'OPTIONS':
             request.app.fire('on_preflight', request, methods=GET_HEAD)
