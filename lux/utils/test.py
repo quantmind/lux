@@ -98,13 +98,14 @@ def test_app(test, config_file=None, config_params=True, argv=None,
 
 
 @green
-def create_users(app, items):
-    items.insert(0, {
-        "username": "testuser",
-        "password": "testuser",
-        "superuser": True,
-        "active": True
-    })
+def create_users(app, items, index=None):
+    if not index:
+        items.insert(0, {
+            "username": "testuser",
+            "password": "testuser",
+            "superuser": True,
+            "active": True
+        })
     logger.debug('Creating %d users', len(items))
     request = app.wsgi_request()
     auth = app.auth_backend
@@ -117,53 +118,53 @@ def create_users(app, items):
     return len(processed)
 
 
-async def load_fixtures(app, path=None):
+async def load_fixtures(app, path=None, api_url=None):
     if not hasattr(app.auth_backend, 'create_user'):
         return
 
     fpath = path if path else os.path.join(app.meta.path, 'fixtures')
+    total = 0
 
-    fixtures = OrderedDict()
-    if os.path.isdir(fpath):
-        for filename in os.listdir(fpath):
-            if filename.endswith('.json'):
-                with open(os.path.join(fpath, filename), 'r') as file:
-                    fixtures.update(_json.load(file,
-                                               object_pairs_hook=OrderedDict))
-    else:
+    if not os.path.isdir(fpath):
         if path:
             logger.error('Could not find %s path for fixtures', path)
-        return 0
+        return total
 
-    total = await create_users(app, fixtures.pop('users', []))
+    api_url = api_url or ''
+    if api_url.endswith('/'):
+        api_url = api_url[:-1]
 
     client = TestClient(app)
     test = TestCase()
     test_tokens = {}
 
-    for model, items in fixtures.items():
-        logger.info('Creating %d fixtures for "%s"', len(items), model)
-        for params in items:
-            url = params.pop('api_url', '/%s' % model)
-            user = params.pop('api_user', 'testuser')
-            if user not in test_tokens:
-                request = await client.post('/authorizations',
-                                            json=dict(username=user,
-                                                      password=user))
-                token = test.json(request.response, 201)['token']
-                test_tokens[user] = token
-            test_token = test_tokens[user]
-            request = await client.post(url,
-                                        json=params,
-                                        token=test_token)
-            data = test.json(request.response)
-            code = request.response.status_code
-            if code > 201:
-                raise AssertionError('%s api call got %d: %s' %
-                                     (url, code, data))
-            total += 1
+    for index, fixtures in enumerate(_read_fixtures(fpath)):
 
-    logger.info('Created %s objects from %d models', total, 1 + len(fixtures))
+        total += await create_users(app, fixtures.pop('users', []), index)
+
+        for model, items in fixtures.items():
+            logger.info('Creating %d fixtures for "%s"', len(items), model)
+            for params in items:
+                user = params.pop('api_user', 'testuser')
+                url = '%s%s' % (api_url, params.pop('api_url', '/%s' % model))
+                if user not in test_tokens:
+                    request = await client.post('%s/authorizations' % api_url,
+                                                json=dict(username=user,
+                                                          password=user))
+                    token = test.json(request.response, 201)['token']
+                    test_tokens[user] = token
+                test_token = test_tokens[user]
+                request = await client.post(url,
+                                            json=params,
+                                            token=test_token)
+                data = test.json(request.response)
+                code = request.response.status_code
+                if code > 201:
+                    raise AssertionError('%s api call got %d: %s' %
+                                         (url, code, data))
+                total += 1
+
+    logger.info('Created %s objects', total)
 
 
 class TestClient:
@@ -525,11 +526,13 @@ class AppTestCase(unittest.TestCase, TestMixin):
 
     @classmethod
     def populatedb(cls):
-        return load_fixtures(cls.app)
+        return load_fixtures(cls.app, api_url=cls.api_url())
 
     @classmethod
-    def api_url(cls, path):
-        return remove_double_slash('%s/%s' % (cls.app.config['API_URL'], path))
+    def api_url(cls, path=None):
+        if 'API_URL' in cls.app.config:
+            url = cls.app.config['API_URL']
+            return remove_double_slash('%s/%s' % (url, path)) if path else url
 
     @classmethod
     def clone_app(cls):
@@ -566,12 +569,12 @@ class AppTestCase(unittest.TestCase, TestMixin):
                            "password": credentials}
 
         # Get new token
-        request = await self.client.post('/authorizations',
+        request = await self.client.post(self.api_url('authorizations'),
                                          json=credentials)
-        user = request.cache.user
-        self.assertFalse(user.is_authenticated())
         data = self.json(request.response, 201)
         self.assertTrue('token' in data)
+        user = request.cache.user
+        self.assertFalse(user.is_authenticated())
         return data['token']
 
 
@@ -689,3 +692,12 @@ class TestApp:
         odm = self.odm
         if odm:
             odm.close()
+
+
+# INTERNALS
+
+def _read_fixtures(fpath):
+    for filename in os.listdir(fpath):
+        if filename.endswith('.json'):
+            with open(os.path.join(fpath, filename), 'r') as file:
+                yield _json.load(file, object_pairs_hook=OrderedDict)

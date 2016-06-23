@@ -1,3 +1,7 @@
+from lux.core import Parameter
+from lux.extensions import base
+
+
 CONTENT_GROUPS = {
     'site': {
         'path': '*',
@@ -12,3 +16,10 @@ CONTENT_GROUPS = {
         'body_template': 'foo.html'
     }
 }
+
+
+class Extension(base.Extension):
+    _config = [
+        Parameter('RANDOM_P', False),
+        Parameter('USE_ETAGS', False, ''),
+    ]

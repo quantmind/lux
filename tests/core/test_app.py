@@ -50,3 +50,9 @@ class CommandTests(test.TestCase):
         self.assertEqual(page.path, 'bla')
         self.assertEqual(page.body_template, 'bla.html')
         self.assertIsInstance(app.cms.sitemap(), list)
+
+    def test_extension_override(self):
+        app = self.application()
+        self.assertTrue('RANDOM_P' in app.config)
+        self.assertTrue('USE_ETAGS' in app.config)
+        self.assertTrue('SERVE_STATIC_FILES' in app.config)

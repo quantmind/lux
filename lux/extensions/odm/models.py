@@ -45,8 +45,9 @@ class Query(BaseQuery):
         except (DataError, NoResultFound):
             raise Http404
         except MultipleResultsFound:
-            self.logger.error('Multiple result found for model %s. '
-                              'Returning the first' % self.name)
+            self.logger.error('%s - Multiple result found for model %s. '
+                              'Returning the first' %
+                              (self.request.first_line, self.name))
             one = query.first()
         return self.model.instance(one, self.fields)
 

@@ -130,12 +130,11 @@ class ExtensionType(type):
                 config.extend(cfg)
         version = attrs.pop('version', None)
         abstract = attrs.pop('abstract', False)
-        cfg = attrs.get('_config')
+        cfg = attrs.get('_config') if abstract else attrs.pop('_config', None)
         if cfg:
             config.extend(cfg)
         klass = super().__new__(cls, name, bases, attrs)
         if not abstract:
-            klass._config = None
             meta = getattr(klass, 'meta', None)
             module = getmodule(klass)
             if isinstance(meta, ExtensionMeta):

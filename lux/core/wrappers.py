@@ -33,6 +33,11 @@ class WsgiRequest(wsgi.WsgiRequest):
     """Extend pulsar :class:`~pulsar.apps.wsgi.wrappers.WsgiRequest` with
     additional methods and attributes.
     """
+    @cached_property
+    def first_line(self):
+        env = self.environ
+        return '%s %s' % (env['REQUEST_METHOD'], self.absolute_uri())
+
     @property
     def app(self):
         """The :class:`.Application` running the website.
