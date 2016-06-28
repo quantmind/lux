@@ -54,7 +54,8 @@ from .form import FormType, Form, BoundField, create_form
 from .serialise import (Fieldset, Submit, Layout, Row, Col, Formsets,
                         as_serialised_field)
 from .options import Options, OptionGroup
-from .views import WebFormRouter, get_form, get_form_layout, get_form_class
+from .views import (WebFormRouter, ActionsRouter, get_form, get_form_layout,
+                    get_form_class)
 from ..core.wrappers import formreg
 
 __all__ = [
@@ -92,6 +93,7 @@ __all__ = [
     'Col',
     'as_serialised_field',
     'WebFormRouter',
+    'ActionsRouter',
     'get_form',
     'get_form_class',
     'get_form_layout',

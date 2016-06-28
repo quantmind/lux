@@ -43,11 +43,9 @@ class UserModelBase(RestModel):
 
 class UserModel(UserModelBase):
 
-    def create_model(self, request, data, session=None):
+    def create_model(self, request, instance, data, session=None):
         '''Override create model so that it calls the backend method
         '''
-        if session:
-            data['odm_session'] = session
         return request.cache.auth_backend.create_user(request, **data)
 
 
@@ -70,7 +68,7 @@ class TokenModel(RestModel):
             ]
         )
 
-    def create_model(self, request, data, session=None):
+    def create_model(self, request, instance, data, session=None):
         user = ensure_authenticated(request)
         auth = request.cache.auth_backend
         data['session'] = False

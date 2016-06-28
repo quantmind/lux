@@ -1,19 +1,19 @@
 from lux.core import LuxExtension
-from lux.extensions.rest.views.browser import MultiWebFormRouter
+from lux.forms import ActionsRouter
 
 
 class Extension(LuxExtension):
 
     def middleware(self, app):
-        return [DummyMultiWebFormRouter('settings'),
-                TestMultiWebFormRouter('testing')]
+        return [DummyTestActionsRouter('settings'),
+                TestActionsRouter('testing')]
 
 
-class DummyMultiWebFormRouter(MultiWebFormRouter):
+class DummyTestActionsRouter(ActionsRouter):
     templates_path = 'cdhsgcvhdcvd'
 
 
-class TestMultiWebFormRouter(MultiWebFormRouter):
+class TestActionsRouter(ActionsRouter):
     default_action = 'bla'
     templates_path = 'test-multi'
     action_config = {}
