@@ -51,6 +51,25 @@ class UserModel(UserModelBase):
 
 class RequestUserModel(UserModelBase):
 
+    @classmethod
+    def create(cls, exclude=None, hidden=None, fields=None):
+        exclude = exclude or ('password',)
+        fields = list(fields or ())
+        fields.extend((
+            full_name,
+            RestField('groups', model='groups')
+        ))
+        return cls(
+            'user',
+            updateform='user-profile',
+            url='user',
+            id_field='username',
+            repr_field='full_name',
+            exclude=exclude,
+            hidden=hidden,
+            fields=fields
+        )
+
     def get_instance(self, request, *args, **kwargs):
         return self.instance(ensure_authenticated(request))
 
@@ -97,7 +116,6 @@ class GroupForm(forms.Form):
 
 
 class UserForm(forms.Form):
-    id = forms.HiddenField(required=False)
     username = forms.SlugField()
     email = forms.EmailField(required=False)
     first_name = forms.CharField(required=False)
@@ -141,6 +159,8 @@ formreg['user'] = Layout(
     Fieldset(all=True),
     Submit('Update user')
 )
+
+formreg['user-profile'] = formreg['user']
 
 
 formreg['create-group'] = Layout(

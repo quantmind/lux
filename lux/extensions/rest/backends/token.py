@@ -46,18 +46,21 @@ class TokenBackend(TokenBackendMixin,
         """
         auth_type, key = auth.split(None, 1)
         auth_type = auth_type.lower()
-        if auth_type == 'bearer':
-            try:
+        user = None
+        try:
+            if auth_type == 'bearer':
                 token = self.decode_token(request, key)
-            except Http401:
-                raise
-            except Exception:
-                request.app.logger.exception('Could not load user')
-            else:
                 request.cache.session = token
                 user = self.get_user(request, **token)
-                if user:
-                    request.cache.user = user
+            elif auth_type == 'oauth':
+                user = self.get_user(request, oauth=key)
+        except Http401:
+            raise
+        except Exception:
+            request.app.logger.exception('Could not load user')
+        else:
+            if user:
+                request.cache.user = user
 
     def response(self, environ, response):
         if CORS not in response.headers:

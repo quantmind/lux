@@ -126,7 +126,7 @@ class Extension(MultiAuthBackend):
                   'List/tuple of default policy documents'),
         #
         # REST API SETTINGS
-        Parameter('API_URL', None, 'URL FOR THE REST API'),
+        Parameter('API_URL', None, 'URL FOR THE REST API', True),
         Parameter('API_SEARCH_KEY', 'q',
                   'The query key for full text search'),
         Parameter('API_OFFSET_KEY', 'offset', ''),
@@ -146,11 +146,9 @@ class Extension(MultiAuthBackend):
         Parameter('PAGINATION', 'lux.extensions.rest.Pagination',
                   'Pagination class'),
         Parameter('POST_LOGIN_URL', '',
-                  'URL users are redirected to after logging in',
-                  jscontext=True),
+                  'URL users are redirected to after logging in', True),
         Parameter('POST_LOGOUT_URL', None,
-                  'URL users are redirected to after logged out',
-                  jscontext=True),
+                  'URL users are redirected to after logged out', True),
         Parameter('WEB_SITE_URL', None,
                   'Url of the website registering to'),
         Parameter('LOGIN_URL', '/login', 'Url to login page', True),

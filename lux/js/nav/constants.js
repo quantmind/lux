@@ -92,10 +92,17 @@ export const sidebarTemplate = `<lux-navbar class="sidebar-navbar" ng-class="{'s
         <i ng-if="link.subitems" class="fa fa-angle-left pull-right"></i>
     </a>
     <ul class="treeview-menu" ng-class="{active:links.activeSubmenu(link)}" ng-if="link.subitems">
-        <li ng-repeat="link in link.subitems" ng-class="{active:links.activeLink(link)}" ng-include="'subnav'">
+        <li ng-repeat="link in link.subitems" ng-class="{active: links.activeLink(link)}" ng-include="'subnav'">
         </li>
     </ul>
 </script>`;
+
+
+export const luxTabsTemplate = `<ul class="nav nav-tabs">
+<li ng-repeat='link in tabs' ng-class="{active: links.activeLink(link)}">
+<a href="{{ link.url }}">{{ link.label }}</a>
+</li>
+</ul>`;
 
 
 export const navbarDefaults = {

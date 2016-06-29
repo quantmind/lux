@@ -44,6 +44,24 @@ export function navbar ($window, luxNavbarTemplate, luxNavbar) {
 }
 
 // @ngInject
+export function tabs ($lux, luxTabsTemplate, luxLink) {
+    //
+    return {
+        template: luxTabsTemplate,
+        restrict: 'AE',
+        scope: {
+            tabs: '='
+        },
+        controller: TabsCtrl
+    };
+    //
+    // @ngInject
+    function TabsCtrl ($scope) {
+        $scope.links = luxLink;
+    }
+}
+
+// @ngInject
 export function sidebar ($window, $compile, $timeout, luxSidebarTemplate, luxSidebar) {
     //
     let inner;

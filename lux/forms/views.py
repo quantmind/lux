@@ -1,5 +1,6 @@
 from pulsar import Http404, HttpRedirect
 from pulsar.apps.wsgi import route, Json
+from pulsar.utils.slugify import slugify
 
 from .form import Form
 from .serialise import Layout
@@ -91,9 +92,6 @@ class ActionsRouter(HtmlRouter):
     templates_path = ''
     action_config = {}
 
-    def action_context(self, request, context, target):
-        pass
-
     def get(self, request):
         action = request.urlargs.get('action')
         if not action:
@@ -105,35 +103,55 @@ class ActionsRouter(HtmlRouter):
         else:
             return super().get(request)
 
-    @route('<action>', position=1000000)
+    @route('<path:action>')
     def action(self, request):
-        app = request.app
         action = request.urlargs['action']
-        template = app.template('%s/%s.html' % (self.templates_path, action))
-        if not template:
+        if action not in self.action_config:
             raise Http404
-        request.cache.template = template
         return self.get(request)
 
+    def get_form_layout(self, request, form):
+        form = get_form_layout(request, form)
+        if not form:
+            raise Http404
+        return form
+
     def get_html(self, request):
-        template = request.cache.template
-        if not template:
+        action = request.urlargs.get('action')
+        cfg = self.action_config.get(action)
+        if cfg is None:     # pragma    nocover
             raise Http404
 
-        action = request.urlargs.get('action')
-        context = dict(self.action_config.get(action) or ())
-        model = context.get('model') or self.model
-        target = model.get_target(request,
-                                  path=context.get('path'),
-                                  get=context.get('getdata'))
+        context = {}
+        model = request.app.models.get(cfg.get('model') or self.model)
+        if model:
+            target = model.get_target(request, **cfg.get('target', {}))
+            context['target'] = target
 
-        if 'form' in context:
-            form = get_form_layout(request, context['form'])
+        if 'form' in cfg:
+            form = get_form_layout(request, cfg['form'])
             if not form:
                 raise Http404
-            html = form(request).as_form(action=target)
+            html = form(request).as_form(action=context.get('target'))
             context['html_main'] = html.render(request)
+        elif 'html' in cfg:
+            context['html_main'] = cfg['html']
 
-        self.action_context(request, context, target)
-        rnd = request.app.template_engine()
-        return rnd(template, context)
+        doc = request.html_document
+        doc.jscontext['navigation'] = self.sitemap(request)
+
+        attr = 'action_%s' % slugify(action, '_')
+        if hasattr(self, attr):
+            return getattr(self, attr)(request, context)
+        else:
+            return context.get('html_main', '')
+
+    def sitemap(self, request):
+        sitemap = []
+        for url, action in self.action_config.items():
+            link = action.get('link')
+            if link:
+                href = self.full_route.path
+                sitemap.append({'url': '%s/%s' % (href, url),
+                                'label': link})
+        return sitemap

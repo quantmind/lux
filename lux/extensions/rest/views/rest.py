@@ -87,7 +87,8 @@ class RestRouter(JsonRouter):
         model = self.get_model(request)
         return model.get_instance(request, *filters, **params)
 
-    def get_list(self, request, *filters, check_permission=None, **params):
+    def get_list(self, request, *filters, model=None,
+                 check_permission=None, **params):
         """Return a list of models satisfying user queries
 
         :param request: WSGI request with url data
@@ -104,7 +105,7 @@ class RestRouter(JsonRouter):
         params['search'] = params.pop(cfg['API_SEARCH_KEY'], None)
         params['check_permission'] = check_permission
         filters, params = self.filters_params(request, *filters, **params)
-        model = self.get_model(request)
+        model = model or self.get_model(request)
         return model.query_data(request, *filters, **params)
 
     def options(self, request):

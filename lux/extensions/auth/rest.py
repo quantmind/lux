@@ -58,8 +58,7 @@ class UserRest(RestRouter):
 
     Read, Updates and other update-type operations only
     """
-    model = RequestUserModel.create(url='user',
-                                    hidden=('id', 'oauth'),
+    model = RequestUserModel.create(hidden=('id', 'oauth'),
                                     exclude=('password', 'type'))
 
     def get(self, request):

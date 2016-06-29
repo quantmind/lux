@@ -181,8 +181,8 @@ class TestClient:
 
     def request_start_response(self, method, path, HTTP_ACCEPT=None,
                                headers=None, data=None, json=None,
-                               content_type=None, token=None, cookie=None,
-                               params=None, **extra):
+                               content_type=None, token=None, oauth=None,
+                               cookie=None, params=None, **extra):
         method = method.upper()
         extra['REQUEST_METHOD'] = method.upper()
         path = path or '/'
@@ -199,6 +199,8 @@ class TestClient:
             heads.append(('content-type', content_type))
         if token:
             heads.append(('Authorization', 'Bearer %s' % token))
+        elif oauth:
+            heads.append(('Authorization', 'OAuth %s' % oauth))
         if cookie:
             heads.append(('Cookie', cookie))
 

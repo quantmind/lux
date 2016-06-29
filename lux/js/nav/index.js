@@ -12,6 +12,7 @@ luxNavModule.constant('luxSidebarTemplate', constants.sidebarTemplate);
 luxNavModule.constant('luxNavBarDefaults', constants.navbarDefaults);
 luxNavModule.constant('luxSidebarDefaults', constants.sidebarDefaults);
 luxNavModule.constant('luxDropdownTemplate', constants.luxDropdownTemplate);
+luxNavModule.constant('luxTabsTemplate', constants.luxTabsTemplate);
 
 
 // Factories
@@ -26,3 +27,4 @@ import * as directives from './directives';
 luxNavModule.directive('luxLink', directives.link);
 luxNavModule.directive('luxNavbar', directives.navbar);
 luxNavModule.directive('luxSidebar', directives.sidebar);
+luxNavModule.directive('luxTabs', directives.tabs);

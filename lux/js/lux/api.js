@@ -42,6 +42,7 @@ export class Lux {
         this.$apis = map();
         this.$lazyBootstrap = 0;
         this.router = luxRouter(this);
+        this.$rootScope.$lux = this;
     }
 
     // Return the csrf key-value token to post in forms
