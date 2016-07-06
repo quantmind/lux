@@ -45,7 +45,9 @@ def specification(request):
         raise Http404
 
     rnd = app.template_engine()
-    spec = rnd(spec, {})
+    context = dict(request.config)
+    context['version'] = request.app.get_version()
+    spec = rnd(spec, context)
     spec = yaml.safe_load(spec)
     # validate_spec(spec)
     return spec
