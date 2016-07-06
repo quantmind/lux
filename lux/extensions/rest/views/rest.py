@@ -104,8 +104,9 @@ class RestRouter(JsonRouter):
         params['offset'] = params.pop(cfg['API_OFFSET_KEY'], None)
         params['search'] = params.pop(cfg['API_SEARCH_KEY'], None)
         params['check_permission'] = check_permission
-        filters, params = self.filters_params(request, *filters, **params)
-        model = model or self.get_model(request)
+        if model is None:
+            filters, params = self.filters_params(request, *filters, **params)
+            model = self.get_model(request)
         return model.query_data(request, *filters, **params)
 
     def options(self, request):

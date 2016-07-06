@@ -1,6 +1,6 @@
 from lux.utils import test
 from lux import forms
-from lux.forms import Layout, Fieldset, Submit
+from lux.forms import Layout, Fieldset, Inline, Submit
 
 
 class SimpleForm(forms.Form):
@@ -32,13 +32,6 @@ class FormsetTests(test.TestCase):
         self.assertFalse(form.form_sets['users'].is_bound)
         self.assertEqual(form.form_sets['users'].related_form, form)
 
-    def __test_bound_empty(self):
-        form = EmailUserForm(data={'body': 'Hello!'})
-        self.assertTrue(form.is_bound)
-        self.assertFalse(form.is_valid())
-        form = EmailUserForm(data={'body': 'Hello!', 'users_num_forms': 0})
-        self.assertTrue(form.is_valid())
-
     def test_serialise(self):
         layout = Layout(EmailUserForm,
                         Fieldset(all=True),
@@ -53,6 +46,7 @@ class FormsetTests(test.TestCase):
     def test_serialise_empty_fields(self):
         layout = Layout(EmptyFieldsForm,
                         Fieldset(all=True),
+                        Inline('users'),
                         Submit('update'))
         self.assertEqual(len(layout.children), 3)
         form = layout()
