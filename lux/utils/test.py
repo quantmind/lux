@@ -114,7 +114,8 @@ def create_users(app, items, index=None):
         if params.get('username') in processed:
             continue
         user = auth.create_user(request, **params)
-        processed.add(user.username)
+        if user:
+            processed.add(user.username)
     return len(processed)
 
 
@@ -518,6 +519,7 @@ class AppTestCase(unittest.TestCase, TestMixin):
                         if url == orig_url:
                             cls.datastore[key] = new_url
         cls.app.config['DATASTORE'] = cls.datastore
+        cls.app.params['DATASTORE'] = cls.datastore
         odm.table_create()
 
     @classmethod

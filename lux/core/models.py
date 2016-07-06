@@ -240,6 +240,9 @@ class ModelInstance:
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    def __getattr__(self, name):
+        return self.get(name)
+
     @classmethod
     def create(cls, model, obj, fields=None):
         if hasattr(obj, '_model_instance'):

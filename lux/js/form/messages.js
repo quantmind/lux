@@ -6,15 +6,15 @@ export default function (ngModule) {
         var p = luxFormConfigProvider;
 
         p.error('minlength', function (field) {
-            return `${field.$name} length should be more than ${field.$viewValue.length}`;
+            return `${field.label} length should be more than ${field.ngField.$viewValue.length}`;
         });
 
         p.error('maxlength', function (field) {
-            return `${field.$name} length should be less than ${field.$viewValue.length}`;
+            return `${field.label} length should be less than ${field.ngField.$viewValue.length}`;
         });
 
         p.error('required', function (field) {
-            return `${field.$name} is required`;
+            return `${field.label} is required`;
         });
 
     }

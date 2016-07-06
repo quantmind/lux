@@ -426,10 +426,35 @@ class DictModel(RestModel):
                     self.app.logger.error('Related model "%s" not found in %s',
                                           field.model, self)
                     return
-            instance.obj[name] = value
+            value = self.clean_up_value(value)
+            if value is None:
+                instance.obj.pop(name, None)
+            else:
+                instance.obj[name] = value
 
     def get_instance_value(self, instance, name):
         return instance.obj.get(name)
+
+    def clean_up_value(self, value):
+        if value is None:
+            return value
+        if isinstance(value, list):
+            values = []
+            for v in value:
+                v = self.clean_up_value(v)
+                if v:
+                    values.append(v)
+            return values or None
+        elif isinstance(value, dict):
+            for k, v in tuple(value.items()):
+                v = self.clean_up_value(v)
+                if not v:
+                    value.pop(k)
+                else:
+                    value[k] = v
+            return value or None
+        else:
+            return value
 
 
 def get_offset(offset=None):

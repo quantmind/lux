@@ -3,14 +3,16 @@ from pulsar.apps.wsgi import route, Json
 from pulsar.utils.slugify import slugify
 
 from .form import Form
-from .serialise import Layout
-from ..core.wrappers import HtmlRouter
+from .serialise import Layout, Fieldset, Submit
+from ..core.wrappers import HtmlRouter, formreg
 
 
 def get_form(request, form):
     """Get a form class from registry
     """
     registry = request.app.forms
+    if registry is None:
+        registry = formreg
     if (hasattr(form, '__call__') and
             not isinstance(form, Layout) and
             not isinstance(form, type(Form))):
@@ -36,8 +38,14 @@ def get_form_layout(request, form):
     """Get a form layout from the app registry
     """
     form = get_form(request, form)
-    if form:
-        return form if isinstance(form, Layout) else Layout(form)
+    if isinstance(form, Layout):
+        return form
+    elif form:
+        return Layout(
+            form,
+            Fieldset(all=True),
+            Submit('submit')
+        )
 
 
 class WebFormRouter(HtmlRouter):

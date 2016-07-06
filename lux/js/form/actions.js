@@ -39,9 +39,10 @@ function submitForm (e) {
     info.setSubmited();
     //
     // Invalid?
-    if (form.$invalid)
+    if (form.$invalid) {
         form.$setDirty();
-        // return this.$lux.messages.info('Invalid form - not submitting');
+        return info.addMessages('Please correct form errors', 'error');
+    }
 
     var ct = (info.enctype || '').split(';')[0],
         method = info.method || 'post',

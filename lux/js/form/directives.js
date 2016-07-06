@@ -44,7 +44,6 @@ export function luxField () {
     };
 }
 
-
 // @ngInject
 function FieldController ($scope, $lux, luxFormConfig) {
     $scope.$lux = $lux;

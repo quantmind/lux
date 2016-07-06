@@ -116,7 +116,7 @@ export default function () {
             errors[name] = message;
             return this;
         } else {
-            var obj = name.$error,
+            var obj = name.ngField.$error,
                 errorHandler;
             for (let key in obj) {
                 if (obj.hasOwnProperty(key) && obj[key]) {

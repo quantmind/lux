@@ -5,10 +5,9 @@ from pulsar.utils.slugify import slugify
 
 
 def attributes(form, attrs):
-    request = form.request if form else None
     for k, v in attrs.items():
         if hasattr(v, '__call__'):
-            v = v(request)
+            v = v(form)
         if v is not None:
             yield k.replace('_', '-'), v
 
@@ -17,15 +16,24 @@ def serialised_fields(form_class, fields, missings):
     '''Utility function for checking fields in layouts'''
     for field in fields:
         if field in missings:
-            field = form_class.base_fields.get(field)
-            if field:
+            if field in form_class.base_fields:
+                field = form_class.base_fields[field]
                 missings.remove(field.name)
                 yield field
+            elif field in form_class.inlines:
+                yield from element_fields(Inline(field), form_class, missings)
         elif isinstance(field, FormElement):
-            field.setup(form_class, missings)
-            yield field
+            yield from element_fields(field, form_class, missings)
         else:
             raise ValueError(field)
+
+
+def element_fields(field, form_class, missings):
+    field.setup(form_class, missings)
+    if field.type:
+        yield field
+    else:
+        yield from field.children
 
 
 def as_serialised_field(field, form):
@@ -82,6 +90,7 @@ class Fieldset(FormElement):
         self.children = children
         self.attrs = attrs
         self.all = attrs.pop('all', self.all)
+        self.empty = attrs.pop('empty', False)
         if 'showLabels' in attrs:   # legacy
             attrs['labelSrOnly'] = not attrs.pop('showLabels')
         if not self.attrs.get('type') and self.type:
@@ -96,17 +105,18 @@ class Fieldset(FormElement):
     __str__ = __repr__
 
     def as_dict(self, form=None):
-        if self.children:
+        if self.children or self.empty:
             field = dict(attributes(form, self.attrs))
-            children = []
-            for child in self.children:
-                child = as_serialised_field(child, form)
-                if isinstance(child, list):
-                    children.extend(child)
-                elif child:
-                    children.append(child)
+            if self.children:
+                children = []
+                for child in self.children:
+                    child = as_serialised_field(child, form)
+                    if isinstance(child, list):
+                        children.extend(child)
+                    elif child:
+                        children.append(child)
 
-            field['children'] = children
+                field['children'] = children
             return field
 
     def setup(self, form_class, missings):
@@ -116,28 +126,6 @@ class Fieldset(FormElement):
             children = missings[:]
         for field in serialised_fields(form_class, children, missings):
             self.children.append(field)
-
-
-class Formsets(Fieldset):
-    type = None
-
-    def as_dict(self, form=None):
-        return [as_serialised_field(c, form) for c in self.children]
-
-    def setup(self, form_class, missings):
-        children = self.children
-        self.children = []
-        if self.all:
-            children = list(form_class.inlines)
-        for name in children:
-            inline = form_class.inlines.get(name)
-            if inline:
-                inline = Layout(inline.form_class,
-                                name=name,
-                                type='formset',
-                                labelSrOnly=True,
-                                default_element=None)
-                self.children.append(inline)
 
 
 class Row(Fieldset):
@@ -160,6 +148,34 @@ class Col(Fieldset):
         super().__init__(*children, **kwargs)
 
 
+class Inline(Fieldset):
+    """Inline form
+    """
+    def __init__(self, inline, *children, **kwargs):
+        self.inline = inline
+        super().__init__(*children, **kwargs)
+
+    def setup(self, form_class, missings):
+        inline = form_class.inlines.get(self.inline)
+        children = self.children
+        if inline:
+            self.type = None
+            if self.inline in missings:
+                missings.remove(self.inline)
+            self.children = []
+            attrs = self.attrs.copy()
+            attrs['name'] = inline.name
+            attrs['type'] = 'form'
+            if not inline.single:
+                attrs['type'] = 'formset'
+                attrs['labelSrOnly'] = True
+            inline = Layout(inline.form_class,
+                            Fieldset(all=True, type=None),
+                            *children,
+                            **attrs)
+            self.children.append(inline)
+
+
 class Layout(Fieldset):
     type = 'form'
     form_class = None
@@ -179,6 +195,7 @@ class Layout(Fieldset):
     def setup(self, instance_type):
         self.form_class = instance_type
         missings = list(self.form_class.base_fields)
+        missings.extend(self.form_class.inlines)
         children = self.children
         self.children = []
         for field in serialised_fields(self.form_class, children, missings):

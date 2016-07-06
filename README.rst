@@ -54,7 +54,7 @@ Python Requirements
 * pulsar_ asychronous engine
 * greenlet_ implicit asynchronous code
 * jinja2_ template engine
-* pytz_ timzones and countries
+* pytz_ timezones and countries
 * dateutil_ date utilities
 
 **Soft requirements**

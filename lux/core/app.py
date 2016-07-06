@@ -357,8 +357,8 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
 
     def wsgi_handler(self):
         if self._handler is None:
-            self._handler = _build_handler(self)
             self.forms = formreg.copy()
+            self._handler = _build_handler(self)
             self.fire('on_loaded')
         return self._handler
 

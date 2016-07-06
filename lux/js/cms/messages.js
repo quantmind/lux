@@ -14,6 +14,16 @@ export default function () {
     function pushMessage(scope, message) {
         message.type = message.level;
         if (message.type === 'error') message.type = 'danger';
+        if (message.rel) {
+            var index;
+            var found = scope.messages.find((m) => {
+                return m.rel === message.rel;
+            });
+            if (found) {
+                index = scope.messages.indexOf(found);
+                scope.messages.splice(index, 1);
+            }
+        }
         scope.messages.push(message);
     }
 

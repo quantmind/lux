@@ -1,6 +1,7 @@
 import json
 from datetime import date, datetime
 from enum import Enum
+from uuid import UUID
 
 import pytz
 
@@ -216,6 +217,8 @@ class RestModel(rest.RestModel):
                     data = data.isoformat()
                 elif isinstance(data, Enum):
                     data = data.name
+                elif isinstance(data, UUID):
+                    data = data.hex
                 elif is_rel_field(field):
                     if exclude_related:
                         continue

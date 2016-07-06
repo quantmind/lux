@@ -43,7 +43,8 @@ def has_permission(request, policies, resource, action):
         return False
 
     context = {
-        "user": request.cache.user
+        'user': request.cache.user,
+        'env': request.cache
     }
 
     while namespaces:
@@ -74,8 +75,9 @@ def has_permission(request, policies, resource, action):
                         continue
                 except Exception as exc:
                     request.logger.error(
-                        'Could not evaluate policy condition "%s": %s',
-                        condition, exc)
+                        'Could not evaluate policy condition "%s" '
+                        'on resource "%s": %s',
+                        condition, resource, exc)
                     return False
 
             if not match and not effect:

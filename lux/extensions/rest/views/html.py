@@ -36,7 +36,7 @@ formreg['login'] = Layout(
     Submit('Login'),
     showLabels=False,
     resultHandler='redirect',
-    redirectTo=lambda r: r.config['POST_LOGIN_URL']
+    redirectTo=lambda form: form.request.config['POST_LOGIN_URL']
 )
 
 

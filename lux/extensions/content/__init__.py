@@ -7,6 +7,7 @@ from .rest import ContentCRUD
 from .cms import CMS, LazyContext
 from .github import GithubHook, EventHandler, PullRepo
 from .files import content_location
+from .views import TemplateRouter
 
 
 __all__ = ['Content',
@@ -24,12 +25,20 @@ class Extension(LuxExtension):
                   'Directory where content repo is located'),
         Parameter('CONTENT_LOCATION', None,
                   'Directory where content is located inside CONTENT_REPO'),
+        Parameter('HTML_TEMPLATES_URL', 'templates',
+                  'Base url for serving HTML templates when the default '
+                  'content type is text/html. Set to None if not needed.'),
         Parameter('GITHUB_HOOK_KEY', None,
                   'Secret key for github webhook')
     ]
 
     def on_config(self, app):
         self.require(app, 'lux.extensions.rest')
+
+    def middleware(self, app):
+        url = app.config['HTML_TEMPLATES_URL']
+        if app.config['DEFAULT_CONTENT_TYPE'] == 'text/html' and url:
+            yield TemplateRouter(url, serve_only=('html', 'txt'))
 
     def on_loaded(self, app):
         if app.config['DEFAULT_CONTENT_TYPE'] == 'text/html':

@@ -29,6 +29,7 @@ from .views.actions import (AuthenticationError, check_username, login,
                             logout, user_permissions)
 from .views.rest import RestRoot, RestRouter, MetadataMixin, CRUD, Rest404
 from .views.auth import Authorization
+from .views.spec import Specification
 from .pagination import Pagination, GithubPagination
 from .forms import RelationshipField, UniqueField
 from .query import Query, RestSession
@@ -127,6 +128,8 @@ class Extension(MultiAuthBackend):
         #
         # REST API SETTINGS
         Parameter('API_URL', None, 'URL FOR THE REST API', True),
+        Parameter('API_DOCS_YAML_URL', None,
+                  'URL FOR THE REST API TYAML DOCS'),
         Parameter('API_SEARCH_KEY', 'q',
                   'The query key for full text search'),
         Parameter('API_OFFSET_KEY', 'offset', ''),
@@ -237,6 +240,9 @@ class Extension(MultiAuthBackend):
             return middleware
 
         self.api_router = RestRoot(url)
+
+        if app.config['API_DOCS_YAML_URL']:
+            self.api_router.add_child(Specification('spec.json'))
 
         # Add routers and models
         routes = OrderedDict()

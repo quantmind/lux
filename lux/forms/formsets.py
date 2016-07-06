@@ -1,9 +1,9 @@
-from pulsar.utils.html import nicename
-
 from copy import copy
 
+from .fields import BaseField
 
-class FormSet:
+
+class FormSet(BaseField):
     '''A factory class for nested forms. Instances
     of this class are declared in the body of a :class:`.Form`.
 
@@ -12,21 +12,20 @@ class FormSet:
     :param related_name: The field attribute name in ``model`` which
         specifies the related model.
     '''
-    creation_counter = 0
-
     def __init__(self,
                  form_class,
                  related_name=None,
                  model=None,
-                 label=None):
-        self.name = None
+                 name=None,
+                 single=False,
+                 **kwargs):
+        super().__init__(name, **kwargs)
         self.form_class = form_class
         self.related_name = related_name
         self.creation_counter = FormSet.creation_counter
         self.related_form = None
         self.model = model
-        self.label = label
-        FormSet.creation_counter += 1
+        self.single = single
 
     def __call__(self, related_form):
         fset = copy(self)
@@ -37,12 +36,9 @@ class FormSet:
     def is_bound(self):
         return self.related_form.is_bound if self.related_form else False
 
-    def metadata(self):
-        return {
-            'name': self.name,
-            'displayName': self.label or nicename(self.name),
-            'type': 'array'
-        }
+    @property
+    def type(self):
+        return 'object' if self.single else 'array'
 
     def is_valid(self, exclude_missing=False):
         self._unwind()
@@ -63,7 +59,14 @@ class FormSet:
             if not data:
                 return
 
-            if not isinstance(data, list):
+            if self.single:
+                if not isinstance(data, dict):
+                    related_form.add_error_message(
+                        'expecting an object for %s' % self.name,
+                        self.name)
+                    return
+                data = [data]
+            elif not isinstance(data, list):
                 related_form.add_error_message(
                     'expecting a list for %s' % self.name,
                     self.name)
@@ -88,4 +91,5 @@ class FormSet:
             else:
                 for entry, _ in forms:
                     self._forms.append(entry)
-                related_form.cleaned_data[self.name] = self._forms
+                data = self._forms[0] if self.single else self._forms
+                related_form.cleaned_data[self.name] = data

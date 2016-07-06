@@ -31,6 +31,10 @@ export class FormElement extends LuxComponent {
             fieldType = this.$fieldType,
             template, w;
 
+        // TODO: we have switched off the replace flag for now has it does
+        //  not work as it should, events are not propagated as they should
+        replace = false;
+
         if (!fieldType) return;
 
         template = fieldType.template || '';
@@ -40,9 +44,11 @@ export class FormElement extends LuxComponent {
 
         var children = field.children;
 
-        if (_.isArray(children) && children.length && fieldType.childTpl) {
-            field.children = makeChildren(field, children);
-            var inner = fieldType.childTpl($scope.luxform.name);
+        if (_.isArray(children) && fieldType.childTpl) {
+            field.children = [];
+            field.$setChildren(children);
+            var name = this.$luxform === this ? this.name : 'form',
+                inner = fieldType.childTpl(name);
             if (template) {
                 var tel = _.element(template);
                 tel.append(inner);
@@ -71,7 +77,7 @@ export class FormElement extends LuxComponent {
         var compileHtml = fieldType.compile || compile;
         compileHtml(this.$lux, $el, $scope);
         this.$timeout(() => {
-            field.$postCompile($element);
+            field.$postCompile($scope, $element);
         });
     }
 
@@ -80,6 +86,20 @@ export class FormElement extends LuxComponent {
     $click ($event) {
         var action = this.$cfg.getAction(this.click || this.type);
         if (action) action.call(this, $event);
+    }
+
+    $setChildren (children) {
+        var fieldType = this.$fieldType;
+        if (fieldType.childTpl)
+            children = makeChildren(this, children);
+        if (this.children) {
+            this.children.splice(0);
+            var ch = this.children;
+            children.forEach((c) => {
+                ch.push(c);
+            });
+        } else
+            this.children = children;
     }
 
     get $last () {
@@ -97,10 +117,13 @@ export class Form extends FormElement {
 
     constructor ($scope, $lux, $cfg, field, type, tag) {
         super($scope, $lux, $cfg, field, type, tag);
-        this.fields = {};
-        $scope.luxform = this.$luxform = this;
+        if (!this.children) this.$setChildren([]);
+        //
         // Check if this is a nested form
-        var formset = $scope.formset;
+        var luxform = $scope.luxform,
+            formset = $scope.formset;
+
+        $scope.luxform = this.$luxform = this;
 
         if (formset) {
             this.$formset = formset;
@@ -108,6 +131,18 @@ export class Form extends FormElement {
             this.tag = 'ng-form';
             this.name = formset.name + '_' + formset.counter();
             this.classes = 'form-inline formset';
+        } else if (luxform) {
+            this.tag = 'ng-form';
+            if (!this.name)
+                this.name = 'form' + $lux.id();
+            if (this.flat)
+                this.model = luxform.model;
+            else {
+                luxform.model[this.name] = {};
+                this.model = luxform.model[this.name];
+            }
+            luxform.$setField(this);
+            this.classes = 'lux-form';
         } else {
             this.model = {};
             this.tag = 'form';
@@ -145,14 +180,21 @@ export class Form extends FormElement {
         super.addMessages(formMessage, level);
     }
 
+    $setChildren (children) {
+        this.fields = {};
+        super.$setChildren(children);
+    }
+
     $compile ($scope, $element) {
         super.$compile($scope, $element, false);
     }
 
-    $postCompile ($element) {
+    $postCompile ($scope, $element) {
         this.$htmlElement = $element[0];
+        this.$form = $scope[this.name];
 
-        var form = this.$form,
+        var base = this,
+            form = this.$form,
             action = this.action,
             model = this.model;
 
@@ -165,11 +207,16 @@ export class Form extends FormElement {
         function success (response) {
             form.$pending = false;
             var data = response.data,
-                current;
+                current,
+                field;
             _.forEach(data, function (value, key) {
                 if (value !== null) {
                     current = model[key];
-                    if (_.isArray(current)) mergeArray(current, value);
+                    field = base.fields[key];
+                    if (_.isArray(current))
+                        mergeArray(current, value);
+                    else if (field && field.type == 'form' && current)
+                        _.extend(current, value);
                     else model[key] = value.id || value;
                 }
             });
@@ -205,7 +252,7 @@ export class Field extends FormElement {
     get error () {
         var ngField = this.ngField;
         if (ngField && this.displayStatus && ngField.$invalid) {
-            var msg = this.$cfg.error(ngField);
+            var msg = this.$cfg.error(this);
             return this.server_error || msg || 'Not a valid value';
         }
     }
@@ -238,7 +285,8 @@ export class Field extends FormElement {
     }
 
     get ngField () {
-        return this.$form[this.name];
+        if (this.$form)
+            return this.$form[this.name];
     }
 }
 

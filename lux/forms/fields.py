@@ -13,13 +13,59 @@ from pulsar.utils.slugify import slugify
 
 from .options import Options
 from .errors import ValidationError
+from .serialise import attributes
 
 
 standard_validation_error = 'Not a valid value'
 standard_required_error = 'required'
 
 
-class Field:
+class BaseField:
+    creation_counter = 0
+    attrs = None
+
+    def __init__(self, name, label=None, attrs=None, **kwargs):
+        self.name = name
+        self.label = label
+        self.attrs = dict(self.attrs or ())
+        self.attrs.update(attrs or ())
+        self.handle_params(**kwargs)
+        self.creation_counter = BaseField.creation_counter
+        BaseField.creation_counter += 1
+
+    def __repr__(self):
+        return self.name if self.name else self.__class__.__name__
+
+    __str__ = __repr__
+
+    @property
+    def type(self):
+        return self.attrs.get('type')
+
+    def html_name(self, prefix=None):
+        return '%s%s' % (prefix, self.name) if prefix else self.name
+
+    def handle_params(self, **kwargs):
+        '''Called during initialization for handling extra key-valued
+        parameters.'''
+        self.attrs.update(kwargs)
+
+    def getattrs(self, form=None):
+        '''Dictionary of attributes for the Html element.
+        '''
+        attrs = dict(attributes(form, self.attrs))
+        attrs['label'] = self.label or nicename(self.name)
+        return attrs
+
+    def metadata(self):
+        return {
+            'name': self.name,
+            'displayName': self.label or nicename(self.name),
+            'type': self.type
+        }
+
+
+class Field(BaseField):
     '''Base class for all fields.
     Field are specified as attribute of a form, for example::
 
@@ -66,38 +112,18 @@ class Field:
     creation_counter = 0
     required_error = standard_required_error
     validation_error = standard_validation_error
-    attrs = None
 
     def __init__(self, name=None, required=None, default=None,
                  validation_error=None, help_text=None,
-                 label=None, attrs=None, validator=None,
-                 required_error=None,
-                 **kwargs):
-        self.name = name
+                 validator=None, required_error=None, **kwargs):
+        super().__init__(name, **kwargs)
         self.default = default if default is not None else self.default
         self.required = required if required is not None else self.required
         self.validation_error = validation_error or self.validation_error
         self.required_error = required_error or self.required_error
         self.help_text = escape(help_text)
-        self.label = label
         self.validator = validator
-        self.attrs = dict(self.attrs or ())
-        self.attrs.update(attrs or ())
         self.attrs['required'] = self.required
-        self.handle_params(**kwargs)
-        # Increase the creation counter, and save our local copy.
-        self.creation_counter = Field.creation_counter
-        Field.creation_counter += 1
-
-    def __repr__(self):
-        return self.name if self.name else self.__class__.__name__
-
-    __str__ = __repr__
-
-    def handle_params(self, **kwargs):
-        '''Called during initialization for handling extra key-valued
-        parameters.'''
-        self.attrs.update(kwargs)
 
     def value_from_datadict(self, data, files, key):
         """Given a dictionary of data this field name, returns the value
@@ -146,26 +172,15 @@ class Field:
     def to_json(self, value):
         return value
 
-    def html_name(self, prefix=None):
-        return '%s%s' % (prefix, self.name) if prefix else self.name
-
     def getattrs(self, form=None):
         '''Dictionary of attributes for the Html element.
         '''
-        attrs = dict(((slugify(k), v) for k, v in self.attrs.items()))
-        attrs['label'] = self.label or nicename(self.name)
+        attrs = super().getattrs(form)
         if self.required_error != standard_required_error:
             attrs['required_error'] = self.required_error
         if self.validation_error != standard_validation_error:
             attrs['validation_error'] = self.validation_error
         return attrs
-
-    def metadata(self):
-        return {
-            'name': self.name,
-            'displayName': self.label or nicename(self.name),
-            'type': self.attrs.get('type')
-        }
 
     def copy(self):
         return self.__copy__()
@@ -194,7 +209,6 @@ class CharField(Field):
         Default ``None``.
     """
     attrs = {'type': 'text', 'maxlength': 50}
-    default = ''
 
     def _clean(self, value, instance):
         try:
@@ -212,7 +226,6 @@ class CharField(Field):
 
 class TextField(Field):
     attrs = {'type': 'textarea'}
-    default = ''
 
     def _clean(self, value, instance):
         try:

@@ -119,6 +119,13 @@ export default function (ngModule) {
             childTpl: fieldInnerTemplate
         });
 
+        // nested lux form
+        p.setType({
+            name: 'lux-form',
+            template: luxFormTemplate,
+            class: FormElement
+        });
+
         // Fieldset
         p.setType({
             name: 'fieldset',
@@ -287,8 +294,16 @@ ng-hide="${field.hide}"
 
 
 function uiSelectTpl(field) {
+    let multiple = '',
+        selected = '$select.selected';
+
+    if (field.multiple) {
+        multiple = ' multiple';
+        selected = '$item';
+    }
+
     return `<div class="input-group">
-<ui-select
+<ui-select ${multiple}
 id="${field.id}"
 name="${field.name}"
 ${field.directives}
@@ -298,7 +313,7 @@ ng-required="${field.required}"
 ng-readonly="${field.readonly}"
 ng-disabled="${field.disabled}"
 allow-clear>
-<ui-select-match placeholder="${field.placeholder}">{{$select.selected.label}}</ui-select-match>
+<ui-select-match placeholder="${field.placeholder}">{{${selected}.label}}</ui-select-match>
 <ui-select-choices repeat="item.value as item in field.options | filter: $select.search">
   <div ng-bind-html="item.label | highlight: $select.search"></div>
   <small ng-if="item.description" ng-bind-html="item.description | highlight: $select.search"></small>
@@ -316,6 +331,10 @@ function formTemplate (form) {
 </${form.tag}>`;
 }
 
+
+function luxFormTemplate (field) {
+    return `<lux-form luxform="luxform" json="${field.json}"></lux-form>`;
+}
 
 function formsetTemplate () {
     return `<lux-formset ng-repeat="model in formset.value"

@@ -15,6 +15,10 @@ def get_form_meta_data(bases, attrs):
             # field name priority is the name in the instance
             obj.name = obj.name or name
             fields.append((obj.name, attrs.pop(name)))
+        elif isinstance(obj, FormType):
+            obj = FormSet(attrs.pop(name), single=True)
+            obj.name = name
+            inlines.append((name, obj))
         elif isinstance(obj, FormSet):
             obj.name = name
             inlines.append((name, attrs.pop(name)))
