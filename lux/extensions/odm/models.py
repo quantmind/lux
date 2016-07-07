@@ -31,6 +31,7 @@ class Query(BaseQuery):
         super().__init__(model, session)
         self.request = session.request
         self.sql_query = session.query(model.db_model())
+        self.joins = set()
 
     @property
     def logger(self):
@@ -107,12 +108,27 @@ class Query(BaseQuery):
         if not isinstance(field.field, str):
             return
 
-        field = getattr(self.model.db_model(), field.field, None)
-        if not field:
-            return
+        query = self.sql_query
+
+        if field.model:
+            field_model = self.app.models.get(field.model)
+            if not field_model:
+                return
+            db_model = field_model.db_model()
+            field = getattr(db_model, field.name, None)
+            if field is None:
+                field = getattr(db_model, field_model.id_field, None)
+            if not field:
+                return
+            if field_model.identifier not in self.joins:
+                self.joins.add(field_model.identifier)
+                query = query.join(db_model)
+        else:
+            field = getattr(self.model.db_model(), field.name, None)
+            if not field:
+                return
 
         multiple = isinstance(value, (list, tuple))
-        query = self.sql_query
 
         if value == '':
             value = None

@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from copy import copy
+from uuid import UUID
 
 from pulsar import ImproperlyConfigured
 
@@ -170,7 +171,10 @@ class LuxModel(ABC):
         setattr(instance.obj, name, value)
 
     def get_instance_value(self, instance, name):
-        return getattr(instance.obj, name, None)
+        val = getattr(instance.obj, name, None)
+        if isinstance(val, UUID):
+            return val.hex
+        return val
 
     def value_from_data(self, name, data, instance=None):
         if name in data:

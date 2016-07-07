@@ -158,7 +158,8 @@ class LuxCommand(ConsoleParser):
         '''Write ``stream`` to the :attr:`stderr`.'''
         self.app.write_err(stream)
 
-    def pulsar_app(self, argv, application=None, log_name='lux', **kw):
+    def pulsar_app(self, argv, application=None, callable=None,
+                   log_name='lux', **kw):
         app = self.app
         if application is None:
             application = LuxApp
@@ -167,7 +168,7 @@ class LuxCommand(ConsoleParser):
             cfg = application.cfg.copy()
         for setting in self.option_list:
             cfg.settings[setting.name] = setting.copy()
-        return application(callable=app.callable,
+        return application(callable=callable or app.callable,
                            description=self.help,
                            epilog=app.config.get('EPILOG'),
                            cfg=cfg,
