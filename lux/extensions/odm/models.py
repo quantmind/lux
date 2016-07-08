@@ -105,9 +105,6 @@ class Query(BaseQuery):
         """
         app = self.app
         odm = app.odm()
-        if not isinstance(field.field, str):
-            return
-
         query = self.sql_query
 
         if field.model:
@@ -123,10 +120,13 @@ class Query(BaseQuery):
             if field_model.identifier not in self.joins:
                 self.joins.add(field_model.identifier)
                 query = query.join(db_model)
-        else:
+        elif isinstance(field.field, str):
             field = getattr(self.model.db_model(), field.name, None)
-            if not field:
-                return
+        else:
+            field = None
+
+        if not field:
+            return
 
         multiple = isinstance(value, (list, tuple))
 

@@ -54,7 +54,7 @@ class RelationshipField(MultipleMixin, forms.Field):
         try:
             request = bfield.request
             model = request.app.models.get(self.model)
-            kwargs = {model.id_field: value}
+            kwargs = model.model_url_params(request, value)
             if self.multiple:
                 return model.get_list(request, **kwargs)
             else:
@@ -96,12 +96,14 @@ class UniqueField:
         request = bfield.request
         app = request.app
         model = app.models.get(model)
+
         if not model:
             model = self.model or bfield.form.model
             raise forms.ValidationError('No model %s' % model)
 
+        kwargs = model.model_url_params(request, value)
         try:
-            instance = model.get_instance(request, **{field: value})
+            instance = model.get_instance(request, **kwargs)
         except Http404:
             pass
         else:

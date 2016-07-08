@@ -99,6 +99,18 @@ def is_rel_field(col):
 class RestClient:
     """Implements the method accessed by clients of lux Rest API
     """
+    def model_url_params(self, request, idvalue=None, **kwargs):
+        params = {}
+        if idvalue:
+            params[self.id_field] = idvalue
+        for name in self.api_route.variables:
+            if name not in kwargs:
+                value = request.urlargs.get(name)
+            else:
+                value = kwargs[name]
+            params[name] = value
+        return params
+
     def api_url(self, request, instance=None, **kwargs):
         if self.api_route:
             base = request.config.get('API_URL')

@@ -17,7 +17,7 @@ class Command(LuxCommand):
     option_list = (nominify,)
     wsgiApp = wsgi.WSGIServer
 
-    def __call__(self, argv, start=True):
+    def __call__(self, argv, start=True, get_app=False):
         app = self.app
         server = self.pulsar_app(argv, self.wsgiApp)
         if server.cfg.nominify:
@@ -30,4 +30,4 @@ class Command(LuxCommand):
             app.on_start(server)
             arbiter = pulsar.arbiter()
             arbiter.start()
-        return server
+        return app if get_app else server
