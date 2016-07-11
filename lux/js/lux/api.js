@@ -15,10 +15,10 @@ let luxId = 0;
 
 export function windowContext ($window) {
     var doc = $window.document,
-        context = $window.lux,
         name = _.element(doc.querySelector('meta[name=csrf-param]')).attr('content'),
         token = _.element(doc.querySelector('meta[name=csrf-token]')).attr('content'),
-        user = _.element(doc.querySelector('meta[name=user-token]')).attr('content');
+        user = _.element(doc.querySelector('meta[name=user-token]')).attr('content'),
+        context = _.element(doc.querySelector('meta[name=html-context]')).attr('content');
 
     if (_.isString(context)) context = decodeJWToken(context);
     if (!_.isObject(context)) context = {};

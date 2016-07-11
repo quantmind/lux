@@ -698,8 +698,7 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
 
         if doc.jscontext:
             encoded = encode_json(doc.jscontext, self.config['SECRET_KEY'])
-            doc.head.embedded_js.insert(
-                0, 'var lux = "%s";\n' % encoded)
+            doc.head.add_meta(name="html-context", content=encoded)
 
         return doc.http_response(request)
 

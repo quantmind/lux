@@ -159,7 +159,7 @@ class ActionsRouter(HtmlRouter):
         for url, action in self.action_config.items():
             link = action.get('link')
             if link:
-                href = self.full_route.path
+                href = self.full_route.url(**request.urlargs)
                 sitemap.append({'url': '%s/%s' % (href, url),
                                 'label': link})
         return sitemap

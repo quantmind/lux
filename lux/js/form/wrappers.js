@@ -31,8 +31,11 @@ ng-if="field.label">
 }
 
 
-function statusTpl (inner) {
-    return `<div class="form-group" ng-class="{'has-error': field.error, 'has-success': field.success}">
+function statusTpl (inner, field) {
+    return `<div
+class="form-group"
+ng-class="{'has-error': field.error, 'has-success': field.success}"
+ng-hide="${field.hide}">
 ${inner}
 <p ng-if="field.error" class="text-danger error-block">{{ field.error }}</p>
 </div>`;

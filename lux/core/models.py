@@ -146,13 +146,17 @@ class LuxModel(ABC):
             return query.all()
 
     # CRUD API
-    def create_model(self, request, instance, data, session=None):
+    def create_model(self, request, instance=None, data=None, session=None):
         """Create a model ``instance``"""
+        if instance is None:
+            instance = self.instance()
         return self.update_model(request, instance, data,
                                  session=session, flush=True)
 
     def update_model(self, request, instance, data, session=None, flush=False):
         """Update a model ``instance``"""
+        if data is None:
+            data = {}
         with self.session(request, session=session) as session:
             session.add(instance.obj)
             for name, value in data.items():

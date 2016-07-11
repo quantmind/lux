@@ -11,6 +11,8 @@ from pulsar.utils.importer import module_attribute
 from pulsar.utils.string import to_string
 from pulsar import ImproperlyConfigured
 
+from .component import AppComponent
+
 
 logger = logging.getLogger('lux.cache')
 
@@ -32,11 +34,11 @@ def cached(*args, **kw):
         return CacheObject(*args, **kw)
 
 
-class Cache:
+class Cache(AppComponent):
     """Cache base class
     """
     def __init__(self, app, name, url):
-        self.app = app
+        super().__init__(app)
         self.name = name
         self.url = url
         self._wait = app.green_pool.wait if app.green_pool else passthrough

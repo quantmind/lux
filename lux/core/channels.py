@@ -9,15 +9,17 @@ from pulsar.apps.data import create_store, PubSubClient
 from pulsar.apps.ds import redis_to_py_pattern
 from pulsar.utils.importer import module_attribute
 
+from .component import AppComponent, AppProxy
+
 
 regex_callbacks = namedtuple('regex_callbacks', 'regex callbacks')
 
 
-class Channels(PubSubClient):
+class Channels(AppComponent, PubSubClient):
     """Manage channels for publish/subscribe
     """
     def __init__(self, app):
-        self.app = app
+        super().__init__(app)
         self.channels = {}
         self.protocol = module_attribute(app.config['PUBSUB_PROTOCOL'])()
         self._pubsub = None
@@ -132,7 +134,7 @@ class Channels(PubSubClient):
         return pubsub
 
 
-class Channel:
+class Channel(AppProxy):
     """Lux Channel
 
     .. attribute:: channels
