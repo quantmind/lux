@@ -101,7 +101,7 @@ class RestClient:
     """
     def model_url_params(self, request, idvalue=None, **kwargs):
         params = {}
-        if idvalue:
+        if idvalue is not None:
             params[self.id_field] = idvalue
         for name in self.api_route.variables:
             if name not in kwargs:

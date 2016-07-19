@@ -181,7 +181,7 @@ class CRUD(MetadataMixin, RestRouter):
                                                   session=session)
                 except Exception as exc:
                     request.logger.exception('Could not create model')
-                    form.add_error_message(str(exc))
+                    form.add_error_message('Could not create model')
                     data = form.tojson()
                 else:
                     data = model.tojson(request, instance)
@@ -227,11 +227,17 @@ class CRUD(MetadataMixin, RestRouter):
                 form = form_class(request, data=data, files=files,
                                   previous_state=instance, model=model)
                 if form.is_valid(exclude_missing=True):
-                    instance = model.update_model(request,
-                                                  instance,
-                                                  form.cleaned_data,
-                                                  session=session)
-                    data = model.tojson(request, instance)
+                    try:
+                        instance = model.update_model(request,
+                                                      instance,
+                                                      form.cleaned_data,
+                                                      session=session)
+                    except Exception:
+                        request.logger.exception('Could not update model')
+                        form.add_error_message('Could not update model')
+                        data = form.tojson()
+                    else:
+                        data = model.tojson(request, instance)
                 else:
                     data = form.tojson()
 

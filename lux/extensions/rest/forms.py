@@ -84,10 +84,10 @@ class UniqueField:
         self.validation_error = validation_error or self.validation_error
 
     def __call__(self, value, bfield):
-        model = self.model or bfield.form.model
-        # field = self.field or bfield.name
+        model_name = self.model or bfield.form.model
+        field = self.field or bfield.name
         previous_state = bfield.form.previous_state
-        if not model:
+        if not model_name:
             raise forms.ValidationError('No model')
 
         if not value and self.nullable:
@@ -95,13 +95,13 @@ class UniqueField:
 
         request = bfield.request
         app = request.app
-        model = app.models.get(model)
+        model = app.models.get(model_name)
 
         if not model:
-            model = self.model or bfield.form.model
-            raise forms.ValidationError('No model %s' % model)
+            raise forms.ValidationError('No model %s' % model_name)
 
-        kwargs = model.model_url_params(request, value)
+        kwargs = {field: value}
+        kwargs.update(model.model_url_params(request))
         try:
             instance = model.get_instance(request, **kwargs)
         except Http404:

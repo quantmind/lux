@@ -30,4 +30,6 @@ class Command(LuxCommand):
             app.on_start(server)
             arbiter = pulsar.arbiter()
             arbiter.start()
-        return app if get_app else server
+
+        if not start:
+            return app if get_app else server

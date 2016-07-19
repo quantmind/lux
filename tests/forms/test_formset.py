@@ -34,7 +34,8 @@ class FormsetTests(test.TestCase):
 
     def test_serialise(self):
         layout = Layout(EmailUserForm,
-                        Fieldset(all=True),
+                        Fieldset('body'),
+                        Inline('users'),
                         Submit('update'))
         self.assertEqual(len(layout.children), 3)
         form = layout()
@@ -45,15 +46,16 @@ class FormsetTests(test.TestCase):
 
     def test_serialise_empty_fields(self):
         layout = Layout(EmptyFieldsForm,
-                        Fieldset(all=True),
+                        Fieldset(empty=True, name='foo'),
                         Inline('users'),
                         Submit('update'))
         self.assertEqual(len(layout.children), 3)
         form = layout()
         data = form.as_dict()
         children = data['children']
-        self.assertEqual(len(children), 2)
-        self.assertEqual(children[0]['name'], 'users')
+        self.assertEqual(len(children), 3)
+        self.assertEqual(children[0]['name'], 'foo')
+        self.assertEqual(children[1]['name'], 'users')
 
     def test_validation_empty_formset(self):
         form = EmailUserForm(data={'body': 'fooo'})

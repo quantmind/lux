@@ -46,7 +46,7 @@ class CommandTests(test.TestCase):
         command = self.fetch_command('serve')
         self.assertTrue(command.help)
         self.assertEqual(len(command.option_list), 1)
-        app = command(['-b', ':9000'], start=False)
+        app = command(['-b', ':9000'], start=False, get_app=True)
         self.assertEqual(app, command.app)
 
     def test_command_write_err(self):
