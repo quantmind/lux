@@ -85,7 +85,7 @@ class UniqueField:
 
     def __call__(self, value, bfield):
         model = self.model or bfield.form.model
-        field = self.field or bfield.name
+        # field = self.field or bfield.name
         previous_state = bfield.form.previous_state
         if not model:
             raise forms.ValidationError('No model')

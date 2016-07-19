@@ -23,8 +23,8 @@ class LockTests:
 
     @test.green
     def test_lock(self):
-        lock = self.cache.lock('test')
-        other_lock = self.cache.lock('test2')
+        lock = self.cache.lock('test', blocking=None)
+        other_lock = self.cache.lock('test2', blocking=None)
         self.assertTrue(lock.acquire())
         self.assertFalse(lock.acquire())
         self.assertTrue(other_lock.acquire())
@@ -50,7 +50,7 @@ class LockTests:
         lock.release()
 
 
-class TestDymmuCache(test.TestCase, LockTests):
+class TestDummyCache(test.TestCase, LockTests):
 
     def setUp(self):
         self.app = self.application()
