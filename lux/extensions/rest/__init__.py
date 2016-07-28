@@ -129,7 +129,7 @@ class Extension(MultiAuthBackend):
         # REST API SETTINGS
         Parameter('API_URL', None, 'URL FOR THE REST API', True),
         Parameter('API_DOCS_YAML_URL', None,
-                  'URL FOR THE REST API TYAML DOCS'),
+                  'URL FOR THE REST API YAML DOCS'),
         Parameter('API_SEARCH_KEY', 'q',
                   'The query key for full text search'),
         Parameter('API_OFFSET_KEY', 'offset', ''),

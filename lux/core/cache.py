@@ -141,7 +141,9 @@ class RedisCache(Cache):
             self.client = redis.StrictRedis.from_url(url)
 
     def set(self, key, value, timeout=None):
-        self._wait(self.client.set(key, value, timeout))
+        if timeout is not None:
+            timeout = int(1000*timeout)
+        self._wait(self.client.set(key, value, px=timeout))
 
     def get(self, key):
         return self._wait(self.client.get(key))
