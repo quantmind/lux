@@ -228,6 +228,6 @@ class SessionBackend:
 def session_backend(app):
     url = app.config['SESSION_BACKEND']
     if not url:
-        raise ImproperlyConfigured('Session backend required by '
+        raise ImproperlyConfigured('SESSION_BACKEND required by '
                                    'authentication backend')
     return SessionBackend(create_cache(app, url))

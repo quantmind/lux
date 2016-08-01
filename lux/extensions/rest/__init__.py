@@ -17,7 +17,7 @@ from collections import OrderedDict
 
 from pulsar import ImproperlyConfigured
 from pulsar.utils.importer import module_attribute
-from pulsar.utils.httpurl import is_absolute_uri, remove_double_slash
+from pulsar.utils.httpurl import remove_double_slash
 from pulsar.apps.wsgi import wsgi_request
 
 from lux.core import Parameter
@@ -202,8 +202,11 @@ class Extension(MultiAuthBackend):
         self.backends = []
         url = app.config['API_URL']
         if url is not None:
-            if not is_absolute_uri(url):
+            app.api_url = urlparse(app.config['API_URL'])
+            if not app.api_url.netloc:
                 app.config['API_URL'] = str(RestRoot(url))
+        else:
+            app.api_url = None
 
         if not app.config['PASSWORD_SECRET_KEY']:
             app.config['PASSWORD_SECRET_KEY'] = app.config['SECRET_KEY']
@@ -236,7 +239,7 @@ class Extension(MultiAuthBackend):
         for backend in self.backends:
             middleware.extend(backend.middleware(app) or ())
 
-        if url is None:
+        if not app.api_url:
             return middleware
 
         self.api_router = RestRoot(url)
@@ -266,7 +269,7 @@ class Extension(MultiAuthBackend):
         app.api = app.providers['Api'](app)
 
         # routers not required when this is a client app
-        if is_absolute_uri(app.config['API_URL']):
+        if app.api_url.netloc:
             return middleware
         #
         # Create paginator

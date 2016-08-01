@@ -147,6 +147,10 @@ class App(LazyWsgi):
     def command(self):
         return self._argv[0] if self._argv else None
 
+    @property
+    def argv(self):
+        return self._argv
+
     def setup(self, environ=None, on_config=None, handler=True):
         app = Application(self)
         if on_config:
