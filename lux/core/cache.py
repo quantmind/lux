@@ -249,13 +249,14 @@ class CacheObject:
             except Exception:
                 timeout = config['CACHE_DEFAULT_TIMEOUT']
 
-            try:
-                app.cache_server.set_json(key, result, timeout=timeout)
-            except TypeError:
-                app.logger.exception('Could not convert to JSON a value to '
-                                     'set in cache')
-            except Exception:
-                app.logger.exception('Critical exception while setting cache')
+            if timeout:
+                try:
+                    app.cache_server.set_json(key, result, timeout=timeout)
+                except TypeError:
+                    app.logger.exception(
+                        'Could not convert to JSON a value to set in cache')
+                except Exception:
+                    app.logger.exception('Critical error while setting cache')
 
         return result
 

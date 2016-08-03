@@ -85,6 +85,9 @@ class Extension(LuxExtension):
                     data = instance._json
                 app.channels.publish(model.identifier, event, data)
 
+    def on_close(self, app):
+        app.odm().close()
+
 
 class Odm:
     """Lazy object data mapper container

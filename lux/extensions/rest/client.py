@@ -9,8 +9,8 @@ from lux.core import raise_http_error
 class ApiClient:
     '''A python client for a Lux REST Api
 
-    The api can be remote (API_URL is an absolute url) or local (served by
-    the same application this client is part of)
+    Thist class is the default Api client provider.
+    To override set the ``app.providers['Api']`` to a different class.
     '''
     def __init__(self, app):
         self.app = app

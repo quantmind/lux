@@ -167,6 +167,9 @@ class App(LazyWsgi):
         app._argv = copy(app._argv)
         return app
 
+    def close(self):
+        return self.handler().close()
+
 
 def Http(app):
     params = app.config['HTTP_CLIENT_PARAMETERS'] or {}
@@ -485,6 +488,10 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
             else:
                 links.append(link)
         return doc
+
+    def close(self):
+        self.green_pool.shutdown(False)
+        self.fire('on_close')
 
     @lazyproperty
     def commands(self):
