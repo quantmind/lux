@@ -414,7 +414,8 @@ class RestModel(LuxModel, RestClient):
 
 
 class DictModel(RestModel):
-
+    """A rest model with instances given by python dictionaries
+    """
     def session(self, request, session=None):
         return session or RestSession(self, request)
 
@@ -446,7 +447,9 @@ class DictModel(RestModel):
             instance.obj[name] = value
 
     def get_instance_value(self, instance, name):
-        return instance.obj.get(name)
+        value = instance.obj.get(name)
+        field = self.field(name)
+        return field.value(value) if field else value
 
     def clean_up_value(self, value):
         if value is None:
