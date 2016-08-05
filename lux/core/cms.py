@@ -1,6 +1,6 @@
 from pulsar.apps.wsgi import Route
 
-from lux.utils import absolute_uri
+from lux.utils.url import absolute_uri
 
 from .extension import app_attribute
 from .templates import Template

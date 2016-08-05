@@ -10,7 +10,7 @@ from pulsar import Unsupported
 from pulsar.utils.slugify import slugify
 from pulsar.utils.structures import mapping_iterator
 
-from lux.utils import iso8601
+from lux.utils.date import iso8601
 
 from .urlwrappers import (URLWrapper, Processor, MultiValue, Tag, Author,
                           Category)

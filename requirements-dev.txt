@@ -1,5 +1,4 @@
 pip
-cython
 psycopg2
 alembic
 unidecode
@@ -13,4 +12,3 @@ flake8
 lxml
 recommonmark
 premailer
--e git+https://github.com/quantmind/pulsar.git@master#egg=pulsar

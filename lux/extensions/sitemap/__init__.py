@@ -12,7 +12,7 @@ from pulsar.apps.wsgi import Router
 from pulsar.utils.httpurl import urllibr
 
 from lux.core import Parameter, cached, LuxExtension
-from lux.utils import iso8601
+from lux.utils.date import iso8601
 
 
 PING_URL = "http://www.google.com/webmasters/tools/ping"

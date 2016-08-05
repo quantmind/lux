@@ -6,7 +6,7 @@ import jinja2
 
 from pulsar import ImproperlyConfigured
 
-from lux.utils import iso8601
+from lux.utils.date import iso8601
 
 SKIP = object()
 numbers = (int, float)
