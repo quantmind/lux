@@ -7,10 +7,14 @@ services:
   - redis-server
 
 install:
-  - pip install -r requirements-dev.txt
+  - pip install -U -r requirements-dev.txt
+
 
 addons:
   postgresql: "9.4"
+
+before_script:
+  - psql -U postgres -f tests/db.sql
 
 script:
   - python setup.py test --coverage -q
