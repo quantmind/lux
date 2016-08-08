@@ -356,10 +356,7 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
     def __call__(self, environ, start_response):
         """The WSGI thing."""
         wsgi_handler = self.wsgi_handler()
-        request = self.wsgi_request(environ)
-        if self.debug:
-            self.logger.debug('Serving request %s' % request.path)
-        self.fire('on_request', request)
+        self.wsgi_request(environ)
         return wsgi_handler(environ, start_response)
 
     def wsgi_handler(self):

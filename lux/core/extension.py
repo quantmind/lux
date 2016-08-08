@@ -18,7 +18,6 @@ ALL_EVENTS = (
     'on_config',  # Config ready.
     'on_loaded',  # Wsgi handler ready.
     'on_start',  # Wsgi server starts. Extra args: server
-    'on_request',  # Fired when a new request arrives
     'on_html_document',  # Html doc built. Extra args: request, html
     'on_form',  # Form constructed. Extra args: form
     'on_close',  # Close the application - cleanup

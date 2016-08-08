@@ -11,17 +11,11 @@ module.exports = function(config) {
         frameworks: ['jasmine', 'browserify', 'es5-shim'],
 
         files: [
-            'lux/js/cms/*.js',
-            'lux/js/core/*.js',
-            'lux/js/form/*.js',
-            'lux/js/grid/*.js',
-            'lux/js/lux/*.js',
-            'lux/js/nav/*.js',
-            'lux/js/tests/*.js'
+            '../tests/*.js'
         ],
 
         preprocessors: {
-            'lux/js/**/*.js': ['browserify']
+            '../tests/**/*.js': ['browserify']
         },
 
         // coverage reporter generates the coverage

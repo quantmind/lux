@@ -14,7 +14,7 @@ export default {
         }),
         babel({
             babelrc: false,
-            presets: ["es2015-rollup"]
+            presets: ['es2015-loose-rollup']
         }),
         nodeResolve({jsnext: true})
     ],
