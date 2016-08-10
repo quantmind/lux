@@ -21,13 +21,13 @@ export default function ($location) {
 function crumbs (loc) {
     var steps = [],
         path = loc.path(),
-        last = last = {
+        last = {
             label: 'Home',
             href: '/'
         };
 
     steps.push(last);
-    
+
     path.split('/').forEach(function (name) {
         if (name) {
             last = {

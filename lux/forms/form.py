@@ -219,7 +219,7 @@ class Form(metaclass=FormType):
             for name, msg in self.errors.items():
                 formset = self.form_sets.get(name)
                 if formset:
-                    msg = formset.tojson()
+                    msg = msg or formset.tojson()
                 else:
                     msg = {'message': '\n'.join(msg)}
                     field = self.dfields.get(name)

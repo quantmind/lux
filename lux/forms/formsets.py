@@ -1,3 +1,4 @@
+import json
 from copy import copy
 
 from .fields import BaseField
@@ -60,6 +61,11 @@ class FormSet(BaseField):
                 return
 
             if self.single:
+                if isinstance(data, str):
+                    try:
+                        data = json.loads(data)
+                    except json.JSONDecodeError:
+                        pass
                 if not isinstance(data, dict):
                     related_form.add_error_message(
                         'expecting an object for %s' % self.name,

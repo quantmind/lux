@@ -7,7 +7,7 @@ from pulsar.apps.wsgi import (Json, RouterParam, Router, Route, Html,
                               cached_property, render_error_debug)
 from pulsar.apps.wsgi.utils import error_messages
 from pulsar.utils.httpurl import JSON_CONTENT_TYPES, CacheControl
-from pulsar.utils.structures import mapping_iterator, AttributeDictionary
+from pulsar.utils.structures import mapping_iterator
 
 from lux.utils.data import unique_tuple
 
