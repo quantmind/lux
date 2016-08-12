@@ -63,6 +63,7 @@ Python Requirements
 * pyjwt_ used by some authentication backends in ``lux.extensions.rest``
 * markdown_
 * oauthlib_ for ``lux.extensions.oauth``
+* premailer_ for rendering email HTML
 
 
 Testing
@@ -109,3 +110,4 @@ Debugging javascript on Chrome::
 .. _`Quantmind`: http://quantmind.com
 .. _flake8: https://pypi.python.org/pypi/flake8
 .. _jinja2: http://jinja.pocoo.org/docs/dev/
+.. _premailer: https://github.com/peterbe/premailer
