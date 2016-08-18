@@ -6,6 +6,8 @@ export default function ($lux) {
         restrict: 'A',
         link: {
             post: function (scope, element) {
+                // TODO this is broken
+                element.addClass('lux');
                 scope.$on('lux-ready', () => {
                     element.addClass('lux');
                 });

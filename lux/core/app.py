@@ -781,9 +781,12 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         else:
             return future
 
-    async def shell(self, request, command, communicate=None, raw=False):
+    async def shell(self, request, command, communicate=None,
+                    raw=False, chdir=None):
         """Asynchronous execution of a shell command
         """
+        if chdir:
+            command = 'cd %s && %s' % (chdir, command)
         request.logger.info('Execute shell command: %s', command)
         stdin = subprocess.PIPE if communicate else None
         proc = await create_subprocess_shell(command,
