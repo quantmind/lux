@@ -23,7 +23,7 @@ class Extension(LuxExtension,
                   'Dotted path to websocket handler'),
         Parameter('WEBSOCKET_HARTBEAT', 25, 'Hartbeat in seconds'),
         Parameter('WEBSOCKET_AVAILABLE', True,
-                  'Server handle websocket')
+                  'websocket server handle available')
     ]
 
     def on_config(self, app):

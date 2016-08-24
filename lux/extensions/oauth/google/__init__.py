@@ -84,7 +84,7 @@ class Google(OAuth2):
         if id:
             rnd = request.app.template_engine()
             txt = rnd(GOOGLE_ANALYTICS, id=id, ga='ga')
-            doc.head.append(txt)
+            doc.body.before_render(lambda r, b: b.append(txt))
 
 
 GOOGLE_ANALYTICS = '''\

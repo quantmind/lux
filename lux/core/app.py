@@ -260,10 +260,8 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
                   'List of links to include in the html head tag.'),
         Parameter('HTML_SCRIPTS', [],
                   'List of scripts to load in the head tag'),
-        Parameter('HTML_REQUIREJS_URL',
-                  "//cdnjs.cloudflare.com/ajax/libs/require.js/2.1.22/require",
-                  'Default url for requirejs. Set to None if no requirejs '
-                  'is needed by your application'),
+        Parameter('HTML_BODY_SCRIPTS', [],
+                  'List of scripts to include at the end of the body tag'),
         Parameter('HTML_META',
                   [{'http-equiv': 'X-UA-Compatible',
                     'content': 'IE=edge'},
@@ -464,16 +462,15 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         #
         # Head
         head = doc.head
-        # Add requirejs if url available
-        requirejs = cfg['HTML_REQUIREJS_URL']
-        if requirejs:
-            head.scripts.append(requirejs)
 
         for script in cfg['HTML_SCRIPTS']:
-            head.scripts.append(script)
+            head.scripts.append(script, async=True)
         #
         for entry in cfg['HTML_META'] or ():
             head.add_meta(**entry)
+
+        for script in cfg['HTML_BODY_SCRIPTS']:
+            doc.body.scripts.append(script, async=True)
 
         self.fire('on_html_document', request, doc, safe=True)
         #
