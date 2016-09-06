@@ -223,5 +223,7 @@ class SerialisedForm(object):
         return data
 
     def as_form(self, **attrs):
+        tag = (self.form.request.config['HTML_FORM_TAG'] if self.form.request
+               else 'lux-form')
         data = json.dumps(self.as_dict(**attrs))
-        return Html('lux-form').attr('json', data)
+        return Html(tag).attr('json', data)

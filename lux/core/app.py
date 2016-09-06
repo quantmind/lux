@@ -269,6 +269,8 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
                     'content': 'width=device-width, initial-scale=1'}],
                   'List of default ``meta`` elements to add to the html head'
                   'element'),
+        Parameter('HTML_FORM_TAG', 'lux-form',
+                  'Html tag for lux forms'),
         #
         # CONTENT base parameters
         Parameter('CONTENT_GROUPS', {
