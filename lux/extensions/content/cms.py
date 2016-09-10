@@ -127,8 +127,10 @@ class CMS(core.CMS):
             data = data.pop(key_data)
             if isinstance(data, dict):
                 data = data.get('body')
-            if data:
-                setattr(page, attr, Template(data))
+            if isinstance(data, str):
+                # Check if this is a template in the file system
+                tpl = self.app.template(data) or Template(data)
+                setattr(page, attr, tpl)
 
     def all(self, request, group):
         path = api_path(request, 'contents', group=group)
