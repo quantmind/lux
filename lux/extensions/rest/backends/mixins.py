@@ -90,7 +90,7 @@ class SessionBackendMixin(TokenBackendMixin):
         """
         if request.method == 'GET':
             session = request.cache.session
-            if session and session.user:
+            if session and session.user and session.encoded:
                 doc.head.add_meta(name="user-token", content=session.encoded)
 
     # MIDDLEWARE
