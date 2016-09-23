@@ -120,10 +120,10 @@ class Fieldset(FormElement):
             return field
 
     def setup(self, form_class, missings):
-        children = self.children
+        children = list(self.children)
         self.children = []
         if self.all:
-            children = missings[:]
+            children.extend((m for m in missings if m not in children))
         for field in serialised_fields(form_class, children, missings):
             self.children.append(field)
 
