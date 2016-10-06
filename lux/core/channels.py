@@ -51,16 +51,17 @@ class Channels(AppComponent, PubSubClient):
         pubsub = self._get()
         if not pubsub:
             return
-        channel_name = self._channel_name(channel_name)
+        name = channel_name.lower()
+        channel_name = self._channel_name(name)
         channel = self.channels.get(channel_name)
         subscribe = False
         if channel is None:
-            channel = Channel(self, channel_name)
-            self.channels[channel.name] = channel
+            channel = Channel(self, name)
+            self.channels[channel_name] = channel
             subscribe = True
         channel.register(event, callback)
         if subscribe:
-            pubsub.subscribe(channel.name)
+            pubsub.subscribe(channel_name)
             pubsub.add_client(self)
             channels = pubsub.channels()
             return [to_string(c) for c in channels]
