@@ -8,8 +8,7 @@
 
 :Badges: |license|  |pyversions| |status|
 :Python CI: |master-build| |coverage-master|
-:Javascript CI: |jsci| |jsdep| |jsdevdep| jscoverage_
-:Documentation: http://quantmind.github.io/lux/
+:Documentation: https://github.com/quantmind/lux
 :Downloads: https://pypi.python.org/pypi/lux
 :Source: https://github.com/quantmind/lux
 :Design by: `Quantmind`_
@@ -44,51 +43,9 @@ Lux is a library for developing asynchronous web applications with python 3.5 or
 It uses pulsar_ asynchronous framework built on top of python asyncio_ module.
 
 
-.. _requirements:
-
-Python Requirements
-=======================
-
-**Hard requirements**
-
-* pulsar_ asychronous engine
-* greenlet_ implicit asynchronous code
-* jinja2_ template engine
-* pytz_ timezones and countries
-* dateutil_ date utilities
-
-**Soft requirements**
-
-* sqlalchemy_ and pulsar-odm_ used by ``lux.extensions.odm``
-* pyjwt_ used by some authentication backends in ``lux.extensions.rest``
-* markdown_
-* oauthlib_ for ``lux.extensions.oauth``
-* premailer_ for rendering email HTML
-
-
-Testing
-==========
-
-For testing, create the test database first::
-
-    psql -a -f tests/db.sql
-
-To run tests::
-
-    python setup.py test
-
-For options and help type::
-
-    python setup.py test --help
-
-flake8_ check (requires flake8 package)::
-
-    flake8
-
-Debugging javascript on Chrome::
-
-    npm run-script debug
-
+* `Getting Started <https://github.com/quantmind/lux/blob/master/docs/getting-started.rst`_
+* `Migrations <https://github.com/quantmind/lux/blob/master/docs/migrations.rst`_
+* `Changelog <https://github.com/quantmind/lux/blob/master/docs/changelog.md`_
 
 .. _asyncio: https://docs.python.org/3/library/asyncio.html
 .. _pulsar: https://github.com/quantmind/pulsar
