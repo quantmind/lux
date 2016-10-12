@@ -16,9 +16,6 @@ Lux use alembic_ as tool to provide migrations. Please install it via::
 When Alembic is installed, you can use ``manage.py alembic -h`` to get all possible
 migration commands.
 
-It integrate all alembic commands and gather
-configuration from the project's config file.
-
 **NOTE:** This documentation assume that you know alembic_ and its usage.
 
 +-----------------------------------------------------------------------------+
@@ -32,12 +29,11 @@ configuration from the project's config file.
 Console commands
 ================
 
-Lux provide a command line ``migration.py alembic`` that provide almost the
-same sets of commands as Alembic. The main difference is that there is no
-command ``list_templates`` as lux provide only one default template.
-Also there is one new command ``auto``.
+Lux command ``alembic`` provides almost the same sets of commands as alembic_.
+The main difference is that there is no command ``list_templates`` as lux
+provides only one default template.
 
-The ``auto`` command is in fact only abbreviation for: ::
+Also there is one new command ``auto``, a shortcut for the alembic_ command::
 
     alembic revision --autogenerate
 
