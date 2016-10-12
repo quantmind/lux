@@ -27,8 +27,8 @@ In order to be able to use migrations you need to have Alembic installed::
 
     pip install alembic
 
-When Alembic is already installed, you can now use
-``manage.py alembic -h`` to get all possible commands.
+When Alembic is installed, you can use ``manage.py alembic -h`` to get all possible
+migration commands.
 
 Configuration
 =============
