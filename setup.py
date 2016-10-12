@@ -45,7 +45,7 @@ meta = dict(
     packages=find_packages(exclude=['tests', 'tests.*']),
     include_package_data=True,
     zip_safe=False,
-    setup_requires=['pulsar'],
+    setup_requires=['pulsar', 'wheel'],
     install_requires=requires,
     dependency_links=links,
     scripts=['bin/luxmake.py'],
@@ -59,6 +59,7 @@ meta = dict(
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
         'Topic :: Utilities'
     ]
 )

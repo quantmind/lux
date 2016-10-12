@@ -11,7 +11,6 @@
 :Documentation: https://github.com/quantmind/lux
 :Downloads: https://pypi.python.org/pypi/lux
 :Source: https://github.com/quantmind/lux
-:Design by: `Quantmind`_
 :Platforms: Linux, OSX, Windows. Python 3.5 and above
 :Keywords: asynchronous, wsgi, websocket, redis, json-rpc, REST, web
 
@@ -25,12 +24,8 @@
   :target: https://pypi.python.org/pypi/lux
 .. |master-build| image:: https://img.shields.io/travis/quantmind/lux/master.svg
   :target: http://travis-ci.org/quantmind/lux
-.. |dev-build| image:: https://img.shields.io/travis/quantmind/lux/dev.svg
-  :target: http://travis-ci.org/quantmind/lux
 .. |coverage-master| image:: https://img.shields.io/coveralls/quantmind/lux/master.svg
   :target: https://coveralls.io/r/quantmind/lux?branch=master
-.. |coverage-dev| image:: https://img.shields.io/coveralls/quantmind/lux/dev.svg
-  :target: https://coveralls.io/r/quantmind/lux?branch=dev
 .. |jsdep| image:: https://david-dm.org/quantmind/lux.svg
   :target: https://david-dm.org/quantmind/lux
 .. |jsdevdep| image:: https://david-dm.org/quantmind/lux/dev-status.svg
@@ -40,10 +35,10 @@
 .. _jscoverage: https://circleci.com/api/v1/project/quantmind/lux/latest/artifacts/0/$CIRCLE_ARTIFACTS/coverage/index.html?branch=master&filter=successful
 
 Lux is a library for developing asynchronous web applications with python 3.5 or above.
-It uses pulsar_ asynchronous framework built on top of python asyncio_ module.
 
 
 * `Getting Started </docs/getting-started.rst>`_
+* `Extensions </docs/extensions.rst>`_
 * `Migrations </docs/migrations.rst>`_
 * `Changelog </docs/changelog.md>`_
 
