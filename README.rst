@@ -43,9 +43,9 @@ Lux is a library for developing asynchronous web applications with python 3.5 or
 It uses pulsar_ asynchronous framework built on top of python asyncio_ module.
 
 
-* `Getting Started <https://github.com/quantmind/lux/blob/master/docs/getting-started.rst>`_
-* `Migrations <https://github.com/quantmind/lux/blob/master/docs/migrations.rst>`_
-* `Changelog <https://github.com/quantmind/lux/blob/master/docs/changelog.md>`_
+* `Getting Started </docs/getting-started.rst>`_
+* `Migrations </docs/migrations.rst>`_
+* `Changelog </docs/changelog.md>`_
 
 .. _asyncio: https://docs.python.org/3/library/asyncio.html
 .. _pulsar: https://github.com/quantmind/pulsar
