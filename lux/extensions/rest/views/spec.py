@@ -50,5 +50,6 @@ def specification(request):
     spec = rnd(spec, context)
     spec = yaml.safe_load(spec)
     spec['host'] = request.get_host()
+    spec['schemes'] = [request.scheme]
     # validate_spec(spec)
     return spec
