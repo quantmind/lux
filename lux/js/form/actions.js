@@ -10,6 +10,10 @@ export default function (ngModule) {
 
         cfg.setAction('submit', submitForm);
 
+        cfg.setAction('addForm', addForm);
+
+        cfg.setAction('removeForm', removeForm);
+
         cfg.onSuccess('default', defaultOnSuccess);
     }
 
@@ -21,7 +25,7 @@ function submitForm (e) {
     var form = this.$form,
         $lux = this.$lux,
         $cfg = this.$cfg,
-        info = this.info,
+        info = this.$luxform,
         action = info.action;
 
     if (!action) return;
@@ -35,9 +39,10 @@ function submitForm (e) {
     info.setSubmited();
     //
     // Invalid?
-    if (form.$invalid)
+    if (form.$invalid) {
         form.$setDirty();
-        // return this.$lux.messages.info('Invalid form - not submitting');
+        return info.addMessages('Please correct form errors', 'error');
+    }
 
     var ct = (info.enctype || '').split(';')[0],
         method = info.method || 'post',
@@ -89,4 +94,24 @@ function defaultOnSuccess (response, form) {
     }
 
     form.addMessages(messages);
+}
+
+
+function addForm (e) {
+    var $luxform = this.$luxform;
+    if ($luxform && $luxform.$formset) {
+        e.preventDefault();
+        e.stopPropagation();
+        $luxform.$formset.$newForm();
+    }
+}
+
+
+function removeForm (e) {
+    var $luxform = this.$luxform;
+    if ($luxform && $luxform.$formset) {
+        e.preventDefault();
+        e.stopPropagation();
+        $luxform.$formset.$removeForm($luxform);
+    }
 }

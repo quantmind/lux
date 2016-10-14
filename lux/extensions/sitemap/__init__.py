@@ -12,7 +12,7 @@ from pulsar.apps.wsgi import Router
 from pulsar.utils.httpurl import urllibr
 
 from lux.core import Parameter, cached, LuxExtension
-from lux.utils import iso8601
+from lux.utils.date import iso8601
 
 
 PING_URL = "http://www.google.com/webmasters/tools/ping"
@@ -20,9 +20,9 @@ PING_URL = "http://www.google.com/webmasters/tools/ping"
 
 class Extension(LuxExtension):
 
-    _config = [Parameter('SITEMAP_CACHE_TIMEOUT', None,
+    _config = [Parameter('CACHE_SITEMAP_TIMEOUT', None,
                          ('Sitemap cache timeout, if not set it defaults to '
-                          'the DEFAULT_CACHE_TIMEOUT parameter'))]
+                          'the CACHE_DEFAULT_TIMEOUT parameter'))]
 
 
 def ping_google(sitemap_url, ping_url=PING_URL):
@@ -55,7 +55,7 @@ class BaseSitemap(Router):
         response.content = sitemap
         return response
 
-    @cached(timeout='SITEMAP_CACHE_TIMEOUT')
+    @cached(timeout='CACHE_SITEMAP_TIMEOUT')
     def sitemap(self, request):
         sitemap = [self.version,
                    '<%s xmlns="%s">' % (self.tag, self.xmlns)]

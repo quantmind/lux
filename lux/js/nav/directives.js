@@ -4,15 +4,27 @@ import _ from '../ng';
 
 
 // @ngInject
-export function link (luxLinkTemplate, luxLink) {
+export function link ($lux, luxLinkTemplate, luxDropdownTemplate, luxLink) {
     return {
-        template: luxLinkTemplate,
         restrict: 'A',
-        link: link
+        link: linkLink
     };
 
-    function link (scope) {
-        scope.links = luxLink;
+    function linkLink ($scope, $element) {
+        var link = $scope.link || {},
+            template;
+
+        $scope.links = luxLink;
+
+        if (link.items) {
+            link.id = link.id || $lux.id();
+            template = luxDropdownTemplate;
+            $element.replaceWith($lux.$compile(template)($scope));
+        }
+        else {
+            template = luxLinkTemplate;
+            $element.append($lux.$compile(template)($scope));
+        }
     }
 }
 
@@ -28,6 +40,24 @@ export function navbar ($window, luxNavbarTemplate, luxNavbar) {
     function navbar (scope, element, attrs) {
         scope.navbar = luxNavbar(_.extend({}, scope.navbar, getOptions($window, attrs, 'navbar')));
         scope.navbar.element = element[0];
+    }
+}
+
+// @ngInject
+export function tabs ($lux, luxTabsTemplate, luxLink) {
+    //
+    return {
+        template: luxTabsTemplate,
+        restrict: 'AE',
+        scope: {
+            tabs: '='
+        },
+        controller: TabsCtrl
+    };
+    //
+    // @ngInject
+    function TabsCtrl ($scope) {
+        $scope.links = luxLink;
     }
 }
 
@@ -57,6 +87,7 @@ export function sidebar ($window, $compile, $timeout, luxSidebarTemplate, luxSid
             navbar = _.extend({}, scope.navbar, sidebar.navbar);
 
         navbar.top = true;
+        navbar.fixed = true;
         navbar.fluid = true;
         scope.navbar = navbar;
         delete scope.sidebar;

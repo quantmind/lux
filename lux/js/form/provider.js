@@ -6,7 +6,8 @@ export default function () {
     const formMap = {},
         wrapperMap = {},    // container of Html wrappers for form elements
         actionMap = {},     // container of actions on a form
-        successHooks = {},  // collection of handlers invoked on successful submits
+        successHooks = {},  // collection of handlers invoked on successful submit
+        errors = {},
         tagMap = {
             date: 'input',
             datetime: 'input',
@@ -26,6 +27,7 @@ export default function () {
     let formCount = 1;
 
     _.extend(this, {
+        inheritAttributes: ['labelSrOnly'],
         setType,
         getType,
         setWrapper,
@@ -35,6 +37,7 @@ export default function () {
         getAction: getAction,
         setAction: setAction,
         onSuccess: onSuccess,
+        error: error,
         id: formid,
         // Required for angular providers
         $get: () => this
@@ -106,5 +109,28 @@ export default function () {
             return this;
         } else
             return successHooks[type] || successHooks['default'];
+    }
+
+    function error (name, message) {
+        if (arguments.length === 2) {
+            errors[name] = message;
+            return this;
+        } else {
+            var obj = name.ngField.$error,
+                errorHandler;
+            for (let key in obj) {
+                if (obj.hasOwnProperty(key) && obj[key]) {
+                    errorHandler = errors[key];
+                    if (errorHandler)
+                        break;
+                }
+            }
+
+            if (_.isFunction(errorHandler))
+                return errorHandler(name);
+            else
+                return errorHandler;
+
+        }
     }
 }

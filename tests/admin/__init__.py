@@ -2,7 +2,8 @@ from lux import forms
 from lux.core import LuxExtension
 
 from lux.extensions.admin import register, CRUDAdmin
-from lux.extensions.odm import CRUD, RestModel
+from lux.extensions.rest import CRUD
+from lux.extensions.odm import RestModel
 
 
 from tests.config import *  # noqa
@@ -18,8 +19,12 @@ API_URL = 'http://api.com'
 DEFAULT_CONTENT_TYPE = 'text/html'
 AUTHENTICATION_BACKENDS = ['lux.extensions.auth.TokenBackend']
 DATASTORE = 'postgresql+green://lux:luxtest@127.0.0.1:5432/luxtests'
-DEFAULT_PERMISSION_LEVELS = {}
-DEFAULT_PERMISSION_LEVEL = '*'
+DEFAULT_POLICY = [
+    {
+        "resource": "*",
+        "action": "read"
+    }
+]
 
 
 class Extension(LuxExtension):

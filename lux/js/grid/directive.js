@@ -12,8 +12,8 @@ export default function () {
     };
 
     // @ngInject
-    function GridController ($scope, luxGrid) {
-        $scope.grid = luxGrid($scope.gridOptions);
+    function GridController ($scope, $lux) {
+        $scope.grid = $lux.grid($scope.gridOptions);
     }
 
     function link ($scope, element) {

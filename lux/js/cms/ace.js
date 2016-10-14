@@ -1,5 +1,5 @@
 import _ from '../ng';
-import querySelector from '../core/querySelector';
+import querySelector from '../core/queryselector';
 
 const aceTemplate = `<div class="ace-lux">
 <div ng-if="aceHeader" class="ace-lux-header" lux-navbar="aceHeader"></div>
@@ -35,7 +35,7 @@ export default function ($lux) {
                 tabSize: 4
             }, $lux.context.ace, scope.$eval(attrs.luxAce));
 
-        $lux.lazy.require(['ace/ace'], startAce);
+        $lux.require(['ace/ace'], startAce);
 
         // Bind to the Model
         if (ngModel) {
@@ -44,7 +44,7 @@ export default function ($lux) {
                     return '';
                 }
                 else if (_.isObject(value) || _.isArray(value)) {
-                    throw new Error('ui-ace cannot use an object or an array as a model');
+                    return _.toJson(value, 4);
                 }
                 return value;
             });

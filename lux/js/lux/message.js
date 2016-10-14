@@ -19,7 +19,7 @@ class MessageService {
         if (!$log[level]) level = 'info';
         $log[level](message);
         if (opts && opts.broadcast === false) return;
-        if (!opts) opts = {}
+        if (!opts) opts = {};
         opts.text = message;
         opts.level = level;
         this.$scope.$broadcast('messageAdded', opts);

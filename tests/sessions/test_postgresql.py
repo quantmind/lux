@@ -68,9 +68,7 @@ class TestPostgreSql(test.AppTestCase):
     async def test_login_fail(self):
         data = {'username': 'jdshvsjhvcsd',
                 'password': 'dksjhvckjsahdvsf'}
-        request = await self.client.post('/auth/login',
-                                         content_type='application/json',
-                                         body=data)
+        request = await self.client.post('/auth/login', json=data)
         response = request.response
         self.assertEqual(response.status_code, 403)
         user = request.cache.user
@@ -85,8 +83,7 @@ class TestPostgreSql(test.AppTestCase):
         cookie = self.cookie(response)
         self.assertTrue(cookie)
         request = await self.client.post('/auth/login',
-                                         content_type='application/json',
-                                         body=data,
+                                         json=data,
                                          cookie=cookie)
         self.assertValidationError(request.response,
                                    text='Invalid username or password')
@@ -113,8 +110,7 @@ class TestPostgreSql(test.AppTestCase):
         #
         # Login with csrf token and cookie, It should work
         request = await self.client.post('/auth/login',
-                                         content_type='application/json',
-                                         body=data,
+                                         json=data,
                                          cookie=cookie)
         response = request.response
         self.assertEqual(response.status_code, 201)
@@ -143,8 +139,7 @@ class TestPostgreSql(test.AppTestCase):
         #
         # This wont work, not csrf token
         request = await self.client.post('/auth/logout',
-                                         content_type='application/json',
-                                         body={},
+                                         json={},
                                          cookie=cookie)
         response = request.response
         self.assertEqual(response.status_code, 403)
@@ -158,8 +153,7 @@ class TestPostgreSql(test.AppTestCase):
         self.assertTrue(token)
 
         request = await self.client.post('/auth/logout',
-                                         content_type='application/json',
-                                         body=token,
+                                         json=token,
                                          cookie=cookie)
         response = request.response
         self.assertEqual(response.status_code, 200)

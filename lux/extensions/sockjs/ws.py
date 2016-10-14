@@ -6,6 +6,8 @@ import json
 import hashlib
 import logging
 
+from lux.core.channels import Channel
+
 from pulsar import ProtocolError
 from pulsar.apps import ws
 
@@ -123,6 +125,8 @@ class WsClient:
         self.logger.info('closing socket %s', self)
 
     def write_message(self, channel, event, data):
+        if isinstance(channel, Channel):
+            channel = channel.name
         msg = {'event': event, 'channel': channel}
         if data:
             msg['data'] = data

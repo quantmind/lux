@@ -5,9 +5,20 @@ export const linkTemplate = `<a ng-href="{{link.href}}" title="{{link.title}}" n
 ng-attr-target="{{link.target}}" ng-class="link.klass" bs-tooltip="tooltip">
 <span ng-if="link.left" class="left-divider"></span>
 <i ng-if="link.icon" class="{{link.icon}}"></i>
-<span>{{link.label || link.name}}</span>
+<span>{{link.label || link.name || link.title}}</span>
 <span ng-if="link.right" class="right-divider"></span></a>`;
 
+
+export const luxDropdownTemplate = `<li class="dropdown" uib-dropdown>
+<a id="{{ link.id }}" href="#" class="dropdown-toggle" uib-dropdown-toggle>
+{{ link.label || link.name || link.title }}<span class="caret"></span></a>
+<ul class="dropdown-menu" uib-dropdown-menu aria-labelledby="{{ link.id }}">
+<li ng-repeat="item in link.items" ng-class="{'divider': !item}" ng-attr-role="{'separator': !item}">
+<a ng-if="item" href="{{ item.href }}" ng-click="links.click($event, item)"
+><i ng-if="item.icon" class="{{ item.icon }}"></i> {{ item.label || item.name || item.title }}</a>
+</li>
+</ul>
+</li>`;
 
 export const navbarTemplate = `<nav ng-attr-id="{{navbar.id}}" class="navbar navbar-{{navbar.theme}}"
 ng-class="{'navbar-fixed-top':navbar.fixed, 'navbar-static-top':navbar.top}"
@@ -21,7 +32,7 @@ ng-style="navbar.style" role="navigation">
                 <span class="icon-bar"></span>
             </button>
             <ul ng-if="navbar.itemsLeft" class="nav navbar-nav navbar-left">
-                <li ng-repeat="link in navbar.itemsLeft" ng-class="{active:links.activeLink(link)}" navbar-link></li>
+                <li ng-repeat="link in navbar.itemsLeft" ng-class="{active:links.activeLink(link)}" lux-link></li>
             </ul>
             <a ng-if="navbar.brandImage" href="{{navbar.url}}" class="navbar-brand" target="{{navbar.target}}">
                 <img ng-src="{{navbar.brandImage}}" alt="{{navbar.brand || 'brand'}}">
@@ -37,10 +48,10 @@ ng-style="navbar.style" role="navigation">
              collapsing="navbar.collapsing()"
              collapsed="navbar.collapsed()">
             <ul ng-if="navbar.items" class="nav navbar-nav navbar-left">
-                <li ng-repeat="link in navbar.items" ng-class="{active:links.activeLink(link)}" navbar-link></li>
+                <li ng-repeat="link in navbar.items" ng-class="{active:links.activeLink(link)}" lux-link></li>
             </ul>
             <ul ng-if="navbar.itemsRight" class="nav navbar-nav navbar-right">
-                <li ng-repeat="link in navbar.itemsRight" ng-class="{active:links.activeLink(link)}" navbar-link></li>
+                <li ng-repeat="link in navbar.itemsRight" ng-class="{active:links.activeLink(link)}" lux-link></li>
             </ul>
         </nav>
     </div>
@@ -62,7 +73,7 @@ export const sidebarTemplate = `<lux-navbar class="sidebar-navbar" ng-class="{'s
             </div>
         </div>
     </div>
-    <ul class="sidebar-menu">
+    <ul class="nav">
         <li ng-if="section.name" ng-repeat-start="section in sidebar.sections" class="header">
             {{section.name}}
         </li>
@@ -81,10 +92,17 @@ export const sidebarTemplate = `<lux-navbar class="sidebar-navbar" ng-class="{'s
         <i ng-if="link.subitems" class="fa fa-angle-left pull-right"></i>
     </a>
     <ul class="treeview-menu" ng-class="{active:links.activeSubmenu(link)}" ng-if="link.subitems">
-        <li ng-repeat="link in link.subitems" ng-class="{active:links.activeLink(link)}" ng-include="'subnav'">
+        <li ng-repeat="link in link.subitems" ng-class="{active: links.activeLink(link)}" ng-include="'subnav'">
         </li>
     </ul>
 </script>`;
+
+
+export const luxTabsTemplate = `<ul class="nav nav-tabs">
+<li ng-repeat='link in tabs' ng-class="{active: links.activeLink(link)}">
+<a href="{{ link.url }}">{{ link.label }}</a>
+</li>
+</ul>`;
 
 
 export const navbarDefaults = {

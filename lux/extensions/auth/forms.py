@@ -3,14 +3,14 @@ import json
 from lux import forms
 from lux.forms import Layout, Fieldset, Submit, formreg
 from lux.extensions.odm import RestModel
-from lux.extensions.rest import (AuthenticationError, RestColumn,
+from lux.extensions.rest import (AuthenticationError, RestField,
                                  RelationshipField, UniqueField)
 from lux.extensions.rest.views.forms import PasswordForm
 from lux.extensions.rest.policy import validate_policy
 from lux.utils.auth import ensure_authenticated
 
 
-full_name = RestColumn(
+full_name = RestField(
     'full_name',
     displayName='Name',
     field=('first_name', 'last_name', 'username', 'email')
@@ -18,15 +18,15 @@ full_name = RestColumn(
 
 
 # REST Models
-class UserModel(RestModel):
+class UserModelBase(RestModel):
 
     @classmethod
-    def create(cls, url=None, exclude=None, hidden=None, columns=None):
+    def create(cls, url=None, exclude=None, hidden=None, fields=None):
         exclude = exclude or ('password',)
-        columns = list(columns or ())
-        columns.extend((
+        fields = list(fields or ())
+        fields.extend((
             full_name,
-            RestColumn('groups', model='groups')
+            RestField('groups', model='groups')
         ))
         return cls(
             'user',
@@ -37,15 +37,41 @@ class UserModel(RestModel):
             repr_field='full_name',
             exclude=exclude,
             hidden=hidden,
-            columns=columns
+            fields=fields
         )
 
-    def create_model(self, request, data, session=None):
+
+class UserModel(UserModelBase):
+
+    def create_model(self, request, instance, data, session=None):
         '''Override create model so that it calls the backend method
         '''
-        if session:
-            data['odm_session'] = session
         return request.cache.auth_backend.create_user(request, **data)
+
+
+class RequestUserModel(UserModelBase):
+
+    @classmethod
+    def create(cls, exclude=None, hidden=None, fields=None):
+        exclude = exclude or ('password',)
+        fields = list(fields or ())
+        fields.extend((
+            full_name,
+            RestField('groups', model='groups')
+        ))
+        return cls(
+            'user',
+            updateform='user-profile',
+            url='user',
+            id_field='username',
+            repr_field='full_name',
+            exclude=exclude,
+            hidden=hidden,
+            fields=fields
+        )
+
+    def get_instance(self, request, *args, **kwargs):
+        return self.instance(ensure_authenticated(request))
 
 
 class TokenModel(RestModel):
@@ -56,12 +82,12 @@ class TokenModel(RestModel):
         return cls(
             'token',
             'create-token',
-            columns=[
-                RestColumn('user', field='user_id', model='users')
+            fields=[
+                RestField('user', field='user_id', model='users')
             ]
         )
 
-    def create_model(self, request, data, session=None):
+    def create_model(self, request, instance, data, session=None):
         user = ensure_authenticated(request)
         auth = request.cache.auth_backend
         data['session'] = False
@@ -71,19 +97,18 @@ class TokenModel(RestModel):
 # FORMS
 class PermissionForm(forms.Form):
     model = 'permissions'
-    id = forms.HiddenField(required=False)
     name = forms.CharField()
-    description = forms.TextField()
-    policy = forms.JsonField(text_edit=json.dumps({'mode': 'json'}))
+    description = forms.TextField(required=False, rows=2)
+    policy = forms.JsonField(lux_ace=json.dumps({'mode': 'json'}))
 
     def clean(self):
-        policy = self.cleaned_data['policy']
-        self.cleaned_data['policy'] = validate_policy(policy)
+        if 'policy' in self.cleaned_data:
+            policy = self.cleaned_data['policy']
+            self.cleaned_data['policy'] = validate_policy(policy)
 
 
 class GroupForm(forms.Form):
     model = 'groups'
-    id = forms.HiddenField(required=False)
     name = forms.SlugField(validator=UniqueField())
     permissions = RelationshipField('permissions',
                                     multiple=True,
@@ -91,7 +116,6 @@ class GroupForm(forms.Form):
 
 
 class UserForm(forms.Form):
-    id = forms.HiddenField(required=False)
     username = forms.SlugField()
     email = forms.EmailField(required=False)
     first_name = forms.CharField(required=False)
@@ -99,7 +123,7 @@ class UserForm(forms.Form):
     superuser = forms.BooleanField()
     active = forms.BooleanField()
     joined = forms.DateTimeField(readonly=True, required=False)
-    # groups = RelationshipField('groups', multiple=True, required=False)
+    groups = RelationshipField('groups', multiple=True, required=False)
 
 
 class ChangePasswordForm(PasswordForm):
@@ -135,6 +159,8 @@ formreg['user'] = Layout(
     Fieldset(all=True),
     Submit('Update user')
 )
+
+formreg['user-profile'] = formreg['user']
 
 
 formreg['create-group'] = Layout(

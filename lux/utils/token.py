@@ -14,6 +14,13 @@ from datetime import date
 
 
 encode = jwt.encode
+decode = jwt.decode
+ExpiredSignature = jwt.ExpiredSignature
+DecodeError = jwt.DecodeError
+
+
+def encode_json(payload, secret, **kw):
+    return encode(payload, secret, **kw).decode('utf-8')
 
 
 def create_token(request, *args, expiry=None, **kwargs):

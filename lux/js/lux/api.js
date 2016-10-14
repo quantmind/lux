@@ -2,6 +2,7 @@ import {map} from 'd3-collection';
 import {decodeJWToken, LuxException} from '../core/utils';
 import {urlIsSameOrigin, urlResolve, urlIsAbsolute, urlJoin} from '../core/urls';
 import paginator from './paginator';
+import luxRouter from './router';
 import _ from '../ng';
 
 
@@ -12,15 +13,14 @@ const NO_CSRF = ['get', 'head', 'options'];
 let luxId = 0;
 
 
-// @ngInject
-export default function ($location, $window, $http, $log, $timeout, luxMessage, luxLazy) {
-
+export function windowContext ($window) {
     var doc = $window.document,
-        context = $window.lux,
         name = _.element(doc.querySelector('meta[name=csrf-param]')).attr('content'),
         token = _.element(doc.querySelector('meta[name=csrf-token]')).attr('content'),
-        user = _.element(doc.querySelector('meta[name=user-token]')).attr('content');
+        user = _.element(doc.querySelector('meta[name=user-token]')).attr('content'),
+        context = _.element(doc.querySelector('meta[name=html-context]')).attr('content');
 
+    if (_.isString(context)) context = decodeJWToken(context);
     if (!_.isObject(context)) context = {};
 
     if (name && token) {
@@ -29,24 +29,20 @@ export default function ($location, $window, $http, $log, $timeout, luxMessage, 
     }
     if (user) {
         context.userToken = user;
-        context.user = decodeJWToken(user)
+        context.user = decodeJWToken(user);
     }
-
-    return new Lux($location, $http, $log, $timeout, context, luxMessage, luxLazy);
+    return context;
 }
 
 
-class Lux {
+export class Lux {
 
-    constructor ($location, $http, $log, $timeout, context, luxMessage, luxLazy) {
-        this.$location = $location;
-        this.$http = $http;
-        this.$log = $log;
-        this.$timeout = $timeout;
+    constructor (core, plugins) {
+        _.extend(this, core, plugins);
         this.$apis = map();
-        this.messages = luxMessage;
-        this.lazy = luxLazy;
-        this.context = context;
+        this.$lazyBootstrap = 0;
+        this.router = luxRouter(this);
+        this.$rootScope.$lux = this;
     }
 
     // Return the csrf key-value token to post in forms
@@ -54,8 +50,16 @@ class Lux {
         return this.context.csrf;
     }
 
+    get user () {
+        return this.context.user;
+    }
+
     get userToken () {
         return this.context.userToken;
+    }
+
+    get currentYPosition () {
+        return this.$window.pageYOffset;
     }
 
     api (action, ApiClass) {
@@ -90,13 +94,46 @@ class Lux {
             if (!ApiClass) ApiClass = this.api(action.baseUrl, RestApi);
         }
 
-        action.path = urlJoin(path, action.path);
+        action.baseUrl = urlJoin(action.baseUrl, path);
 
         return new ApiClass(this, action);
     }
 
     id (prefix) {
         return (prefix || 'l') + (++luxId);
+    }
+
+    logout (e, url) {
+        e.preventDefault();
+        var api = this.api(url),
+            self = this;
+
+        api.post().then(function () {
+            if (self.context.POST_LOGOUT_URL) {
+                self.$window.location.href = self.context.POST_LOGOUT_URL;
+            } else {
+                self.$window.location.reload();
+            }
+        }, function () {
+            self.messages.error('Error while logging out');
+        });
+    }
+
+    // Increase the lazy bootstrap counter
+    bootstrap () {
+        if (this.$lazyBootstrap === null) return;
+        return ++this.$lazyBootstrap;
+    }
+
+    bootstrapDone (force) {
+        if (this.$lazyBootstrap === null) return true;
+        this.$lazyBootstrap -= 1;
+        if (this.$lazyBootstrap <= 0 || force) {
+            this.$lazyBootstrap = null;
+            this.$rootScope.$broadcast('lux-ready');
+            return true;
+        }
+        return false;
     }
 }
 
@@ -154,11 +191,12 @@ class Api {
         if (!opts) opts = {};
         // handle urlparams when not an object
         var $lux = this.$lux,
+            path = _.isDefined(opts.url) ? opts.url : this.$defaults.path,
             options = {
                 method: method.toLowerCase(),
                 params: _.extend({}, this.params, opts.params),
                 headers: opts.headers || {},
-                url: urlJoin(this.url, opts.path)
+                url: urlJoin(this.baseUrl, path, opts.path)
             };
 
         if (ENCODE_URL_METHODS.indexOf(options.method) === -1) options.data = opts.data;

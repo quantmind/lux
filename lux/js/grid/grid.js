@@ -1,19 +1,17 @@
 import _ from '../ng';
 import {parseColumns, parseData} from './utils';
-import LuxComponent from '../lux/component'
-import pop from '../core/pop';
+import LuxComponent from '../lux/component';
 
 const cellClass = 'ui-grid-cell-contents';
 
 
 export default class Grid extends LuxComponent {
 
-    constructor (options, $lux, $compile, $window) {
+    constructor ($lux, provider, options) {
         super($lux);
+        this.$provider= provider;
         this.options = options;
         this.state = new State(this);
-        this.$compile = $compile;
-        this.$window = $window;
     }
 
     refresh () {
@@ -26,11 +24,13 @@ export default class Grid extends LuxComponent {
         return `<div class="${cl}">${cell}</div>`;
     }
 
-    $onLoaded (cfg, uiGridConstants) {
-        this.$cfg = cfg;
-        this.uiGridConstants = uiGridConstants;
-        this.$directives = 'ui-grid-pagination ui-grid-selection ui-grid-auto-resize';
-        this.$dataProvider = cfg.getDataProvider(this);
+    get uiGridConstants () {
+        return this.$injector.get('uiGridConstants');
+    }
+
+    $onLoaded (directives) {
+        this.$directives = directives;
+        this.$dataProvider = this.$provider.dataProvider(this.options.dataProvider)(this);
         build(this);
     }
 
@@ -41,14 +41,12 @@ export default class Grid extends LuxComponent {
     }
 
     $onMetadata (metadata) {
-        if (metadata) {
-            var options = this.options;
-             if(metadata['default-limit'])
-                options.paginationPageSize = pop(metadata, 'default-limit');
-            this.metadata = metadata;
-            options.columnDefs = parseColumns(this, metadata);
-        }
-
+        var options = this.options;
+        this.metadata = _.extend({
+            permissions: {}
+        }, metadata);
+        if (this.metadata.columns) options.columnDefs = parseColumns(this);
+        this.$provider.onMetadata(this);
         this.$element.replaceWith(this.$compile(gridTpl(this))(this.$scope));
     }
 
@@ -56,7 +54,7 @@ export default class Grid extends LuxComponent {
         this.options = api.grid.options;
         this.api = api;
         api.lux = this;
-        this.$cfg.onInit(this);
+        this.$provider.onInit(this);
         this.$dataProvider.getPage();
     }
 
@@ -135,7 +133,7 @@ function build (grid) {
 
         grid.options.onRegisterApi = function (api) {
             grid.$onRegisterApi(api);
-            if (onRegisterApi) onRegisterApi(api)
+            if (onRegisterApi) onRegisterApi(api);
         };
         grid.$dataProvider.connect();
     }

@@ -2,9 +2,11 @@ import _ from '../ng';
 import {debounce, findIndex, merge} from 'lodash';
 
 
-export function parseColumns(grid, metadata) {
-    var permissions = metadata.permissions || {},
+export function parseColumns(grid) {
+    var metadata = grid.metadata,
+        permissions = metadata.permissions,
         columnDefs = [],
+        columnHook,
         column;
 
     _.forEach(metadata.columns, function (col) {
@@ -24,7 +26,8 @@ export function parseColumns(grid, metadata) {
         if (!col.filter)
             column.enableFiltering = false;
 
-        grid.$cfg.column(column, grid);
+        columnHook = grid.$provider.columnProcessor(column.type);
+        if (columnHook) columnHook(column, grid);
 
         if (_.isString(col.cellFilter)) {
             column.cellFilter = col.cellFilter;
@@ -37,7 +40,7 @@ export function parseColumns(grid, metadata) {
         if (_.isDefined(column.field) && column.field === metadata.repr) {
             if (permissions.update) {
                 // If there is an update permission then display link
-                var path = grid.options.reprPath || grid.$window.location,
+                var path = grid.options.basePath || grid.$window.location,
                     idfield = metadata.id;
                 column.cellTemplate = grid.wrapCell(
                     `<a href="${path}/{{ row.entity['${idfield}'] }}" title="Edit {{ COL_FIELD }}">{{COL_FIELD}}</a>`);
@@ -123,7 +126,7 @@ export function booleanColumn (column, grid) {
 
 export function objectColumn (column, grid) {
     // TODO: this requires fixing (add a url for example)
-    column.cellTemplate = grid.wrapCell('{{COL_FIELD.repr || COL_FIELD.id}}');
+    column.cellTemplate = grid.wrapCell('{{COL_FIELD.repr || COL_FIELD.id || COL_FIELD}}');
 }
 
 
@@ -201,7 +204,7 @@ function filter () {
     _.forEach(api.columns, function (value) {
         // Clear data in order to refresh icons
         if (value.filter.type === 'select')
-            api.options.data = []
+            api.options.data = [];
 
         if (value.filters[0].term) {
             if (value.colDef.type === 'string') {

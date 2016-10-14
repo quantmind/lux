@@ -22,7 +22,7 @@ class ChannelsTests(test.TestCase):
         self.assertFalse(app.channels is None)
         self.assertFalse(app.channels)
 
-    async def test_ping(self):
+    async def test_server_channel(self):
         app = self.application()
         client = test.TestClient(app)
         request = await client.get('/')
@@ -46,3 +46,23 @@ class ChannelsTests(test.TestCase):
         res = await app.reload()
         self.assertTrue(res)
         await future
+
+    async def test_wildcard(self):
+        app = self.application()
+
+        future = asyncio.Future()
+
+        def fire(channel, event, data):
+            future.set_result(event)
+
+        def test():
+            result = app.channels.register('test', '*', fire)
+            self.assertTrue(result)
+            app.channels.publish('test', 'boom')
+
+        app.green_pool.submit(test)
+        result = await future
+
+        self.assertEqual(result, 'boom')
+        self.assertEqual(len(app.channels), 1)
+        self.assertTrue(repr(app.channels))

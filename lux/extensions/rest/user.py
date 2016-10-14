@@ -204,30 +204,42 @@ class Session(AttributeDictionary, SessionMixin):
 
 
 class SessionBackend:
-
+    """Backend Intraface for browser sessions
+    """
     def __init__(self, cache):
         self.cache = cache
 
-    def get(self, id):
-        return self.cache.get_json(self.session_key(id))
+    def get(self, key):
+        """Get a session at key
+        """
+        return self.cache.get_json(self.session_key(key))
 
-    def set(self, id, data):
-        self.cache.set_json(self.session_key(id), data)
+    def set(self, key, data):
+        """Set session data at key
+        """
+        self.cache.set_json(self.session_key(key), data)
+
+    def delete(self, key):
+        """Delete session at key
+        """
+        self.cache.delete(self.session_key(key))
 
     def clear(self, app_name=None):
+        """Clear all sessions for the application name
+        """
         key = self.session_key(app_name=app_name)
         return self.cache.clear(key)
 
-    def session_key(self, id=None, app_name=None):
+    def session_key(self, key=None, app_name=None):
         app_name = app_name or self.cache.app.config['APP_NAME']
         base = 'session:%s:' % app_name
-        return '%s:%s' % (base, id) if id else base
+        return '%s:%s' % (base, key) if key else base
 
 
 @app_attribute
 def session_backend(app):
     url = app.config['SESSION_BACKEND']
     if not url:
-        raise ImproperlyConfigured('Session backend required by '
+        raise ImproperlyConfigured('SESSION_BACKEND required by '
                                    'authentication backend')
     return SessionBackend(create_cache(app, url))

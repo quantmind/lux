@@ -35,7 +35,8 @@ formreg['login'] = Layout(
     Fieldset(all=True),
     Submit('Login'),
     showLabels=False,
-    resultHandler='redirect'
+    resultHandler='redirect',
+    redirectTo=lambda form: form.request.config['POST_LOGIN_URL']
 )
 
 
@@ -58,12 +59,4 @@ formreg['password-recovery'] = Layout(
     Submit('Submit'),
     showLabels=False,
     resultHandler='passwordRecovery'
-)
-
-
-formreg['mailing-list'] = Layout(
-    forms.EmailForm,
-    Fieldset(all=True),
-    Submit('Get notified'),
-    showLabels=False
 )

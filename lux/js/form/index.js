@@ -13,6 +13,7 @@ luxFormModule.provider('luxFormConfig', luxFormConfig);
 import * as directives from './directives';
 luxFormModule.directive('luxForm', directives.luxForm);
 luxFormModule.directive('luxField', directives.luxField);
+luxFormModule.directive('luxFormset', directives.luxFormset);
 import luxRemote from './remote';
 luxFormModule.directive('luxRemote', luxRemote);
 
@@ -26,6 +27,9 @@ formWrappers(luxFormModule);
 
 import formActions from './actions';
 formActions(luxFormModule);
+
+import formMessages from './messages';
+formMessages(luxFormModule);
 
 
 // Run configuration

@@ -26,6 +26,12 @@
     }
 }
 
+a.feature {
+    @include setLinkSelectorStyle {
+        text-decoration: none;
+    }
+}
+
 @media (max-width: $screen-md-min) {
     .features article {
         width: 50%;

@@ -2,16 +2,11 @@ import time
 from functools import wraps
 from datetime import datetime, timedelta
 
-from pulsar import ImproperlyConfigured, Http401
-from pulsar.utils.pep import to_string
+from pulsar import Http401
 from pulsar.apps.wsgi import Route, wsgi_request
 
 from lux.core import app_attribute
-
-try:
-    import jwt
-except ImportError:     # pragma    nocover
-    jwt = None
+import lux.utils.token as jwt
 
 
 class TokenBackendMixin:
@@ -27,20 +22,18 @@ class TokenBackendMixin:
     def encode_token(self, request, user=None, expiry=None, **token):
         """Encode a JWT
         """
-        if not jwt:     # pragma    nocover
-            raise ImproperlyConfigured('JWT library not available')
-
         if expiry:
             token['exp'] = int(time.mktime(expiry.timetuple()))
 
         request.app.fire('on_token', request, token, user)
-        return to_string(jwt.encode(token, request.config['SECRET_KEY']))
+        return jwt.encode_json(token, request.config['SECRET_KEY'])
 
-    def decode_token(self, request, token):
-        if not jwt:     # pragma    nocover
-            raise ImproperlyConfigured('JWT library not available')
+    def decode_token(self, request, token, key=None,
+                     algorithm=None, **options):
+        algorithm = algorithm or request.config['JWT_ALGORITHM']
+        key = key or request.config['SECRET_KEY']
         try:
-            return jwt.decode(token, request.config['SECRET_KEY'])
+            return jwt.decode(token, key, algorithm=algorithm, options=options)
         except jwt.ExpiredSignature:
             request.app.logger.warning('JWT token has expired')
             raise Http401('Token')
@@ -100,7 +93,7 @@ class SessionBackendMixin(TokenBackendMixin):
         """
         if request.method == 'GET':
             session = request.cache.session
-            if session and session.user:
+            if session and session.user and session.encoded:
                 doc.head.add_meta(name="user-token", content=session.encoded)
 
     # MIDDLEWARE

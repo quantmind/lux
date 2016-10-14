@@ -13,9 +13,11 @@ __pycache__
 htmlcov
 htmlprof
 dist
-build
+/build
+_build
 src
 deps
+release-notes.md
 *.egg-info
 
 # javascript/css

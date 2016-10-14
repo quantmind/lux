@@ -14,13 +14,14 @@ __all__ = ['LuxExtension', 'Parameter', 'app_attribute']
 
 
 # All events are fired with app as first positional argument
-ALL_EVENTS = ('on_config',  # Config ready.
-              'on_loaded',  # Wsgi handler ready.
-              'on_start',  # Wsgi server starts. Extra args: server
-              'on_request',  # Fired when a new request arrives
-              'on_html_document',  # Html doc built. Extra args: request, html
-              'on_form',  # Form constructed. Extra args: form
-              )
+ALL_EVENTS = (
+    'on_config',  # Config ready.
+    'on_loaded',  # Wsgi handler ready.
+    'on_start',  # Wsgi server starts. Extra args: server
+    'on_html_document',  # Html doc built. Extra args: request, html
+    'on_form',  # Form constructed. Extra args: form
+    'on_close',  # Close the application - cleanup
+)
 
 
 class Parameter(object):
@@ -130,12 +131,11 @@ class ExtensionType(type):
                 config.extend(cfg)
         version = attrs.pop('version', None)
         abstract = attrs.pop('abstract', False)
-        cfg = attrs.get('_config')
+        cfg = attrs.get('_config') if abstract else attrs.pop('_config', None)
         if cfg:
             config.extend(cfg)
         klass = super().__new__(cls, name, bases, attrs)
         if not abstract:
-            klass._config = None
             meta = getattr(klass, 'meta', None)
             module = getmodule(klass)
             if isinstance(meta, ExtensionMeta):

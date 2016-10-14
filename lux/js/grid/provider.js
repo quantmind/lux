@@ -4,26 +4,26 @@ import Grid from './grid';
 import reversemerge from '../core/reversemerge';
 
 
-export default function () {
+// @ngInject
+export default function ($luxProvider) {
 
     const
-        providerMap = {},
-        onInitCallbacks = [],
+        dataProviderMap = {},
+        components = [],
         columnProcessors = {},
         defaults = {
-            modules: [
-                'ui.grid',
-                'ui.grid.pagination',
-                'ui.grid.selection',
-                'ui.grid.autoResize',
-                'ui.grid.resizeColumns'
-            ],
+            //
+            // Auto Resize
+            enableAutoResize: true,
+            //
             // Filtering
             enableFiltering: true,
-            enableRowHeaderSelection: false,
-            useExternalPagination: true,
-            useExternalSorting: true,
             useExternalFiltering: true,
+            gridFilters: {},
+            //
+            // Sorting
+            useExternalSorting: true,
+            //
             // Scrollbar display: 0 - never, 1 - always, 2 - when needed
             enableHorizontalScrollbar: 0,
             enableVerticalScrollbar: 0,
@@ -34,13 +34,19 @@ export default function () {
             //
             // Grid pagination
             enablePagination: true,
+            useExternalPagination: true,
             paginationPageSizes: [25, 50, 100, 250],
             paginationPageSize: 25,
             //
-            gridFilters: {},
-            //
-            enableGridMenu: true,
             gridMenuShowHideColumns: false,
+            //
+            // Column resizing
+            enableResizeColumn: true,
+            //
+            // Row Selection
+            enableSelect: true,
+            multiSelect: true,
+            // enableRowHeaderSelection: false,
             //
             // Lux specific options
             // request delay in ms
@@ -49,29 +55,56 @@ export default function () {
         };
     let defaultProvider;
 
-    _.extend(this, {
+    $luxProvider.grid = _.extend(grid, {
         defaults: defaults,
-        registerDataProvider,
+        // get/set data Provider
+        dataProvider,
+        // processor for columns
         columnProcessor,
+        // add or retrieve a component
+        component,
+        //
         onInit,
-        // Required for angular providers
-        $get: get
+        //
+        onMetadata
     });
 
-    function registerDataProvider (type, dataProvider) {
-        providerMap[type] = dataProvider;
-        if (!defaultProvider) defaultProvider = type;
+    $luxProvider.plugins.grid = $luxProvider.grid;
+
+    var defaultComponent = {
+        require: function () {},
+        onInit: function () {},
+        onMetadata: function () {}
+    };
+
+    function dataProvider (type, dataProvider) {
+        if (arguments.length === 2) {
+            dataProviderMap[type] = dataProvider;
+            if (!defaultProvider) defaultProvider = type;
+            return this;
+        } else {
+            if (!type) type = defaultProvider;
+            var provider = dataProviderMap[type];
+            if (provider) return provider;
+            throw Error('No data provider found');
+        }
+    }
+
+    function component(component) {
+        components.push(_.extend({}, defaultComponent, component));
+        return this;
     }
 
     function onInit (grid) {
-        if (grid instanceof Grid) {
-            _.forEach(onInitCallbacks, (callback) => {
-                callback(grid);
-            });
-        } else {
-            onInitCallbacks.push(grid);
-            return this;
-        }
+        _.forEach(components, (component) => {
+            component.onInit(grid);
+        });
+    }
+
+    function onMetadata (grid) {
+        _.forEach(components, (component) => {
+            component.onMetadata(grid);
+        });
     }
 
     function columnProcessor(type, hook) {
@@ -83,38 +116,28 @@ export default function () {
         }
     }
 
-    // @ngInject
-    function get ($compile, $window, $lux, $injector, luxLazy) {
+    // Grid constructor
+    function grid (options) {
+        var $lux = this,
+            provider = $luxProvider.grid,
+            r = {
+                requires: ['angular-ui-grid'],
+                modules: ['ui.grid'],
+                directives: []
+            };
 
-        function gridApi (options) {
-            options = reversemerge(options || {}, gridApi.defaults);
-            var grid = new Grid(options, $lux, $compile, $window);
-            luxLazy.require(['angular-ui-grid'], options.modules, () => {
-                var uiGridConstants = $injector.get('uiGridConstants');
-                grid.$onLoaded(gridApi, uiGridConstants);
-            });
-            return grid;
-        }
+        options = reversemerge(options || {}, provider.defaults);
 
-        return _.extend(gridApi, {
-            defaults: defaults,
-            column,
-            registerDataProvider,
-            getDataProvider,
-            onInit
+        _.forEach(components, (component) => {
+            component.require(options, r);
         });
 
-        function column (column, grid) {
-            var hook = columnProcessors[column.type];
-            if (hook) hook(column, grid);
-        }
+        var grid = new Grid($lux, provider, options);
 
-        function getDataProvider (grid) {
-            var type = grid.options.dataProvider;
-            if (!type) type = defaultProvider;
-            var provider = providerMap[type];
-            if (provider) return provider($lux, grid);
-            throw Error('No data provider found');
-        }
+        $lux.require(r.requires, r.modules, () => {
+            grid.$onLoaded(r.directives.join(' '));
+        });
+
+        return grid;
     }
 }

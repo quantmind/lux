@@ -29,3 +29,9 @@ class ContentTest(web.WebsiteTest):
         bs = self.xml(request.response, 200)
         sitemap = bs.findAll('sitemap')
         self.assertTrue(sitemap)
+
+    async def test_login_json_form(self):
+        request = await self.webclient.get('/auth/login/jsonform')
+        data = self.json(request.response, 200)
+        self.assertIsInstance(data, dict)
+        self.assertTrue('children' in data)

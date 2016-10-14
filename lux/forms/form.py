@@ -6,45 +6,6 @@ from .errors import ValidationError, FormError
 from .fields import Field
 from .formsets import FormSet
 
-FORMKEY = 'm__form'
-
-
-class FieldList(list):
-    '''A list of :class:`Field` and :class:`FieldList`.
-     It can be used to specify fields using a declarative list in a
-     :class:`Form` class.
-     For example::
-
-         from lux import forms
-
-         class MyForm(forms.Form):
-             some_fields = forms.FieldList(('name',forms.CharField()),
-                                           ('description',forms.CharField()))
-
-    .. attribute:: withprefix
-
-        if ``True`` the :class:`Fieldlist` attribute name in the form is
-        prefixed to the field names.
-    '''
-
-    def __init__(self, data=None, withprefix=True):
-        self.withprefix = withprefix
-        super(FieldList, self).__init__(data or ())
-
-    def fields(self, prefix=None):
-        for nf in self:
-            name, field = nf[0], nf[1]
-            initial = nf[2] if len(nf) > 2 else None
-            if isinstance(field, self.__class__):
-                for name2, field2 in field.fields(name):
-                    yield name2, field2
-            else:
-                if prefix and self.withprefix:
-                    name = '%s%s' % (prefix, name)
-                if isinstance(field, type):
-                    field = field(initial=initial)
-                yield name, field
-
 
 def get_form_meta_data(bases, attrs):
     fields = []
@@ -54,9 +15,10 @@ def get_form_meta_data(bases, attrs):
             # field name priority is the name in the instance
             obj.name = obj.name or name
             fields.append((obj.name, attrs.pop(name)))
-        elif isinstance(obj, FieldList):
-            obj = attrs.pop(name)
-            fields.extend(obj.fields(name + '__'))
+        elif isinstance(obj, FormType):
+            obj = FormSet(attrs.pop(name), single=True)
+            obj.name = name
+            inlines.append((name, obj))
         elif isinstance(obj, FormSet):
             obj.name = name
             inlines.append((name, attrs.pop(name)))
@@ -70,6 +32,8 @@ def get_form_meta_data(bases, attrs):
     for base in bases[::-1]:
         if hasattr(base, 'base_fields'):
             fields = list(base.base_fields.items()) + fields
+        if hasattr(base, 'inlines'):
+            inlines = list(base.inlines.items()) + inlines
 
     return OrderedDict(fields), OrderedDict(inlines)
 
@@ -94,7 +58,6 @@ class Form(metaclass=FormType):
         It sets the :attr:`rawdata` attribute.
     :parameter files: dictionary type object containing files to upload.
     :parameter initial: set the :attr:`initial` attribute.
-    :parameter prefix: set the :attr:`prefix` attribute.
     :parameter previous_state:  An optional instance of a model class,
                                 representing the state before changes
                                 have been made.
@@ -114,12 +77,6 @@ class Form(metaclass=FormType):
 
         The input data, if available this :class:`Form` is bound and can
         be validated via the :meth:`is_valid` method.
-
-    .. attribute:: prefix
-
-        String to use as prefix for field names.
-
-        Default: ``''``.
 
     .. attribute:: request
 
@@ -155,7 +112,7 @@ class Form(metaclass=FormType):
     model = None
 
     def __init__(self, request=None, data=None, files=None, initial=None,
-                 prefix=None, previous_state=None):
+                 previous_state=None, model=None):
         self.request = request
         self.is_bound = data is not None or files is not None
         if self.is_bound:
@@ -171,7 +128,7 @@ class Form(metaclass=FormType):
             self.initial = dict(initial.items())
         else:
             self.initial = {}
-        self.prefix = prefix or ''
+        self.model = model or self.model
         self.messages = {}
         self.changed = False
         self.form_sets = {}
@@ -189,11 +146,12 @@ class Form(metaclass=FormType):
 
         Includes any subforms. It returns a coroutine.'''
         if not self._check_unwind(False):
-            self._unwind(exclude_missing)
+            self._unwind_fields(exclude_missing)
             if not bool(self._errors):
                 for fset in self.form_sets.values():
                     if not fset.is_valid(exclude_missing):
                         break
+            self._unwind_form()
         return not bool(self._errors) if self.is_bound else False
 
     @property
@@ -239,20 +197,11 @@ class Form(metaclass=FormType):
         fields for example. It doesn't need to return anything, just throw a
         :class:`.ValidationError` in case the cleaning is not successful.
         '''
-        if self.request:
-            model = self.request.app.models.get(self.model)
-            if model:
-                model.validate_fields(self.request,
-                                      self.previous_state,
-                                      self.cleaned_data)
+        pass
 
-    def add_message(self, message):
-        '''Add a message to the form'''
-        self._form_message(self.messages, FORMKEY, message)
-
-    def add_error_message(self, message):
+    def add_error_message(self, message, field=None):
         '''Add an error message to the form'''
-        self._form_message(self.errors, FORMKEY, message)
+        self._form_message(self.errors, field or '', message)
 
     def tojson(self):
         '''Return a json-serialisable dictionary of messages for form fields.
@@ -268,34 +217,29 @@ class Form(metaclass=FormType):
             messages = []
             data = {'errors': messages}
             for name, msg in self.errors.items():
-                msg = {'message': '\n'.join(msg)}
-                field = self.dfields.get(name)
-                if field:
-                    msg['field'] = field.html_name
+                formset = self.form_sets.get(name)
+                if formset:
+                    msg = msg or formset.tojson()
+                else:
+                    msg = {'message': '\n'.join(msg)}
+                    field = self.dfields.get(name)
+                    if field:
+                        msg['field'] = field.name
                 messages.append(msg)
             return data
-        else:
-            messages = []
-            for name, msg in self.messages.items():
-                msg = {'message': msg}
-                field = self.dfields.get(name)
-                if field:
-                    msg['field'] = field.html_name
-                messages.append(msg)
-            return messages
 
     def message(self):
         messages = self.tojson()
         msg = ''
-        if isinstance(messages, dict):
+        if messages:
             messages = messages['errors']
             msg = 'ERROR: '
-        for idx, message in enumerate(messages):
-            if idx:
-                msg += ', '
-            if 'field' in message:
-                msg += '%s: ' % message['field']
-            msg += message['message']
+            for idx, message in enumerate(messages):
+                if idx:
+                    msg += ', '
+                if 'field' in message:
+                    msg += '%s: ' % message['field']
+                msg += message['message']
         return msg
 
     # INTERNALS
@@ -307,7 +251,7 @@ class Form(metaclass=FormType):
                 return False
         return True
 
-    def _unwind(self, exclude_missing=False):
+    def _unwind_fields(self, exclude_missing=False):
         self._exclude_missing = exclude_missing
         is_bound = self.is_bound
         if is_bound:
@@ -315,11 +259,19 @@ class Form(metaclass=FormType):
             self._errors = {}
         rawdata = self.rawdata
         self._clean_fields(rawdata)
-        if is_bound:
+
+    def _unwind_form(self):
+        if self.is_bound:
             if not self._errors:
-                # Invoke the form clean method.
-                # Useful for cross fields checking
                 try:
+                    if self.request:
+                        model = self.request.app.models.get(self.model)
+                        if model:
+                            model.validate_fields(self.request,
+                                                  self.previous_state,
+                                                  self.cleaned_data)
+                    # Invoke the form clean method.
+                    # Useful for cross fields checking
                     self.clean()
                 except ValidationError as err:
                     self.add_error_message(err)
@@ -337,7 +289,7 @@ class Form(metaclass=FormType):
         # Loop over form fields
         for name, field in self.base_fields.items():
             bfield = BoundField(self, field)
-            key = bfield.html_name
+            key = bfield.name
             if (is_bound and exclude_missing and key not in rawdata and
                key not in files):
                 continue
@@ -397,10 +349,6 @@ class BoundField(object):
     .. attribute::    name
 
         The :attr:`field` name (the key in the forms's fields dictionary).
-
-    .. attribute::    html_name
-
-        The :attr:`field` name to be used in HTML.
     '''
 
     def __init__(self, form, field):
@@ -408,7 +356,6 @@ class BoundField(object):
         self.field = field
         self.request = form.request
         self.name = field.name
-        self.html_name = field.html_name(form.prefix)
         self.value = None
 
     def clean(self, value):
@@ -428,11 +375,14 @@ class BoundField(object):
                     or value not in NOTHING:
                 self.form._cleaned_data[self.name] = value
         except ValidationError as err:
-            form._form_message(form._errors, self.name, err)
+            form.add_error_message(err, self.name)
 
 
-def create_form(name, *fields, **params):
+def create_form(form_name, *fields, base=None, **params):
     '''Create a form class from fields
     '''
+    base = base or Form
+    if not isinstance(base, tuple):
+        base = (base,)
     params.update(((f.name, f) for f in fields))
-    return FormType(name, (Form,), params)
+    return FormType(form_name, base, params)

@@ -2,7 +2,7 @@ import json
 from inspect import isclass
 
 from pulsar import Http404, PermissionDenied
-from pulsar.apps.wsgi import Json, Html
+from pulsar.apps.wsgi import Html
 from pulsar.utils.html import nicename
 
 from lux.core import route, cached, HtmlRouter
@@ -16,6 +16,11 @@ def is_admin(cls, check_model=True):
     if isclass(cls) and issubclass(cls, AdminModel) and cls is not AdminModel:
         return bool(cls.model) if check_model else True
     return False
+
+
+def default_filter(cls):
+    if cls.model:
+        return cls
 
 
 def grid(options):
@@ -42,11 +47,11 @@ class AdminRouter(HtmlRouter):
     '''Base class for all Admin Routers
     '''
     def response_wrapper(self, callable, request):
-        backend = request.cache.auth_backend
-        if backend.has_permission(request, 'site:admin', 'read'):
-            return callable(request)
-        else:
-            raise Http404
+        try:
+            self.check_permission(request)
+        except PermissionDenied:
+            raise Http404 from None
+        return callable(request)
 
     def context(self, request):
         '''Override to add the admin navigation to the javascript context.
@@ -57,9 +62,6 @@ class AdminRouter(HtmlRouter):
         if admin:
             doc = request.html_document
             doc.jscontext['navigation'] = admin.sitemap(request)
-
-    def get_html(self, request):
-        return request.app.render_template('partials/admin.html')
 
     def admin_root(self):
         router = self
@@ -76,24 +78,35 @@ class Admin(AdminRouter):
         # set self as the angular root
         self._angular_root = self
 
+    def load(self, app, filter=None):
+        all = app.module_iterator('admin', is_admin, '__admins__')
+        filter = filter or default_filter
+        for cls in all:
+            cls = filter(cls)
+            if not cls:
+                continue
+            self.add_child(cls())
+        return self
+
     @cached(user=True)
     def sitemap(self, request):
         infos = []
         resources = []
         for child in self.routes:
             if isinstance(child, AdminModel):
+                try:
+                    section, info = child.info(request)
+                except Http404:
+                    continue
                 resource = child.model
                 resources.append(resource)
-                section, info = child.info(request)
                 infos.append((resource, section, info))
 
         backend = request.cache.auth_backend
         sections = {}
         sitemap = []
-
-        if backend:
-            permissions = backend.get_permissions(request, resources, 'read')
-            infos = self._permission_filter(permissions, infos)
+        permissions = backend.get_permissions(request, resources, 'read')
+        infos = self._permission_filter(permissions, infos)
 
         for resource, section, info in infos:
             if section not in sections:
@@ -121,36 +134,42 @@ class AdminModel(AdminRouter):
     '''
     model = None
     section = None
-    permissions = None
-    '''An permissions used in grid
-    '''
     icon = None
+    grid_options = dict(
+        enableRowSelection=True,
+        enableSelectAll=True,
+        enableGridMenu=True
+    )
     '''An icon for this Admin section
     '''
-    def __init__(self):
+    def __init__(self, model=None, **kwargs):
+        self.model = model or self.model
         assert self.model
-        super().__init__(self.model)
+        super().__init__(self.model, **kwargs)
 
     def info(self, request):
         '''Information for admin navigation
         '''
         model = self.get_model(request)
-        url = model.url
-        name = nicename(url)
+        name = nicename(model.identifier)
         info = {'title': name,
                 'name': name,
                 'href': self.full_route.path,
                 'icon': self.icon}
         return self.section, info
 
+    def get_target(self, request, model=None, **kw):
+        model = self.get_model(request, model=model)
+        return model.get_target(request, **kw)
+
     def get_html(self, request):
-        app = request.app
-        model = self.get_model(request)
-        options = dict(target=model.get_target(request))
-        if self.permissions is not None:
-            options['permissions'] = self.permissions
-        context = {'grid': grid(options)}
-        return app.render_template('partials/admin-list.html', context)
+        return self.get_grid(request)
+
+    def get_grid(self, request, basePath=None, **kw):
+        options = self.grid_options.copy()
+        options['target'] = self.get_target(request, **kw)
+        options['basePath'] = basePath
+        return grid(options)
 
 
 class CRUDAdmin(AdminModel):
@@ -158,49 +177,46 @@ class CRUDAdmin(AdminModel):
     '''
     form = None
     updateform = None
-    addtemplate = 'partials/admin-add.html'
 
     @route()
     def add(self, request):
         '''Add a new model
         '''
-        return self.get_form(request, self.form)
+        form = self.get_form(request, self.form)
+        return self.json_or_html(request, form)
 
     @route('<id>')
     def update(self, request):
         '''Edit an existing model
         '''
-        id = request.urlargs['id']
-        form = self.updateform or self.form
-        return self.get_form(request, form, id=id)
+        form = self.get_form(request, id=request.urlargs['id'])
+        return self.json_or_html(request, form)
 
-    def get_form(self, request, form=None, id=None):
-        json = 'json' in request.url_data
+    def json_or_html(self, request, data):
+        if 'json' in request.url_data:
+            return self.json_response(request, data)
+        else:
+            return self.html_response(request, data)
+
+    def get_form(self, request, form=None, id=None, model=None,
+                 initial=None, **params):
         if id:
-            action = 'update'
+            params['action'] = 'update'
             form = form or self.updateform or self.form
         else:
-            action = 'create'
+            params['action'] = 'create'
             form = form or self.form
 
         form = get_form_layout(request, form)
         if not form:
             raise Http404
 
-        backend = request.cache.auth_backend
-        model = self.get_model(request)
-        target = model.get_target(request, path=id, action=action)
+        target = self.get_target(request, path=id, model=model, **params)
         if id:
             request.api.head(target)
 
-        if backend.has_permission(request, model.name, action):
-            if json:
-                data = form(request).as_dict(action=target)
-                return Json(data).http_response(request)
-            else:
-                html = form(request).as_form(action=target)
-                context = {'html_form': html.render()}
-                html = request.app.render_template(self.addtemplate, context)
-                return self.html_response(request, html)
-
-        raise PermissionDenied
+        form = form(request, initial=initial, model=model)
+        if 'json' in request.url_data:
+            return form.as_dict(action=target)
+        else:
+            return form.as_form(action=target)

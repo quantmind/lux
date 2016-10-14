@@ -47,7 +47,29 @@
 
 
 @mixin setLinkSelectorStyle {
-    &:hover, &:active, &:visited {
+    *, &:hover, &:active, &:visited {
         @content;
+    }
+}
+
+@mixin stayOpenSidebar() {
+    .sidebar, .sidebar.sidebar-left {
+        @include transform(translate(0, 0));
+    }
+
+    .sidebar-navbar {
+        .navbar {
+            width: calc(100% - #{$sidebar-width});
+            @include transform(translateX($sidebar-width));
+        }
+    }
+
+    .overlay,
+    .navbar .navbar-nav > li > a.sidebar-toggle {
+        display: none;
+    }
+
+    .sidebar-page {
+        padding-left: $sidebar-width;
     }
 }

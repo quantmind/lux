@@ -7,8 +7,7 @@ to ``text/html``
 """
 from lux.core import Parameter, LuxExtension
 
-from .admin import (Admin, AdminModel, CRUDAdmin, adminMap, register,
-                    is_admin, grid)
+from .admin import Admin, AdminModel, CRUDAdmin, adminMap, register, grid
 
 
 __all__ = ['Admin', 'AdminModel', 'CRUDAdmin', 'register', 'adminMap', 'grid']
@@ -28,11 +27,4 @@ class Extension(LuxExtension):
         if admin and app.config['DEFAULT_CONTENT_TYPE'] == 'text/html':
             self.require(app, 'lux.extensions.rest')
             self.admin = admin = Admin(admin)
-            middleware = []
-            all = app.module_iterator('admin', is_admin, '__admins__')
-            for AdminRouterCls in all:
-                if not AdminRouterCls.model:
-                    continue
-                admin.add_child(AdminRouterCls())
-            middleware.append(admin)
-            return middleware
+            return [admin.load(app)]

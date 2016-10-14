@@ -5,7 +5,7 @@ These views are used by the browser authentication backends
 from pulsar import Http404, HttpRedirect
 from pulsar.apps.wsgi import route
 
-from lux.core import Router, HtmlRouter
+from lux.core import Router
 from lux.forms import WebFormRouter, get_form_layout
 
 from . import actions
@@ -88,60 +88,3 @@ class ForgotPassword(WebFormRouter):
 
         else:
             return actions.reset_password(request, key)
-
-
-class ComingSoon(WebFormRouter):
-    form = 'mailing-list'
-
-
-class MultiWebFormRouter(HtmlRouter):
-    default_action = None
-    templates_path = ''
-    action_config = {}
-
-    def action_context(self, request, context, target):
-        pass
-
-    def get(self, request):
-        action = request.urlargs.get('action')
-        if not action:
-            if self.default_action:
-                loc = '%s/%s' % (request.absolute_uri(), self.default_action)
-                raise HttpRedirect(loc)
-            else:
-                raise Http404
-        else:
-            return super().get(request)
-
-    @route('<action>')
-    def action(self, request):
-        app = request.app
-        action = request.urlargs['action']
-        template = app.template('%s/%s.html' % (self.templates_path, action))
-        if not template:
-            raise Http404
-        request.cache.template = template
-        return self.get(request)
-
-    def get_html(self, request):
-        template = request.cache.template
-        if not template:
-            raise Http404
-
-        action = request.urlargs.get('action')
-        context = dict(self.action_config.get(action) or ())
-        model = context.get('model') or self.model
-        target = model.get_target(request,
-                                  path=context.get('path'),
-                                  get=context.get('getdata'))
-
-        if 'form' in context:
-            form = get_form_layout(request, context['form'])
-            if not form:
-                raise Http404
-            html = form(request).as_form(action=target)
-            context['html_main'] = html.render(request)
-
-        self.action_context(request, context, target)
-        rnd = request.app.template_engine()
-        return rnd(template, context)

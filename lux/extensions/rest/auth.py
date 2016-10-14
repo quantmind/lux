@@ -1,21 +1,12 @@
 from functools import partial
 
 from pulsar.utils.importer import module_attribute
-from lux.core import LuxExtension
+
+from lux.core import AuthBase, backend_action, auth_backend_actions
 from lux.forms import ValidationError
 
 from .user import UserMixin
 from .views.actions import AuthenticationError
-
-
-auth_backend_methods = []
-
-
-def auth_backend(f):
-    name = f.__name__
-    if name not in auth_backend_methods:
-        auth_backend_methods.append(name)
-    return f
 
 
 class Anonymous(UserMixin):
@@ -33,13 +24,8 @@ class Anonymous(UserMixin):
         return 0
 
 
-class AuthBase(LuxExtension):
+class AuthBackendBase(AuthBase):
     abstract = True
-
-    def request(self, request):  # pragma    nocover
-        '''Request middleware. Most backends implement this method
-        '''
-        pass
 
     def anonymous(self):
         '''Anonymous User
@@ -59,7 +45,20 @@ class AuthBase(LuxExtension):
             raise ValidationError('Username not available')
 
 
-class MultiAuthBackend(AuthBase):
+class ProxyBackend:
+
+    def __getattr__(self, method):
+        if method in auth_backend_actions:
+            return partial(self._execute_backend_method, method)
+        else:
+            raise AttributeError("'%s' object has no attribute '%s'" %
+                                 (type(self).__name__, method))
+
+    def _execute_backend_method(self, method, request, *args, **kwargs):
+        return None
+
+
+class MultiAuthBackend(AuthBackendBase, ProxyBackend):
     '''Aggregate several Authentication backends
     '''
     abstract = True
@@ -77,44 +76,43 @@ class MultiAuthBackend(AuthBase):
                                            request, resource, action)
         return True if has is None else has
 
+    def get_permissions(self, request, resource, actions=None):
+        return self._execute_backend_method('get_permissions',
+                                            request, resource, actions)
+
     def __iter__(self):
         return iter(self.backends or ())
 
-    def __getattr__(self, method):
-        if method in auth_backend_methods:
-            return partial(self._execute_backend_method, method)
-        else:
-            raise AttributeError("'%s' object has no attribute '%s'" %
-                                 (type(self).__name__, method))
-
     def _execute_backend_method(self, method, request, *args, **kwargs):
         for backend in self.backends or ():
-            result = getattr(backend, method)(request, *args, **kwargs)
-            if result is not None:
-                return result
+            backend_method = getattr(backend, method, None)
+            if backend_method:
+                result = backend_method(request, *args, **kwargs)
+                if result is not None:
+                    return result
 
 
 class AuthenticationResponses:
 
-    @auth_backend
+    @backend_action
     def authorize(self, request, auth):
         """Authorize an ``auth`` claim
         """
         pass
 
-    @auth_backend
+    @backend_action
     def logout(self, request):  # pragma    nocover
         """Logout a user
         """
         pass
 
-    @auth_backend
+    @backend_action
     def login(self, request, user):  # pragma    nocover
         """Login a user
         """
         pass
 
-    @auth_backend
+    @backend_action
     def inactive_user_login_response(self, request, user):
         """JSON response when a non active user logs in
         """
@@ -125,40 +123,40 @@ class AuthenticationResponses:
 class AuthUserMixin:
 
     # Internal Methods
-    @auth_backend
+    @backend_action
     def authenticate(self, request, **params):  # pragma    nocover
         '''Authenticate user'''
         pass
 
-    @auth_backend
+    @backend_action
     def create_user(self, request, **kwargs):  # pragma    nocover
         '''Create a standard user.'''
         pass
 
-    @auth_backend
+    @backend_action
     def signup(self, request, **params):   # pragma    nocover
         """Signup a new ``user``
         """
         pass
 
-    @auth_backend
+    @backend_action
     def signup_confirm(self, request, key):
         """Confirm a new sign up
         """
         pass
 
-    @auth_backend
+    @backend_action
     def signup_confirmation(self, request, user):
         """Create a new signup confirmation
         """
         pass
 
-    @auth_backend
+    @backend_action
     def create_superuser(self, request, **kwargs):  # pragma    nocover
         '''Create a user with *superuser* permissions.'''
         pass
 
-    @auth_backend
+    @backend_action
     def get_user(self, request, **kwargs):  # pragma    nocover
         '''Retrieve a user.'''
         pass
@@ -166,55 +164,41 @@ class AuthUserMixin:
 
 class AuthenticationKeyMixin:
 
-    @auth_backend
+    @backend_action
     def create_auth_key(self, request, user, **kw):
         """Create an authentication key for ``user``"""
         pass
 
-    @auth_backend
+    @backend_action
     def confirm_auth_key(self, request, auth_key, **kw):
         '''Confirm an authentication key'''
         pass
 
-    @auth_backend
+    @backend_action
     def password_recovery(self, request, email):
         '''Password recovery method via email
         '''
         pass
 
-    @auth_backend
+    @backend_action
     def auth_key_expiry(self, request):
         '''Expiry for a session or a token
         '''
         pass
 
 
-class AuthBackend(AuthBase,
+class AuthBackend(AuthBackendBase,
                   AuthUserMixin,
                   AuthenticationResponses,
                   AuthenticationKeyMixin):
     '''Interface for extension supporting restful methods
     '''
-    @auth_backend
+    @backend_action
     def create_token(self, request, user, **kwargs):  # pragma    nocover
         '''Create an athentication token for ``user``'''
         pass
 
-    @auth_backend
+    @backend_action
     def set_password(self, request, password, **kwargs):
         '''Set a new password for user'''
-        pass
-
-    @auth_backend
-    def has_permission(self, request, resource, action):  # pragma    nocover
-        '''Check if the given request has permission over ``resource``
-        element with permission ``action``
-        '''
-        pass
-
-    @auth_backend
-    def get_permissions(self, request, resource,
-                        actions=None):  # pragma    nocover
-        '''Get a dictionary of permissions for the given resource
-        '''
         pass

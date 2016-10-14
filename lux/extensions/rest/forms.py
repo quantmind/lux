@@ -35,17 +35,26 @@ class RelationshipField(MultipleMixin, forms.Field):
                          self, self.model)
             return attrs
 
+        params = self.params or {}
+        params['load_only'] = [model.id_field, model.repr_field]
         target = model.get_target(request,
                                   path=self.path,
-                                  params=self.params)
+                                  params=params)
         attrs['lux-remote'] = json.dumps(target)
         return attrs
+
+    def metadata(self):
+        """Override metadata method"""
+        meta = super().metadata()
+        meta['type'] = 'object'
+        meta['model'] = self.model
+        return meta
 
     def _clean(self, value, bfield):
         try:
             request = bfield.request
             model = request.app.models.get(self.model)
-            kwargs = {model.id_field: value}
+            kwargs = model.model_url_params(request, value)
             if self.multiple:
                 return model.get_list(request, **kwargs)
             else:
@@ -67,31 +76,38 @@ class UniqueField:
     '''
     validation_error = '{0} not available'
 
-    def __init__(self, model=None, field=None, validation_error=None):
+    def __init__(self, model=None, field=None, nullable=False,
+                 validation_error=None):
         self.model = model
         self.field = field
+        self.nullable = nullable
         self.validation_error = validation_error or self.validation_error
 
     def __call__(self, value, bfield):
-        model = self.model or bfield.form.model
+        model_name = self.model or bfield.form.model
         field = self.field or bfield.name
         previous_state = bfield.form.previous_state
-        if not model:
+        if not model_name:
             raise forms.ValidationError('No model')
+
+        if not value and self.nullable:
+            return value
 
         request = bfield.request
         app = request.app
-        model = app.models.get(model)
-        if not model:
-            model = self.model or bfield.form.model
-            raise forms.ValidationError('No model %s' % model)
+        model = app.models.get(model_name)
 
+        if not model:
+            raise forms.ValidationError('No model %s' % model_name)
+
+        kwargs = {field: value}
+        kwargs.update(model.model_url_params(request))
         try:
-            instance = model.get_instance(request, **{field: value})
+            instance = model.get_instance(request, **kwargs)
         except Http404:
             pass
         else:
-            if not model.same_instance(instance, previous_state):
+            if instance != previous_state:
                 raise forms.ValidationError(
                     self.validation_error.format(value))
 

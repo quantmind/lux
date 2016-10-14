@@ -12,39 +12,52 @@ just after the :mod:`lux.extensions.base`::
                   ]
 
 """
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 from collections import OrderedDict
 
 from pulsar import ImproperlyConfigured
 from pulsar.utils.importer import module_attribute
-from pulsar.utils.httpurl import is_absolute_uri
+from pulsar.utils.httpurl import remove_double_slash
 from pulsar.apps.wsgi import wsgi_request
 
 from lux.core import Parameter
 
-from .auth import AuthBackend, auth_backend, MultiAuthBackend
-from .models import RestModel, RestColumn, ModelMixin, is_rel_column
-from .client import ApiClient
+from .auth import AuthBackend, MultiAuthBackend, backend_action
+from .models import RestModel, DictModel, RestField, is_rel_field
+from .api import Apis
+from .api.client import ApiClient, HttpResponse
 from .views.actions import (AuthenticationError, check_username, login,
                             logout, user_permissions)
-from .views.api import RestRoot, RestRouter, RestMixin
+from .views.rest import RestRoot, RestRouter, MetadataMixin, CRUD, Rest404
 from .views.auth import Authorization
-from .policy import has_permission
+from .views.spec import Specification
 from .pagination import Pagination, GithubPagination
 from .forms import RelationshipField, UniqueField
+from .query import Query, RestSession
 from .user import (MessageMixin, UserMixin, SessionMixin, PasswordMixin,
                    User, Session, session_backend)
 
 
 __all__ = ['RestModel',
-           'RestColumn',
-           'is_rel_column',
-           'ModelMixin',
-           'AuthBackend',
-           'auth_backend',
+           'RestField',
+           'is_rel_field',
+           'DictModel',
+           #
            'Authorization',
+           #
+           'AuthBackend',
+           'backend_action',
+           #
            'RestRouter',
-           'RestMixin',
+           'MetadataMixin',
+           'CRUD',
+           ""
+           "ApiClient",
+           "HttpResponse",
+           #
+           'Query',
+           'RestSession',
+           #
            'Pagination',
            'GithubPagination',
            'AuthenticationError',
@@ -61,6 +74,7 @@ __all__ = ['RestModel',
            'UniqueField',
            #
            'api_url',
+           'api_path',
            #
            'login',
            'logout',
@@ -86,6 +100,15 @@ def api_url(request, location=None):
     return url
 
 
+def api_path(request, model, *args, **params):
+    model = request.app.models.get(model)
+    if model:
+        path = model.api_url(request, **params)
+        if path:
+            path = urlparse(path).path
+            return '%s/%s' % (path, '/'.join(args)) if args else path
+
+
 class Extension(MultiAuthBackend):
 
     _config = [
@@ -102,24 +125,15 @@ class Extension(MultiAuthBackend):
                   '',
                   'A string or bytes used for encrypting data. Must be unique '
                   'to the application and long and random enough'),
-        Parameter('SECRET_KEY',
-                  'secret-key',
-                  'A string or bytes used for encrypting data. Must be unique '
-                  'to the application and long and random enough'),
         Parameter('CHECK_USERNAME', 'lux.extensions.rest:check_username',
                   'Dotted path to username validation function'),
-        Parameter('PERMISSION_LEVELS', {'read': 10,
-                                        'create': 20,
-                                        'update': 30,
-                                        'delete': 40},
-                  'When a model'),
-        Parameter('DEFAULT_PERMISSION_LEVEL', 'read',
-                  'Default permission level'),
-        Parameter('DEFAULT_PERMISSION_LEVELS', {'site:admin': 'none'},
-                  'Dictionary of default permission levels'),
+        Parameter('DEFAULT_POLICY', (),
+                  'List/tuple of default policy documents'),
         #
         # REST API SETTINGS
         Parameter('API_URL', None, 'URL FOR THE REST API', True),
+        Parameter('API_DOCS_YAML_URL', None,
+                  'URL FOR THE REST API YAML DOCS'),
         Parameter('API_SEARCH_KEY', 'q',
                   'The query key for full text search'),
         Parameter('API_OFFSET_KEY', 'offset', ''),
@@ -133,17 +147,12 @@ class Extension(MultiAuthBackend):
         Parameter('API_LIMIT_NOAUTH', 30,
                   ('Maximum number of items returned when user is '
                    'not authenticated')),
-        Parameter('API_AUTHENTICATION_TOKEN', None,
-                  'Authentication token for the api. This is used by '
-                  'a lux application accessing a lux api'),
         Parameter('PAGINATION', 'lux.extensions.rest.Pagination',
                   'Pagination class'),
         Parameter('POST_LOGIN_URL', '',
-                  'URL users are redirected to after logging in',
-                  jscontext=True),
+                  'URL users are redirected to after logging in', True),
         Parameter('POST_LOGOUT_URL', None,
-                  'URL users are redirected to after logged out',
-                  jscontext=True),
+                  'URL users are redirected to after logged out', True),
         Parameter('WEB_SITE_URL', None,
                   'Url of the website registering to'),
         Parameter('LOGIN_URL', '/login', 'Url to login page', True),
@@ -159,6 +168,8 @@ class Extension(MultiAuthBackend):
         #
         Parameter('CORS_ALLOWED_METHODS', 'GET, PUT, POST, DELETE, HEAD',
                   'Access-Control-Allow-Methods for CORS'),
+        # TOKENS
+        Parameter('JWT_ALGORITHM', 'HS512', 'Signing algorithm'),
         #
         # SESSIONS
         Parameter('SESSION_COOKIE_NAME', 'LUX',
@@ -192,10 +203,7 @@ class Extension(MultiAuthBackend):
 
     def on_config(self, app):
         self.backends = []
-        url = app.config['API_URL']
-        if url is not None:
-            if not is_absolute_uri(url):
-                app.config['API_URL'] = str(RestRoot(url))
+        app.apis = Apis.make(app.config['API_URL'])
 
         if not app.config['PASSWORD_SECRET_KEY']:
             app.config['PASSWORD_SECRET_KEY'] = app.config['SECRET_KEY']
@@ -212,6 +220,8 @@ class Extension(MultiAuthBackend):
                 backend.on_config(app)
 
         app.auth_backend = self
+        app.providers['Api'] = ApiClient
+        app.add_events(('on_before_commit', 'on_after_commit'))
 
     def sorted_config(self):
         cfg = self.meta.config.copy()
@@ -225,13 +235,13 @@ class Extension(MultiAuthBackend):
         for backend in self.backends:
             middleware.extend(backend.middleware(app) or ())
 
-        if app.config['API_URL'] is None:
+        # API urls not available - no middleware to add
+        if not app.apis:
             return middleware
-
-        api = RestRoot(app.config['API_URL'])
 
         # Add routers and models
         routes = OrderedDict()
+
         for extension in app.extensions.values():
             api_sections = getattr(extension, 'api_sections', None)
             if api_sections:
@@ -240,18 +250,17 @@ class Extension(MultiAuthBackend):
 
         # Allow router override
         for router in routes.values():
-            if isinstance(router, ModelMixin):
+            if isinstance(router, RestRouter):
                 # Register model
                 router.model = app.models.register(router.model)
+                if router.model:
+                    router.model.api_route = router.route
             # Add router to API root-router
-            api.add_child(router)
+            app.apis.add_child(router)
 
         # Create the rest-api handler
-        app.api = ApiClient(app)
+        app.api = app.providers['Api'](app)
 
-        # routers not required when this is a client app
-        if is_absolute_uri(app.config['API_URL']):
-            return middleware
         #
         # Create paginator
         dotted_path = app.config['PAGINATION']
@@ -260,9 +269,22 @@ class Extension(MultiAuthBackend):
             raise ImproperlyConfigured('Could not load paginator "%s"',
                                        dotted_path)
         app.pagination = pagination()
-        #
-        # Add API root-router to middleware
-        middleware.append(api)
+
+        for api in app.apis:
+
+            # router not required when api is remote
+            if api.urlp.netloc:
+                continue
+            #
+            # Add API root-router to middleware
+            middleware.append(api.router)
+            url = str(api.router)
+            if url != '/':
+                # when the api is served by a path, make sure 404 is raised
+                # when no suitable routes are found
+                middleware.append(
+                    Rest404(remove_double_slash('%s/<path:path>' % url))
+                )
         #
         # Add the preflight and token events
         events = ('on_preflight', 'on_token')
@@ -290,8 +312,6 @@ class Extension(MultiAuthBackend):
     def __call__(self, environ, start_response):
         return self.request(wsgi_request(environ))
 
-
-class SimpleBackend(AuthBackend):
-
-    def has_permission(self, request, resource, action):
-        return has_permission(request, {}, resource, action)
+    def context(self, request, context):
+        """Add user to the Html template context"""
+        context['user'] = request.cache.user

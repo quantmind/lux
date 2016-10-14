@@ -6,12 +6,12 @@ from copy import copy
 from inspect import isfunction
 
 from pulsar.utils.slugify import slugify
-from pulsar.apps.data import parse_store_url, create_store, LockError
+from pulsar.apps.data import parse_store_url, create_store
 from pulsar.utils.importer import module_attribute
 from pulsar.utils.string import to_string
-from pulsar import ImproperlyConfigured
+from pulsar import ImproperlyConfigured, Lock
 
-from .wrappers import WsgiRequest
+from .component import AppComponent
 
 
 logger = logging.getLogger('lux.cache')
@@ -34,11 +34,11 @@ def cached(*args, **kw):
         return CacheObject(*args, **kw)
 
 
-class Cache:
+class Cache(AppComponent):
     """Cache base class
     """
     def __init__(self, app, name, url):
-        self.app = app
+        super().__init__(app)
         self.name = name
         self.url = url
         self._wait = app.green_pool.wait if app.green_pool else passthrough
@@ -87,69 +87,6 @@ class Cache:
         raise NotImplementedError
 
 
-class AsyncLock:
-    """An asynchronous lock for the local cache
-    """
-    def __init__(self, name, loop=None, timeout=None, blocking=0, sleep=0.2):
-        self._timeout = timeout
-        self._blocking = blocking
-        self._loop = loop or asyncio.get_event_loop()
-        self._lock = self._get_lock(name)
-
-        self._acquired = False
-        self._timeout_handler = None
-        # Sleep is ignored, this parameter is not needed, but might be passed
-        # in as RedisLock needs it
-
-    @property
-    def _locks(self):
-        if not hasattr(self._loop, '_locks'):
-            self._loop._locks = {}
-        return self._loop._locks
-
-    async def acquire(self):
-        try:
-            await asyncio.wait_for(self._lock.acquire(),
-                                   timeout=self._blocking)
-            self._acquired = True
-            self._schedule_timeout()
-            return True
-        except asyncio.TimeoutError:
-            return False
-
-    def release(self):
-        if not self._acquired:
-            raise LockError('Trying to release an un-acquired lock')
-        try:
-            self._lock.release()
-            self._cancel_timeout()
-        except RuntimeError as exc:
-            raise LockError(str(exc)) from exc
-        finally:
-            self._acquired = False
-
-    def _get_lock(self, name):
-        if name not in self._locks:
-            self._locks[name] = asyncio.Lock(loop=self._loop)
-        return self._locks[name]
-
-    def _schedule_timeout(self):
-        if self._timeout is None:
-            return
-        self._timeout_future = self._loop.call_later(
-            self._timeout, self._release_after_timeout
-        )
-
-    def _cancel_timeout(self):
-        if self._timeout_handler:
-            self._timeout_handler.cancel()
-            self._timeout_handler = None
-
-    def _release_after_timeout(self):
-        if self._acquired:
-            self.release()
-
-
 class DummyCache(Cache):
     """A dummy cache to get you started
 
@@ -164,7 +101,7 @@ class DummyCache(Cache):
             self._loop = asyncio.get_event_loop()
 
     def lock(self, name, **kwargs):
-        return GreenLock(AsyncLock(name, **kwargs), self._wait)
+        return GreenLock(Lock(name, **kwargs), self._wait)
 
     def _wait(self, coro):
         return self._loop.run_until_complete(coro)
@@ -204,7 +141,9 @@ class RedisCache(Cache):
             self.client = redis.StrictRedis.from_url(url)
 
     def set(self, key, value, timeout=None):
-        self._wait(self.client.set(key, value, timeout))
+        if timeout is not None:
+            timeout = int(1000*timeout)
+        self._wait(self.client.set(key, value, px=timeout))
 
     def get(self, key):
         return self._wait(self.client.get(key))
@@ -234,13 +173,6 @@ class RedisCache(Cache):
         return value
 
 
-class Cacheable:
-    """An class which can create its how cache key
-    """
-    def cache_key(self, app):
-        return ''
-
-
 class CacheObject:
     """Object which implement cache functionality on callables.
 
@@ -249,22 +181,21 @@ class CacheObject:
     instance = None
     callable = None
 
-    def __init__(self, user=False, timeout=None, key=None):
+    def __init__(self, user=False, timeout=None, key=None, app=None):
         self.user = user
         self.timeout = timeout
         self.key = key
+        self.app = app
 
     def cache_key(self, arg):
         key = self.key or ''
-        app = arg.app
-        if isinstance(self.instance, Cacheable):
-            key = self.instance.cache_key(app)
-
-        if isinstance(app, WsgiRequest):
+        if hasattr(arg, 'environ'):
             if not key:
-                key = app.path
+                key = arg.path
             if self.user:
-                key = '%s-%s' % (key, app.cache.user)
+                key = '%s-%s' % (key, arg.cache.user)
+
+        app = arg.app
 
         base = self.callable.__name__
         if self.instance:
@@ -289,19 +220,20 @@ class CacheObject:
                 else:
                     raise AttributeError
             except AttributeError:
-                arg = None
-                logger.error('Could not obtain application from first '
-                             'parameter nor from bound instance. '
-                             'Cannot use cache.')
-
-        if self.instance:
-            args = (self.instance,) + args
+                arg = self.app
+                if not arg:
+                    logger.error('Could not obtain application from first '
+                                 'parameter nor from bound instance. '
+                                 'Cannot use cache.')
 
         if arg:
             key = self.cache_key(arg)
             result = arg.app.cache_server.get_json(key)
             if result is not None:
                 return result
+
+        if self.instance:
+            args = (self.instance,) + args
 
         result = self.callable(*args, **kw)
 
@@ -315,15 +247,16 @@ class CacheObject:
             try:
                 int(timeout)
             except Exception:
-                timeout = config['DEFAULT_CACHE_TIMEOUT']
+                timeout = config['CACHE_DEFAULT_TIMEOUT']
 
-            try:
-                app.cache_server.set_json(key, result, timeout=timeout)
-            except TypeError:
-                app.logger.exception('Could not convert to JSON a value to '
-                                     'set in cache')
-            except Exception:
-                app.logger.exception('Critical exception while setting cache')
+            if timeout:
+                try:
+                    app.cache_server.set_json(key, result, timeout=timeout)
+                except TypeError:
+                    app.logger.exception(
+                        'Could not convert to JSON a value to set in cache')
+                except Exception:
+                    app.logger.exception('Critical error while setting cache')
 
         return result
 

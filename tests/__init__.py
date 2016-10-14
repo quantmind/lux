@@ -1,10 +1,13 @@
 import os
-import json
+
+from lux.utils import test
 
 
-PATH = os.path.dirname(os.path.abspath(__file__))
+fixtures = os.path.join(os.path.dirname(__file__), 'fixtures')
 
 
-def load_fixture(name):
-    with open(os.path.join(PATH, 'fixtures', '%s.json' % name), 'r') as file:
-        return json.load(file)
+class AuthFixtureMixin:
+
+    @classmethod
+    def populatedb(cls):
+        return test.load_fixtures(cls.app, fixtures)

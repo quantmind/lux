@@ -2,15 +2,16 @@ import json
 from collections import Mapping
 
 from pulsar import ImproperlyConfigured, Http404
-from pulsar.apps.wsgi import cached_property
 from pulsar.apps import wsgi
-from pulsar.apps.wsgi import (Json, RouterParam, Router, Route,
-                              render_error_debug)
+from pulsar.apps.wsgi import (Json, RouterParam, Router, Route, Html,
+                              cached_property, render_error_debug)
 from pulsar.apps.wsgi.utils import error_messages
-from pulsar.utils.httpurl import JSON_CONTENT_TYPES
+from pulsar.utils.httpurl import JSON_CONTENT_TYPES, CacheControl
 from pulsar.utils.structures import mapping_iterator
 
 from lux.utils.data import unique_tuple
+
+from .auth import Resource
 
 
 TEXT_CONTENT_TYPES = unique_tuple(('text/html', 'text/plain'))
@@ -111,51 +112,62 @@ class RedirectRouter(Router):
 
 
 class JsonRouter(Router):
+    model = RouterParam()
+    cache_control = CacheControl()
     response_content_types = ['application/json']
 
-    def json(self, request, data):
+    def head(self, request):
+        if hasattr(self, 'get'):
+            return self.get(request)
+
+    def json_response(self, request, data):
         """Return a response as application/json
         """
-        return Json(data).http_response(request)
+        response = Json(data).http_response(request)
+        self.cache_control(response)
+        return response
+
+    def get_model(self, request, model=None):
+        model = request.app.models.get(model or self.model)
+        if not model:
+            raise Http404
+        return model
 
 
-class HtmlRouter(Router):
+class HtmlRouter(JsonRouter):
     """Extend pulsar :class:`~pulsar.apps.wsgi.routers.Router`
     with content management.
     """
-    uirouter = RouterParam(None)
-    uimodules = RouterParam(None)
-    response_content_types = TEXT_CONTENT_TYPES
-    template = None
-    """Inner template"""
-    model = RouterParam()
-    """optional REST model name"""
+    response_content_types = DEFAULT_CONTENT_TYPES
+
+    def check_permission(self, request):
+        resource = Resource.app(request)
+        resource(request)
 
     def get(self, request):
-        html = self.get_html(request)
-        return self.html_response(request, html)
+        return self.html_response(request, self.get_html(request))
 
-    def html_response(self, request, html):
-        """Render `html` as a full Html document or a partial
-        """
+    def html_response(self, request, inner_html):
         app = request.app
         # get cms for this router
-        cms = self.cms(app)
-        # fetch the cms page if possible
-        page = cms.page(request, request.path[1:])
+        cms = app.cms
+        # fetch the cms page
+        page = cms.page(request.path[1:])
         # render the inner part of the html page
-        html = cms.inner_html(request, page, html)
-
-        context = app.context(request)
-        context.update(self.context(request) or ())
-        context['html_main'] = html
+        if isinstance(inner_html, Html):
+            inner_html = inner_html.render(request)
+        page.inner_template = cms.inner_html(request, page, inner_html)
 
         # This request is for the inner template only
         if request.url_data.get('template') == 'ui':
-            request.response.content = html
-            return request.response
+            request.response.content = page.render_inner(request)
+            response = request.response
+        else:
 
-        return app.html_response(request, page, context=context)
+            response = app.html_response(request, page, self.context(request))
+
+        self.cache_control(response)
+        return response
 
     def get_inner_template(self, request, inner_template=None):
         return inner_template or self.template
@@ -173,21 +185,10 @@ class HtmlRouter(Router):
         """
         pass
 
-    def cms(self, app):
-        return app.cms
-
     def childname(self, prefix):
         """key for a child router
         """
         return '%s%s' % (self.name, prefix) if self.name else prefix
-
-    def get_model(self, request):
-        model = None
-        if self.model:
-            model = request.app.models.get(self.model)
-        if not model:
-            raise Http404
-        return model
 
     def make_router(self, rule, **params):
         """Create a new :class:`.Router` form rule and parameters

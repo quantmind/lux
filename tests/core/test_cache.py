@@ -1,14 +1,13 @@
 from unittest import skipUnless
 
-from pulsar.apps.data import LockError
-
 try:
     from redis import StrictRedis
-except ImportError:
+except ImportError:     # pragma    nocover
     StrictRedis = None
 
 from pulsar import ImproperlyConfigured
 from pulsar.apps.test import check_server
+from pulsar.utils.string import random_string
 from pulsar.apps.data.redis.client import RedisClient
 
 from lux.utils import test
@@ -23,18 +22,19 @@ class LockTests:
 
     @test.green
     def test_lock(self):
-        lock = self.cache.lock('test')
-        other_lock = self.cache.lock('test2')
+        key1 = random_string()
+        key2 = random_string()
+        lock = self.cache.lock(key1, blocking=False)
+        other_lock = self.cache.lock(key2, blocking=False)
         self.assertTrue(lock.acquire())
         self.assertFalse(lock.acquire())
         self.assertTrue(other_lock.acquire())
         other_lock.release()
         lock.release()
-        self.assertRaises(LockError, lock.release)
 
     @test.green
     def test_lock_contextmanager(self):
-        lock = self.cache.lock('test3', blocking=0.1, sleep=0.1)
+        lock = self.cache.lock('test3', blocking=0.1)
         with lock:
             with self.assertRaises(TimeoutError):
                 with lock:
@@ -50,7 +50,7 @@ class LockTests:
         lock.release()
 
 
-class TestDymmuCache(test.TestCase, LockTests):
+class TestDummyCache(test.TestCase, LockTests):
 
     def setUp(self):
         self.app = self.application()

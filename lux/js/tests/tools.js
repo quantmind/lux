@@ -3,7 +3,7 @@ import angular from '../ng';
 import 'angular-mocks';
 import 'angular-ui-grid/ui-grid';
 import 'ui-select';
-import mock_data from './mock'
+import mock_data from './mock';
 
 
 export const inject = angular.mock.inject;
@@ -52,6 +52,9 @@ export function getForm(element) {
     expect(element[0].tagName).toBe('DIV');
     expect(element.children().length).toBe(1);
     var form = _.element(element.children()[0]);
+    expect(form[0].tagName).toBe('LUX-FORM');
+    expect(form.children().length).toBe(1);
+    form = _.element(form.children()[0]);
     expect(form[0].tagName).toBe('FORM');
     return form;
 }

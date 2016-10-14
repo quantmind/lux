@@ -36,7 +36,7 @@ def service_parser(services, description, help=True):
 class ConsoleParser(object):
     '''A class for parsing the console inputs.
 
-    Used as base class for both :class:`.Command` and :class:`.App`
+    Used as base class for both :class:`.LuxCommand` and :class:`.App`
     '''
     help = None
     option_list = ()
@@ -89,8 +89,7 @@ class LuxCommand(ConsoleParser):
     '''Signature class for lux commands.
 
     A :class:`.LuxCommand` is never initialised directly, instead,
-    the :meth:`.Application.get_command` method is used to retrieve it and
-    executed by its callable method.
+    the :meth:`.Application.get_command` method is used instead.
 
     .. attribute:: name
 
@@ -98,7 +97,7 @@ class LuxCommand(ConsoleParser):
 
     .. attribute:: app
 
-        The :class:`.Application` running this :class:`.Command`.
+        The :class:`.Application` running this :class:`.LuxCommand`.
 
     .. attribute:: stdout
 
@@ -130,7 +129,7 @@ class LuxCommand(ConsoleParser):
         return result
 
     def get_version(self):
-        """Return the :class:`.Command` version.
+        """Return the :class:`.LuxCommand` version.
 
         By default it is the same version as lux.
         """
@@ -141,7 +140,7 @@ class LuxCommand(ConsoleParser):
         return self.app.config_module
 
     def run(self, argv, **params):
-        '''Run this :class:`Command`.
+        '''Run this :class:`.LuxCommand`.
 
         This is the only method which needs implementing by subclasses.
         '''
@@ -159,7 +158,8 @@ class LuxCommand(ConsoleParser):
         '''Write ``stream`` to the :attr:`stderr`.'''
         self.app.write_err(stream)
 
-    def pulsar_app(self, argv, application=None, log_name='lux', **kw):
+    def pulsar_app(self, argv, application=None, callable=None,
+                   log_name='lux', **kw):
         app = self.app
         if application is None:
             application = LuxApp
@@ -168,7 +168,7 @@ class LuxCommand(ConsoleParser):
             cfg = application.cfg.copy()
         for setting in self.option_list:
             cfg.settings[setting.name] = setting.copy()
-        return application(callable=app.callable,
+        return application(callable=callable or app.callable,
                            description=self.help,
                            epilog=app.config.get('EPILOG'),
                            cfg=cfg,

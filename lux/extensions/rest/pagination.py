@@ -34,7 +34,11 @@ class Pagination:
         location = iri_to_uri(request.path, params)
         return request.absolute_uri(location)
 
-    def __call__(self, request, result, total, limit, offset):
+    def __call__(self, request, result, total=None, limit=None, offset=None):
+        if total is None:
+            total = len(result)
+            offset = 0
+            limit = total or 1
         data = {
             'total': total,
             'result': result

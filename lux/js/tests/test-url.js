@@ -9,5 +9,7 @@ describe('lux core', function() {
         expect(urlJoin('bla', '')).toBe('bla');
         expect(urlJoin('bla', '///foo')).toBe('bla/foo');
         expect(urlJoin('bla//////', '///foo')).toBe('bla/foo');
+        expect(urlJoin('/bla', 'foo')).toBe('/bla/foo');
+        expect(urlJoin('/', 'foo')).toBe('/foo');
     });
 });

@@ -11,10 +11,9 @@ from copy import copy
 from inspect import isclass, getfile
 from collections import OrderedDict
 from importlib import import_module
-from base64 import b64encode
 
 import pulsar
-from pulsar import ImproperlyConfigured, HttpException
+from pulsar import ImproperlyConfigured
 from pulsar.apps.wsgi import (WsgiHandler, HtmlDocument, test_wsgi_environ,
                               LazyWsgi, wait_for_body_middleware,
                               middleware_in_executor, wsgi_request)
@@ -27,17 +26,18 @@ from pulsar.utils.string import to_bytes
 from lux import __version__
 from lux.utils.files import skipfile
 from lux.utils.data import multi_pop
+from lux.utils.token import encode_json
 
 from .commands import ConsoleParser, CommandError, ConfigError, service_parser
 from .extension import LuxExtension, Parameter, EventMixin, app_attribute
-from .wrappers import HeadMeta, error_handler, LuxContext, formreg
-from .templates import template_engine
+from .wrappers import HeadMeta, LuxContext, formreg
+from .templates import render_data, template_engine, Template
 from .cms import CMS
 from .models import ModelContainer
 from .cache import create_cache
 from .exceptions import ShellError
-from .content import render_data
 from .channels import Channels
+from .auth import SimpleBackend
 
 
 LUX_CORE = os.path.dirname(__file__)
@@ -45,7 +45,7 @@ LUX_CORE = os.path.dirname(__file__)
 
 def execute_from_config(config_file, services=None,
                         description=None, argv=None,
-                        **params):     # pragma    nocover
+                        cmdparams=None, **params):     # pragma    nocover
     """Create and run an :class:`.Application` from a ``config_file``.
 
     This is the function to use when creating the script which runs your
@@ -70,8 +70,9 @@ def execute_from_config(config_file, services=None,
         if opts.service and description:
             description = '%s - %s' % (description, opts.service)
 
+    cmdparams = cmdparams or {}
     return execute_app(App(config_file, argv=argv, **params),
-                       description=description)
+                       description=description, **cmdparams)
 
 
 def execute_app(app, argv=None, description=None,
@@ -146,8 +147,14 @@ class App(LazyWsgi):
     def command(self):
         return self._argv[0] if self._argv else None
 
-    def setup(self, environ=None, handler=True):
+    @property
+    def argv(self):
+        return self._argv
+
+    def setup(self, environ=None, on_config=None, handler=True):
         app = Application(self)
+        if on_config:
+            on_config(app)
         if handler:
             app.wsgi_handler()
         return app
@@ -160,6 +167,18 @@ class App(LazyWsgi):
         app._argv = copy(app._argv)
         return app
 
+    def close(self):
+        return self.handler().close()
+
+
+def Http(app):
+    params = app.config['HTTP_CLIENT_PARAMETERS'] or {}
+    green = app.green_pool
+    if not green:
+        params['loop'] = pulsar.new_event_loop()
+    http = HttpClient(**params)
+    return GreenHttp(http) if green else http
+
 
 class Application(ConsoleParser, LuxExtension, EventMixin):
     """The :class:`.Application` is the WSGI callable for serving
@@ -168,10 +187,28 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
     It is a specialised :class:`~.LuxExtension` which collects
     all extensions of your application and setup the wsgi middleware used by
     the web server.
-    An :class:`App` is not usually initialised directly, the higher level
-    :func:`.execute_from_config` is used instead.
+    An :class:`Application` is not initialised directly, the higher level
+    :func:`.execute_from_config` or :func:`.execute_app` are
+    used instead.
+
+    .. attribute:: channels
+
+        The :class:`.Channels` manager of this application. This attribute
+        can be used to register to channels events or publish events
+        on channels. For more information check the channels documentation
+
+    .. attribute:: config
+
+        The configuration dictionary
+
+    .. attribute::  extensions
+
+        Ordered dictionary of :class:`.LuxExtension` loaded into the
+        application. Extensions are specified in the :setting:`EXTENSIONS`
+        setting parameter
     """
     cfg = None
+    channels = None
     debug = False
     logger = None
     admin = None
@@ -202,14 +239,20 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
                   'Default encoding for text.'),
         Parameter('SETTINGS_FILES', None,
                   'Path to a json file with additional settings'),
-        Parameter('ERROR_HANDLER', error_handler,
-                  'Handler of Http exceptions'),
+        Parameter('ERROR_HANDLER', 'lux.core.wrappers:error_handler',
+                  'Dotted path to handler of Http exceptions'),
         Parameter('MEDIA_URL', '/media/',
                   'the base url for static files', True),
         Parameter('MINIFIED_MEDIA', True,
                   'Use minified media files. All media files will replace '
                   'their extensions with .min.ext. For example, javascript '
                   'links *.js become *.min.js', True),
+        #
+        Parameter('SECRET_KEY',
+                  'secret-key',
+                  'A string or bytes used for encrypting data. Must be unique '
+                  'to the application and long and random enough'),
+        #
         # HTML base parameters
         Parameter('HTML_TITLE', 'Lux',
                   'Default HTML Title'),
@@ -217,10 +260,8 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
                   'List of links to include in the html head tag.'),
         Parameter('HTML_SCRIPTS', [],
                   'List of scripts to load in the head tag'),
-        Parameter('HTML_REQUIREJS_URL',
-                  "//cdnjs.cloudflare.com/ajax/libs/require.js/2.1.22/require",
-                  'Default url for requirejs. Set to None if no requirejs '
-                  'is needed by your application'),
+        Parameter('HTML_BODY_SCRIPTS', [],
+                  'List of scripts to include at the end of the body tag'),
         Parameter('HTML_META',
                   [{'http-equiv': 'X-UA-Compatible',
                     'content': 'IE=edge'},
@@ -228,14 +269,22 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
                     'content': 'width=device-width, initial-scale=1'}],
                   'List of default ``meta`` elements to add to the html head'
                   'element'),
-        Parameter('HTML_TEMPLATES', {'/': 'home.html'},
-                  'Dictionary of Html templates to render'),
+        Parameter('HTML_FORM_TAG', 'lux-form',
+                  'Html tag for lux forms'),
+        #
         # CONTENT base parameters
+        Parameter('CONTENT_GROUPS', {
+            "site": {
+                "path": "*",
+                "body_template": "home.html"
+            }
+        }, 'List of content model configurations'),
         Parameter('CONTENT_LINKS',
                   {'python': 'https://www.python.org/',
                    'lux': 'https://github.com/quantmind/lux',
                    'pulsar': 'http://pythonhosted.org/pulsar'},
                   'Links used throughout the web site'),
+        #
         # BASE email parameters
         Parameter('EMAIL_BACKEND', 'lux.core.mail.EmailBackend',
                   'Default locale'),
@@ -253,12 +302,14 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
                   'Default formatting for dates in JavaScript', True),
         Parameter('DEFAULT_TEMPLATE_ENGINE', 'jinja2',
                   'Default template engine'),
+        # Cache
         Parameter('CACHE_SERVER', 'dummy://',
                   ('Cache server, can be a connection string to a valid '
                    'datastore which support the cache protocol or an object '
                    'supporting the cache protocol')),
-        Parameter('DEFAULT_CACHE_TIMEOUT', 60,
+        Parameter('CACHE_DEFAULT_TIMEOUT', 60,
                   'Default timeout for data stored in cache'),
+        #
         Parameter('LOCALE', 'en_GB', 'Default locale', True),
         Parameter('DEFAULT_TIMEZONE', 'GMT',
                   'Default timezone'),
@@ -296,26 +347,22 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         self.meta.script = callable._script
         self.auth_backend = self
         self.threads = threading.local()
+        self.providers = {'Http': Http}
         self.models = ModelContainer(self)
         self.extensions = OrderedDict()
         self.config = _build_config(self)
-        self.channels = None
         self.fire('on_config')
 
     def __call__(self, environ, start_response):
         """The WSGI thing."""
         wsgi_handler = self.wsgi_handler()
-        request = self.wsgi_request(environ)
-        if self.debug:
-            self.logger.debug('Serving request %s' % request.path)
-        request.cache.auth_backend = self
-        self.fire('on_request', request)
+        self.wsgi_request(environ)
         return wsgi_handler(environ, start_response)
 
     def wsgi_handler(self):
         if self._handler is None:
-            self._handler = _build_handler(self)
             self.forms = formreg.copy()
+            self._handler = _build_handler(self)
             self.fire('on_loaded')
         return self._handler
 
@@ -355,12 +402,21 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
     def require(self, *extensions):
         return super().require(self, *extensions)
 
+    def has(self, *extensions):
+        """Check if this application has a set of ``extensions``
+        """
+        try:
+            self.require(*extensions)
+        except ImproperlyConfigured:
+            return False
+        return True
+
     def clone_callable(self, **params):
         return self.callable.clone(**params)
 
     def get_version(self):
         """Get version of this :class:`App`. Required by
-        :class:`.ConsoleParser`."""
+        :class:`~.ConsoleParser`."""
         return self.meta.version
 
     def wsgi_request(self, environ=None, loop=None, path=None,
@@ -374,7 +430,8 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
             environ = test_wsgi_environ(path=path, loop=loop, **kw)
         request = wsgi_request(environ, app_handler=app_handler,
                                urlargs=urlargs)
-        environ['error.handler'] = self.config['ERROR_HANDLER']
+        environ['error.handler'] = module_attribute(
+            self.config['ERROR_HANDLER'])
         environ['default.content_type'] = self.config['DEFAULT_CONTENT_TYPE']
         # Check if pulsar is serving the application
         if 'pulsar.cfg' not in environ:
@@ -382,6 +439,7 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
                 self.cfg = pulsar.Config(debug=self.debug)
             environ['pulsar.cfg'] = self.cfg
         request.cache.app = self
+        request.cache.auth_backend = SimpleBackend()
         return request
 
     def html_document(self, request):
@@ -406,16 +464,15 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         #
         # Head
         head = doc.head
-        # Add requirejs if url available
-        requirejs = cfg['HTML_REQUIREJS_URL']
-        if requirejs:
-            head.scripts.append(requirejs)
 
         for script in cfg['HTML_SCRIPTS']:
-            head.scripts.append(script)
+            head.scripts.append(script, async=True)
         #
         for entry in cfg['HTML_META'] or ():
             head.add_meta(**entry)
+
+        for script in cfg['HTML_BODY_SCRIPTS']:
+            doc.body.scripts.append(script, async=True)
 
         self.fire('on_html_document', request, doc, safe=True)
         #
@@ -427,6 +484,10 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
             else:
                 links.append(link)
         return doc
+
+    def close(self):
+        self.green_pool.shutdown(False)
+        self.fire('on_close')
 
     @lazyproperty
     def commands(self):
@@ -538,7 +599,7 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
 
     # Template redering
     def template_full_path(self, names):
-        """Return the template full path or None.
+        """Return a template filesystem full path or None
 
         Loops through all :attr:`extensions` in reversed order and
         check for ``name`` within the ``templates`` directory
@@ -564,11 +625,12 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
 
         If the file is not found an empty string is returned.
         """
-        filename = self.template_full_path(name)
-        if filename:
-            with open(filename, 'r') as file:
-                return file.read()
-        return ''
+        if name:
+            filename = self.template_full_path(name)
+            if filename:
+                with open(filename, 'r') as file:
+                    return Template(file.read())
+        return Template()
 
     def context(self, request, context=None):
         """Load the ``context`` dictionary for a ``request``.
@@ -621,30 +683,31 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
             template filenames
         :param context: optional context dictionary
         """
-        if 'text/html' in request.content_types:
-            request.response.content_type = 'text/html'
-            doc = request.html_document
-            if jscontext:
-                doc.jscontext.update(jscontext)
-            head = doc.head
-            if title:
-                head.title = title
-            if status_code:
-                request.response.status_code = status_code
-            context = self.context(request, context)
-            if not request.config['MINIFIED_MEDIA']:
-                doc.head.embedded_js.insert(
-                    0, 'window.minifiedMedia = false;')
+        request.response.content_type = 'text/html'
+        doc = request.html_document
+        if jscontext:
+            doc.jscontext.update(jscontext)
 
-            if doc.jscontext:
-                jscontext = json.dumps(doc.jscontext)
-                encoded = b64encode(jscontext.encode('utf-8')).decode('utf-8')
-                doc.head.embedded_js.insert(
-                    0, 'var lux = "%s";\n' % encoded)
-            body = self.cms.render(page, context)
-            doc.body.append(body)
-            return doc.http_response(request)
-        raise HttpException(status=415)
+        if title:
+            doc.head.title = title
+
+        if status_code:
+            request.response.status_code = status_code
+        context = self.context(request, context)
+        page = self.cms.as_page(page)
+        body = self.cms.render_body(request, page, context)
+
+        doc.body.append(body)
+
+        if not request.config['MINIFIED_MEDIA']:
+            doc.head.embedded_js.insert(
+                0, 'window.minifiedMedia = false;')
+
+        if doc.jscontext:
+            encoded = encode_json(doc.jscontext, self.config['SECRET_KEY'])
+            doc.head.add_meta(name="html-context", content=encoded)
+
+        return doc.http_response(request)
 
     def site_url(self, path=None):
         """Build the site url from an optional ``path``
@@ -699,12 +762,7 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         A key is used to group together clients so that bandwidths is reduced
         If no key is provided the handler is not included in the http cache.
         """
-        params = self.config['HTTP_CLIENT_PARAMETERS'] or {}
-        green = self.green_pool
-        if not green:
-            params['loop'] = pulsar.new_event_loop()
-        http = HttpClient(**params)
-        return GreenHttp(http) if green else http
+        return self.providers['Http'](self)
 
     def run_in_executor(self, callable, *args):
         """Run a ``callable`` in the event loop executor
@@ -722,9 +780,12 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         else:
             return future
 
-    async def shell(self, request, command, communicate=None, raw=False):
+    async def shell(self, request, command, communicate=None,
+                    raw=False, chdir=None):
         """Asynchronous execution of a shell command
         """
+        if chdir:
+            command = 'cd %s && %s' % (chdir, command)
         request.logger.info('Execute shell command: %s', command)
         stdin = subprocess.PIPE if communicate else None
         proc = await create_subprocess_shell(command,
@@ -841,14 +902,18 @@ def _build_config(self):
             self.bind_events(extension)
             extension.setup(config)
 
+    params = configs.pop()
     _config_from_json(configs, config)
+    config.update(params)
     config['EXTENSIONS'] = tuple(apps)
     return config
 
 
 def _build_handler(self):
     engine = self.template_engine('python')
+    parameters = self.config.pop('_parameters')
     self.config = render_data(self, self.config, engine, self.config)
+    self.config['_parameters'] = parameters
     self.channels = Channels(self)
 
     if not self.cms:

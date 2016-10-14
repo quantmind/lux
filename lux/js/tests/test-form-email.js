@@ -2,7 +2,7 @@ import {module, compile, getForm, _} from './tools';
 import * as lux from '../index';
 
 
-describe('lux core', function() {
+describe('lux form email', function() {
 
     beforeEach(() => {
         module('lux.form');
@@ -11,6 +11,7 @@ describe('lux core', function() {
     it('Test $lux', () => {
 
         var json = _.toJson({
+            type: 'form',
             children: [
                 {
                     type: 'email',
@@ -22,10 +23,11 @@ describe('lux core', function() {
 
         var element = compile(`<div><lux-form json=${json}></lux-form></div>`),
             form = getForm(element),
-            scope = form.isolateScope(),
-            input = lux.querySelector(form, 'input');
+            scope = form.scope(),
+            input = lux.querySelector(form, 'input'),
+            luxform = scope.luxform;
 
-        expect(_.isObject(scope.info.fields['login'])).toBe(true);
+        expect(_.isObject(luxform.fields.login)).toBe(true);
         expect(input.length).toBe(1);
 
         //scope.model.login = 'user@example.com';

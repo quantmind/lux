@@ -4,9 +4,7 @@ body {
 }
 
 .sidebar {
-
     position: fixed;
-    background-color: $sidebar-background-color;
     min-height: 100%;
     max-height: 100%;
     width: $sidebar-width;
@@ -17,7 +15,6 @@ body {
 
     // Reset anchors
     a {
-        text-decoration: none;
         outline: none;
         @include setLinkSelectorStyle {
             text-decoration: none
@@ -26,7 +23,6 @@ body {
 
     .nav-panel {
         @include clearfix();
-        background-color: $sidebar-panel-bg-color;
         @media (min-width: $screen-sm-min) {
             height: $navbar-height;
         }
@@ -36,10 +32,16 @@ body {
         }
     }
 
-    .sidebar-menu {
+    .nav {
         list-style: none;
         padding: 0;
         margin: 0;
+
+        li.header {
+            display: block;
+            padding: $nav-link-padding;
+            text-transform: uppercase;
+        }
 
         .treeview-menu {
             list-style: none;
@@ -67,30 +69,17 @@ body {
         }
 
         > li {
-            &.header,
-            > a:hover,
-            &.active > a  {
-                background-color: $sidebar-active-link-bg-color;
-                color: $sidebar-active-link-color;
-            }
-
             > a {
                 transition: 0.2s;
+                display: block;
+                padding: $nav-link-padding;
             }
 
             .treeview-menu {
-                background-color: $sidebar-submenu-bg-color;
                 > li {
                     > a {
                         opacity: 0;
                         transition: 0.3s $ease-in-out-quad;
-                        color: $sidebar-submenu-link-color;
-                        &:hover {
-                            color: $sidebar-submenu-active-link-color;
-                        }
-                    }
-                    &.active > a {
-                        color: $sidebar-submenu-active-link-color;
                     }
                 }
             }
@@ -153,28 +142,6 @@ body {
 // sidebar open but resizes their screen into this breakpoint
 @media (min-width: $screen-xl-min) {
 
-    @mixin stayOpenSidebar() {
-        .sidebar, .sidebar.sidebar-left {
-            @include transform(translate(0, 0));
-        }
-
-        .sidebar-navbar {
-            .navbar {
-                width: calc(100% - #{$sidebar-width});
-                @include transform(translateX($sidebar-width));
-            }
-        }
-
-        .overlay,
-        .navbar .navbar-nav > li > a.sidebar-toggle {
-            display: none;
-        }
-
-        .sidebar-page {
-            padding-left: $sidebar-width;
-        }
-    }
-
     @include stayOpenSidebar();
 
     .sidebar-open-left {
@@ -184,4 +151,55 @@ body {
         }
     }
 
+}
+
+
+// Styling
+.sidebar-default .sidebar {
+    background-color: $sidebar-default-bg;
+
+    .nav-panel {
+        background-color: $sidebar-default-panel-bg;
+    }
+
+    li.header {
+        color: $sidebar-default-link-color
+    }
+
+    a {
+        color: $sidebar-default-link-color;
+        &:hover {
+            color: $sidebar-default-link-hover-color;
+            background-color: $sidebar-default-link-hover-bg;
+        }
+        &active {
+            color: $sidebar-default-link-active-color;
+            background-color: $sidebar-default-link-active-bg;
+        }
+    }
+}
+
+
+.sidebar-inverse .sidebar {
+    background-color: $sidebar-inverse-bg;
+
+    .nav-panel {
+        background-color: $sidebar-inverse-panel-bg;
+    }
+
+    li.header {
+        color: $sidebar-inverse-link-color
+    }
+
+    a {
+        color: $sidebar-inverse-link-color;
+        &:hover {
+            color: $sidebar-inverse-link-hover-color;
+            background-color: $sidebar-inverse-link-hover-bg;
+        }
+        &active {
+            color: $sidebar-inverse-link-active-color;
+            background-color: $sidebar-inverse-link-active-bg;
+        }
+    }
 }

@@ -7,24 +7,23 @@ import json as _json
 import pickle
 from collections import OrderedDict
 from unittest import mock
-from urllib.parse import urlparse, urlunparse
 from io import StringIO
 
 from pulsar import get_event_loop, as_coroutine
 from pulsar.utils.httpurl import (Headers, encode_multipart_formdata,
-                                  ENCODE_BODY_METHODS, remove_double_slash,
-                                  parse_options_header)
+                                  ENCODE_BODY_METHODS, remove_double_slash)
 from pulsar.utils.string import random_string
 from pulsar.utils.websocket import (SUPPORTED_VERSIONS, websocket_key,
                                     frame_parser)
 from pulsar.apps.wsgi import WsgiResponse
-from pulsar.apps.http import JSON_CONTENT_TYPES
+from pulsar.apps.http import JSON_CONTENT_TYPES, full_url
 from pulsar.apps.test import test_timeout, sequential
 
 from lux.core import App
+from lux.extensions.rest import ApiClient, HttpResponse
 from lux.core.commands.generate_secret_key import generate_secret
 
-logger = logging.getLogger('lux.test')
+logger = logging.getLogger('pulsar.test')
 
 
 __all__ = ['TestClient',
@@ -90,64 +89,82 @@ def test_app(test, config_file=None, config_params=True, argv=None,
         argv.append('--log-level')
         levels = test.cfg.log_level if hasattr(test, 'cfg') else ['none']
         argv.extend(levels)
-    app = App(config_file, argv=argv, **kwargs).setup()
+    app = App(config_file, argv=argv, **kwargs).setup(
+        on_config=test.app_test_providers)
     app.stdout = StringIO()
     app.stderr = StringIO()
-
-    if app.api:
-        api_app = api_app or app
-        http = TestApiClient(api_app, list(app.api.http.headers))
-        # Override http client for the api handler
-        app.api.http = http
-        assert app.api.http == http
-
     return app
 
 
-def get_params(*names):
-    cfg = {}
-    for name in names:
-        value = os.environ.get(name)
-        if value:
-            cfg[name] = value
-        else:
-            return
-    return cfg
+@green
+def create_users(app, items, index=None):
+    if not index:
+        items.insert(0, {
+            "username": "testuser",
+            "password": "testuser",
+            "superuser": True,
+            "active": True
+        })
+    logger.debug('Creating %d users', len(items))
+    request = app.wsgi_request()
+    auth = app.auth_backend
+    processed = set()
+    for params in items:
+        if params.get('username') in processed:
+            continue
+        user = auth.create_user(request, **params)
+        if user:
+            processed.add(user.username)
+    return len(processed)
 
 
-def load_fixtures(app, path=None):
-    if not path:
-        path = os.path.join(app.meta.path, 'fixtures')
+async def load_fixtures(app, path=None, api_url=None):
+    if not hasattr(app.auth_backend, 'create_user'):
+        return
 
-    fixtures = OrderedDict()
-    if os.path.isdir(path):
-        for filename in os.listdir(path):
-            if filename.endswith('.json'):
-                with open(os.path.join(path, filename), 'r') as file:
-                    fixtures.update(_json.load(file,
-                                               object_pairs_hook=OrderedDict))
-    else:
-        logger.error('Could not find %s path for fixtures', path)
-
+    fpath = path if path else os.path.join(app.meta.path, 'fixtures')
     total = 0
 
-    for model, items in fixtures.items():
-        logger.debug('Creating %d fixtures for "%s"', len(items), model)
-        if model == 'user':
-            request = app.wsgi_request()
-            auth = app.auth_backend
+    if not os.path.isdir(fpath):
+        if path:
+            logger.error('Could not find %s path for fixtures', path)
+        return total
+
+    api_url = api_url or ''
+    if api_url.endswith('/'):
+        api_url = api_url[:-1]
+
+    client = TestClient(app)
+    test = TestCase()
+    test_tokens = {}
+
+    for index, fixtures in enumerate(_read_fixtures(fpath)):
+
+        total += await create_users(app, fixtures.pop('users', []), index)
+
+        for model, items in fixtures.items():
+            logger.info('Creating %d fixtures for "%s"', len(items), model)
             for params in items:
-                auth.create_user(request, **params)
-                total += 1
-        else:
-            odm = app.odm()
-            model = odm[model]
-            with odm.begin() as session:
-                for params in items:
-                    session.add(model(**params))
+                user = params.pop('api_user', 'testuser')
+                url = '%s%s' % (api_url, params.pop('api_url', '/%s' % model))
+                if user not in test_tokens:
+                    request = await client.post('%s/authorizations' % api_url,
+                                                json=dict(username=user,
+                                                          password=user))
+                    token = test.json(request.response, 201)['token']
+                    test_tokens[user] = token
+                test_token = test_tokens[user]
+                request = await client.post(url,
+                                            json=params,
+                                            token=test_token)
+                data = test.json(request.response)
+                code = request.response.status_code
+                if code > 201:
+                    raise AssertionError('%s api call got %d: %s' %
+                                         (url, code, data))
                 total += 1
 
-    logger.info('Created %s objects from %d models', total, len(fixtures))
+    logger.info('Created %s objects', total)
 
 
 class TestClient:
@@ -163,9 +180,9 @@ class TestClient:
         return cmd(argv, **kwargs)
 
     def request_start_response(self, method, path, HTTP_ACCEPT=None,
-                               headers=None, body=None, json=None,
-                               content_type=None, token=None, cookie=None,
-                               **extra):
+                               headers=None, data=None, json=None,
+                               content_type=None, token=None, oauth=None,
+                               cookie=None, params=None, **extra):
         method = method.upper()
         extra['REQUEST_METHOD'] = method.upper()
         path = path or '/'
@@ -176,26 +193,31 @@ class TestClient:
             heads.extend(headers)
         if json is not None:
             content_type = 'application/json'
-            assert not body
-            body = json
+            assert not data
+            data = json
         if content_type:
             heads.append(('content-type', content_type))
         if token:
             heads.append(('Authorization', 'Bearer %s' % token))
+        elif oauth:
+            heads.append(('Authorization', 'OAuth %s' % oauth))
         if cookie:
             heads.append(('Cookie', cookie))
 
-        # Encode body
-        if (method in ENCODE_BODY_METHODS and body is not None and
-                not isinstance(body, bytes)):
+        if params:
+            path = full_url(path, params)
+
+        # Encode data
+        if (method in ENCODE_BODY_METHODS and data is not None and
+                not isinstance(data, bytes)):
             content_type = Headers(heads).get('content-type')
             if content_type is None:
-                body, content_type = encode_multipart_formdata(body)
+                data, content_type = encode_multipart_formdata(data)
                 heads.append(('content-type', content_type))
             elif content_type == 'application/json':
-                body = _json.dumps(body).encode('utf-8')
+                data = _json.dumps(data).encode('utf-8')
 
-        request = self.app.wsgi_request(path=path, headers=heads, body=body,
+        request = self.app.wsgi_request(path=path, headers=heads, body=data,
                                         **extra)
         request.environ['SERVER_NAME'] = 'localhost'
         start_response = mock.MagicMock()
@@ -233,13 +255,40 @@ class TestClient:
         return self.get(path, headers=headers)
 
 
+class TestHttpApiClient(TestClient):
+    """Api client test handler
+    """
+    def request(self, method, path, **params):
+        """Override :meth:`TestClient.request` for testing Api clients
+        inside a lux application
+        """
+        request, sr = self.request_start_response(method, path, **params)
+        response = self.app(request.environ, sr)
+        green_pool = self.app.green_pool
+        response = green_pool.wait(response, True) if green_pool else response
+        return HttpResponse(response)
+
+
 class TestMixin:
+    app = None
+    """Test class application"""
     config_file = 'tests.config'
     """The config file to use when building an :meth:`application`"""
     config_params = {}
     """Dictionary of parameters to override the parameters from
     :attr:`config_file`"""
     prefixdb = 'luxtest_'
+
+    @classmethod
+    def app_test_providers(cls, app):
+        if 'Api' in app.providers:
+            app.providers['Api'] = cls.apiClient
+
+    @classmethod
+    def apiClient(cls, app):
+        api = ApiClient(app)
+        api.http = TestHttpApiClient(cls.app or app)
+        return api
 
     def authenticity_token(self, doc):
         name = doc.find('meta', attrs={'name': 'csrf-param'})
@@ -354,6 +403,18 @@ class TestMixin:
             self.assertEqual(data['message'], text)
             self.assertTrue(data['error'])
 
+    def check401(self, response):
+        self.json(response, 401)
+        self.assertEqual(response.headers['WWW-Authenticate'], 'Token')
+
+    def checkOptions(self, response, methods=None):
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue('Access-Control-Allow-Origin' in response.headers)
+        methods_header = response.headers['Access-Control-Allow-Methods']
+        headers = set(methods_header.split(', '))
+        if methods:
+            self.assertEqual(set(methods), headers)
+
     def check_og_meta(self, bs, type=None, image=None):
         meta = bs.find('meta', property='og:type')
         self.assertEqual(meta['content'], type or 'website')
@@ -401,13 +462,11 @@ class AppTestCase(unittest.TestCase, TestMixin):
     """
     odm = None
     """Original odm handler"""
-    app = None
-    """Test class application"""
     datastore = None
     """Test class datastore dictionary"""
 
     @classmethod
-    def setUpClass(cls):
+    async def setUpClass(cls):
         # Create the application
         cls.dbs = {}
         cls.app = cls.create_test_application()
@@ -415,7 +474,9 @@ class AppTestCase(unittest.TestCase, TestMixin):
         if hasattr(cls.app, 'odm'):
             # Store the original odm for removing the new databases
             cls.odm = cls.app.odm
-            return cls.setupdb()
+            await cls.setupdb()
+        await as_coroutine(cls.populatedb())
+        await as_coroutine(cls.beforeAll())
 
     @classmethod
     def tearDownClass(cls):
@@ -457,8 +518,8 @@ class AppTestCase(unittest.TestCase, TestMixin):
                         if url == orig_url:
                             cls.datastore[key] = new_url
         cls.app.config['DATASTORE'] = cls.datastore
+        cls.app.params['DATASTORE'] = cls.datastore
         odm.table_create()
-        cls.populatedb()
 
     @classmethod
     @green
@@ -468,37 +529,13 @@ class AppTestCase(unittest.TestCase, TestMixin):
 
     @classmethod
     def populatedb(cls):
-        fixtures = os.path.join(cls.app.meta.path, 'fixtures')
-        if os.path.isdir(fixtures):
-            odm = cls.app.odm()
-            with odm.begin() as session:
-                for filename in os.listdir(fixtures):
-                    if filename.endswith(('.json')):
-                        with open(os.path.join(fixtures, filename), 'r') as fp:
-                            data = _json.load(fp)
-
-                    for model, entries in data.items():
-                        create = getattr(cls,
-                                         'db_create_%s' % model,
-                                         cls.db_create_model)
-                        for entry in entries:
-                            create(odm, session, model, entry)
+        return load_fixtures(cls.app, api_url=cls.api_url())
 
     @classmethod
-    def db_create_model(cls, odm, session, model, entry):
-        session.add(odm[model](**entry))
-
-    @classmethod
-    def db_create_user(cls, odm, session, model, entry):
-        backend = cls.app.auth_backend
-        entry['odm_session'] = session
-        if 'password' not in entry:
-            entry['password'] = entry['username']
-        backend.create_user(cls.app, **entry)
-
-    @classmethod
-    def api_url(cls, path):
-        return remove_double_slash('%s/%s' % (cls.app.config['API_URL'], path))
+    def api_url(cls, path=None):
+        if 'API_URL' in cls.app.config:
+            url = cls.app.config['API_URL']
+            return remove_double_slash('%s/%s' % (url, path)) if path else url
 
     @classmethod
     def clone_app(cls):
@@ -507,6 +544,10 @@ class AppTestCase(unittest.TestCase, TestMixin):
         if cls.datastore:
             app.config['DATASTORE'] = cls.datastore
         return TestApp(app)
+
+    @classmethod
+    def beforeAll(cls):
+        """Can be used to add logic before all tests"""
 
     def fetch_command(self, command, new=False):
         """Fetch a command."""
@@ -523,21 +564,21 @@ class AppTestCase(unittest.TestCase, TestMixin):
                                         '--email', email,
                                         '--password', password])
 
+    async def _token(self, credentials):
+        '''Return a token for a user
+        '''
+        if isinstance(credentials, str):
+            credentials = {"username": credentials,
+                           "password": credentials}
 
-class TestApiClient(TestClient):
-    """Api client test handler
-    """
-    def request(self, method, path, data=None, **params):
-        """Override :meth:`TestClient.request` for testing Api clients
-        inside a lux application
-        """
-        path = urlunparse(('', '') + tuple(urlparse(path))[2:])
-        params['body'] = data
-        request, sr = self.request_start_response(method, path, **params)
-        response = self.app(request.environ, sr)
-        green_pool = self.app.green_pool
-        response = green_pool.wait(response, True) if green_pool else response
-        return Response(response)
+        # Get new token
+        request = await self.client.post(self.api_url('authorizations'),
+                                         json=credentials)
+        data = self.json(request.response, 201)
+        self.assertTrue('token' in data)
+        user = request.cache.user
+        self.assertFalse(user.is_authenticated())
+        return data['token']
 
 
 class WebApiTestCase(AppTestCase):
@@ -584,10 +625,7 @@ class WebApiTestCase(AppTestCase):
                 'password_repeat': password,
                 'email': email}
         data.update(csrf)
-        request = await self.webclient.post(url,
-                                            body=data,
-                                            cookie=cookie,
-                                            content_type='application/json')
+        request = await self.webclient.post(url, json=data, cookie=cookie)
         return self.json(request.response, 201)
 
     @green
@@ -601,43 +639,6 @@ class WebApiTestCase(AppTestCase):
             query = session.query(odm.registration).join(odm.user).filter(
                 odm.user.email == email)
             return query.one()
-
-
-class Response:
-    __slots__ = ('response',)
-
-    def __init__(self, response):
-        self.response = response
-
-    def _repr__(self):
-        return repr(self.response)
-
-    def __getattr__(self, name):
-        return getattr(self.response, name)
-
-    @property
-    def content(self):
-        '''Retrieve the body without flushing'''
-        return b''.join(self.response.content)
-
-    def text(self, charset=None, errors=None):
-        charset = charset or self.response.encoding or 'utf-8'
-        return self.content.decode(charset, errors or 'strict')
-
-    def json(self, charset=None, errors=None):
-        return _json.loads(self.text(charset, errors))
-
-    def decode_content(self):
-        '''Return the best possible representation of the response body.
-        '''
-        ct = self.response.content_type
-        if ct:
-            ct, _ = parse_options_header(ct)
-            if ct in JSON_CONTENT_TYPES:
-                return self.json()
-            elif ct.startswith('text/'):
-                return self.text()
-        return self.content
 
 
 class TestApp:
@@ -657,3 +658,12 @@ class TestApp:
         odm = self.odm
         if odm:
             odm.close()
+
+
+# INTERNALS
+
+def _read_fixtures(fpath):
+    for filename in os.listdir(fpath):
+        if filename.endswith('.json'):
+            with open(os.path.join(fpath, filename), 'r') as file:
+                yield _json.load(file, object_pairs_hook=OrderedDict)

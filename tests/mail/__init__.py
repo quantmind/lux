@@ -1,8 +1,10 @@
 from lux.core import LuxExtension
-from lux.extensions.smtp import ContactRouter
+from lux.extensions import smtp
 
 EXTENSIONS = ['lux.extensions.smtp']
 
+DEFAULT_CONTENT_TYPE = 'text/html'
+EMAIL_BACKEND = 'tests.mail.EmailBackend'
 EMAIL_USE_TLS = True
 EMAIL_HOST = '127.0.0.1'
 EMAIL_PORT = 25
@@ -25,7 +27,30 @@ EMAIL_ENQUIRY_RESPONSE = [
 ]
 
 
-class Extension(LuxExtension):
+class EmailBackend(smtp.EmailBackend):
 
-    def middleware(self, app):
-        return [ContactRouter('contact')]
+    def __init__(self, app):
+        self.app = app
+        self.sent = []
+
+    async def send_mails(self, messages):
+        return self._send_mails(messages)
+
+    def _open(self):
+        return DummyConnection(self)
+
+
+class Extension(LuxExtension):
+    pass
+
+
+class DummyConnection:
+
+    def __init__(self, backend):
+        self.backend = backend
+
+    def sendmail(self, *args, **kwargs):
+        self.backend.sent.append((args, kwargs))
+
+    def quit(self):
+        pass

@@ -7,12 +7,12 @@ class CommandTests(test.TestCase):
     config_file = 'tests.core'
 
     def test_clone(self):
-        template = {'/': 'foo.html'}
+        groups = {'site': {'path': '*'}}
         app = self.application()
-        callable = app.clone_callable(HTML_TEMPLATES=template)
+        callable = app.clone_callable(CONTENT_GROUPS=groups)
         self.assertNotEqual(app.callable, callable)
         app2 = callable.setup()
-        self.assertEqual(app2.config['HTML_TEMPLATES'], template)
+        self.assertEqual(app2.config['CONTENT_GROUPS'], groups)
 
     def test_require(self):
         app = self.application()
@@ -26,29 +26,33 @@ class CommandTests(test.TestCase):
 
     def test_cms_page(self):
         app = self.application()
-        request = app.wsgi_request()
-        page = app.cms.page(request, '')
+        page = app.cms.page('')
         self.assertTrue(page)
-        self.assertEqual(page.path, '/')
-        self.assertEqual(page.template, 'home.html')
-        sitemap = app.cms.sitemap(request)
+        self.assertEqual(page.path, '')
+        self.assertEqual(page.body_template, 'home.html')
+        sitemap = app.cms.sitemap()
         self.assertIsInstance(sitemap, list)
-        self.assertEqual(id(sitemap), id(app.cms.sitemap(request)))
+        self.assertEqual(id(sitemap), id(app.cms.sitemap()))
 
-    def test_cms_no_page(self):
+    def test_cms_wildcard(self):
         app = self.application()
-        request = app.wsgi_request()
-        page = app.cms.page(request, 'xxx')
-        self.assertFalse(page)
-        self.assertEqual(page.path, None)
-        self.assertEqual(page.template, None)
-        self.assertIsInstance(app.cms.sitemap(request), list)
+        page = app.cms.page('xxx')
+        self.assertTrue(page)
+        self.assertEqual(page.path, '')
+        self.assertEqual(page.urlargs, {'path': 'xxx'})
+        self.assertEqual(page.body_template, 'home.html')
+        self.assertIsInstance(app.cms.sitemap(), list)
 
     def test_cms_path_page(self):
         app = self.application()
-        request = app.wsgi_request()
-        page = app.cms.page(request, 'bla/foo')
+        page = app.cms.page('bla/foo')
         self.assertTrue(page)
-        self.assertEqual(page.path, '/bla/<path:path>')
-        self.assertEqual(page.template, 'bla.html')
-        self.assertIsInstance(app.cms.sitemap(request), list)
+        self.assertEqual(page.path, 'bla')
+        self.assertEqual(page.body_template, 'bla.html')
+        self.assertIsInstance(app.cms.sitemap(), list)
+
+    def test_extension_override(self):
+        app = self.application()
+        self.assertTrue('RANDOM_P' in app.config)
+        self.assertTrue('USE_ETAGS' in app.config)
+        self.assertTrue('SERVE_STATIC_FILES' in app.config)

@@ -3,10 +3,17 @@ from pulsar.utils.pep import to_string
 
 from .mixins import TokenBackendMixin
 from .registration import RegistrationMixin
+from .permissions import PemissionsMixin
 from .. import AuthBackend, Authorization
 
+# Cross-Origin Resource Sharing header
+CORS = 'Access-Control-Allow-Origin'
 
-class TokenBackend(TokenBackendMixin, RegistrationMixin, AuthBackend):
+
+class TokenBackend(TokenBackendMixin,
+                   RegistrationMixin,
+                   PemissionsMixin,
+                   AuthBackend):
     """Toekn Backend
     """
     def api_sections(self, app):
@@ -39,24 +46,26 @@ class TokenBackend(TokenBackendMixin, RegistrationMixin, AuthBackend):
         """
         auth_type, key = auth.split(None, 1)
         auth_type = auth_type.lower()
-        if auth_type == 'bearer':
-            try:
+        user = None
+        try:
+            if auth_type == 'bearer':
                 token = self.decode_token(request, key)
-            except Http401:
-                raise
-            except Exception:
-                request.app.logger.exception('Could not load user')
-            else:
                 request.cache.session = token
                 user = self.get_user(request, **token)
-                if user:
-                    request.cache.user = user
+            elif auth_type == 'oauth':
+                user = self.get_user(request, oauth=key)
+        except Http401:
+            raise
+        except Exception:
+            request.app.logger.exception('Could not load user')
+        else:
+            if user:
+                request.cache.user = user
 
     def response(self, environ, response):
-        name = 'Access-Control-Allow-Origin'
-        if name not in response.headers:
+        if CORS not in response.headers:
             origin = environ.get('HTTP_ORIGIN', '*')
-            response[name] = origin
+            response[CORS] = origin
         return response
 
     def response_middleware(self, app):
@@ -73,7 +82,9 @@ class TokenBackend(TokenBackendMixin, RegistrationMixin, AuthBackend):
         if origin == 'null':
             origin = '*'
 
-        response['Access-Control-Allow-Origin'] = origin
+        response[CORS] = origin
         if headers:
             response['Access-Control-Allow-Headers'] = headers
+        if not isinstance(methods, (str, list)):
+            methods = list(methods)
         response['Access-Control-Allow-Methods'] = methods

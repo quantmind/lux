@@ -26,7 +26,7 @@ export function urlResolve(url) {
         //
         $base: function () {
             var base = `${url.protocol}://${url.hostname}`;
-            if (url.protocol !== DEFAULT_PORTS[+url.port]) base += `:${url.port}`;
+            if (url.port && url.protocol !== DEFAULT_PORTS[+url.port]) base += `:${url.port}`;
             return base;
         }
     };
@@ -62,7 +62,7 @@ export function urlJoin () {
                 slash = true;
                 cbit = cbit.substring(0, cbit.length - 1);
             }
-            if (cbit) {
+            if (cbit || slash) {
                 if (url && url.substring(url.length - 1) !== '/')
                     url += '/';
                 url += cbit;

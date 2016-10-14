@@ -3,9 +3,9 @@ import _ from '../ng';
 
 class Rest {
 
-    constructor ($lux, grid) {
+    constructor (grid) {
         this.grid = grid;
-        this.api = $lux.api(grid.options.target);
+        this.api = grid.$lux.api(grid.options.target);
     }
 
     connect () {
@@ -37,13 +37,13 @@ class Rest {
     }
 
     deleteItem (identifier) {
-        return this.api.delete({path: this._subPath + '/' + identifier});
+        return this.api.delete({url: identifier});
     }
 }
 
 
-function rest ($lux, grid) {
-    return new Rest($lux, grid);
+function rest (grid) {
+    return new Rest(grid);
 }
 
 

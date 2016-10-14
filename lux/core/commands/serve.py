@@ -15,10 +15,11 @@ nominify = Setting('nominify',
 class Command(LuxCommand):
     help = "Starts a fully-functional Web server using pulsar"
     option_list = (nominify,)
+    wsgiApp = wsgi.WSGIServer
 
-    def __call__(self, argv, start=True):
+    def __call__(self, argv, start=True, get_app=False):
         app = self.app
-        server = self.pulsar_app(argv, wsgi.WSGIServer)
+        server = self.pulsar_app(argv, self.wsgiApp)
         if server.cfg.nominify:
             app.params['MINIFIED_MEDIA'] = False
 
@@ -29,4 +30,6 @@ class Command(LuxCommand):
             app.on_start(server)
             arbiter = pulsar.arbiter()
             arbiter.start()
-        return app
+
+        if not start:
+            return app if get_app else server

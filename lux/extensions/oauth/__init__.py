@@ -12,8 +12,8 @@ Add :mod:`lux.extensions.oauth` to the :setting:`EXTENSIONS` list of your
 project and include the :setting:`OAUTH_PROVIDERS` dictionary::
 
     OAUTH_PROVIDERS = {
-        'google': ...,
-        'twitter': ...,
+        "google": ...,
+        "twitter": ...,
     }
 
 This extension adds open graph meta tags when the :setting:`DEFAULT_OG_TYPE`
@@ -67,7 +67,7 @@ class Extension(LuxExtension):
         if canonical:
             if not isinstance(canonical, str):
                 canonical = request.absolute_uri()
-            doc.head.links.append(canonical, 'canonical')
+            doc.head.links.append(canonical, rel='canonical')
 
         type = app.config['DEFAULT_OG_TYPE']
         # add canonical if not available

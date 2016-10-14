@@ -1,20 +1,16 @@
-.. image:: http://quantmind.github.io/lux/media/luxsite/lux-banner.svg
+.. image:: https://lux.fluidily.com/assets/logos/lux-banner.svg
    :alt: Lux
    :width: 50%
 
 |
 |
 
-Lux is a library for developing web applications with Python and javascript frameworks such as AngularJS.
 
-:Badges: |license|  |pyversions| |status| |downloads|
-:Master CI: |master-build| |coverage-master|
-:Dev CI: |dev-build| |coverage-dev|
-:Javascript: |jsdep| |jsdevdep|
-:Documentation: http://quantmind.github.io/lux/
+:Badges: |license|  |pyversions| |status|
+:Python CI: |master-build| |coverage-master|
+:Documentation: https://github.com/quantmind/lux
 :Downloads: https://pypi.python.org/pypi/lux
 :Source: https://github.com/quantmind/lux
-:Design by: `Quantmind`_
 :Platforms: Linux, OSX, Windows. Python 3.5 and above
 :Keywords: asynchronous, wsgi, websocket, redis, json-rpc, REST, web
 
@@ -28,62 +24,25 @@ Lux is a library for developing web applications with Python and javascript fram
   :target: https://pypi.python.org/pypi/lux
 .. |master-build| image:: https://img.shields.io/travis/quantmind/lux/master.svg
   :target: http://travis-ci.org/quantmind/lux
-.. |dev-build| image:: https://img.shields.io/travis/quantmind/lux/dev.svg
-  :target: http://travis-ci.org/quantmind/lux
 .. |coverage-master| image:: https://img.shields.io/coveralls/quantmind/lux/master.svg
   :target: https://coveralls.io/r/quantmind/lux?branch=master
-.. |coverage-dev| image:: https://img.shields.io/coveralls/quantmind/lux/dev.svg
-  :target: https://coveralls.io/r/quantmind/lux?branch=dev
 .. |jsdep| image:: https://david-dm.org/quantmind/lux.svg
   :target: https://david-dm.org/quantmind/lux
 .. |jsdevdep| image:: https://david-dm.org/quantmind/lux/dev-status.svg
   :target: https://david-dm.org/quantmind/lux#info=devDependencies
+.. |jsci| image:: https://circleci.com/gh/quantmind/lux.svg?style=svg
+    :target: https://circleci.com/gh/quantmind/lux
+.. _jscoverage: https://circleci.com/api/v1/project/quantmind/lux/latest/artifacts/0/$CIRCLE_ARTIFACTS/coverage/index.html?branch=master&filter=successful
 
-.. _requirements:
-
-Python Requirements
-=======================
-
-**Hard requirements**
-
-* pulsar_ asychronous engine
-* greenlet_ implicit asynchronous code
-* jinja2_ template engine
-* pytz_ timzones and countries
-* dateutil_ date utilities
-
-**Soft requirements**
-
-* sqlalchemy_ and pulsar-odm_ used by ``lux.extensions.odm``
-* pyjwt_ used by some authentication backends in ``lux.extensions.rest``
-* markdown_
-* oauthlib_ for ``lux.extensions.oauth``
+Lux is a library for developing asynchronous web applications with python 3.5 or above.
 
 
-Testing
-==========
+* `Getting Started </docs/getting-started.rst>`_
+* `Extensions </docs/extensions.rst>`_
+* `Migrations </docs/migrations.rst>`_
+* `Changelog </docs/changelog.md>`_
 
-For testing, create the test database first::
-
-    psql -a -f tests/db.sql
-
-To run tests::
-
-    python setup.py test
-
-For options and help type::
-
-    python setup.py test --help
-
-flake8_ check (requires flake8 package)::
-
-    flake8
-
-Debugging javascript on Chrome::
-
-    npm run-script debug
-
-
+.. _asyncio: https://docs.python.org/3/library/asyncio.html
 .. _pulsar: https://github.com/quantmind/pulsar
 .. _pytz: http://pytz.sourceforge.net/
 .. _dateutil: https://pypi.python.org/pypi/python-dateutil
@@ -103,3 +62,4 @@ Debugging javascript on Chrome::
 .. _`Quantmind`: http://quantmind.com
 .. _flake8: https://pypi.python.org/pypi/flake8
 .. _jinja2: http://jinja.pocoo.org/docs/dev/
+.. _premailer: https://github.com/peterbe/premailer

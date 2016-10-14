@@ -11,6 +11,7 @@ this extension adds middleware for serving static files from
 :setting:`MEDIA_URL`.
 In addition, a :setting:`HTML_FAVICON` location can also be specified.
 '''
+import os
 import hashlib
 from urllib.parse import urlparse
 
@@ -18,8 +19,6 @@ from pulsar.apps import wsgi
 from pulsar.utils.httpurl import remove_double_slash, is_absolute_uri
 
 from lux.core import LuxExtension, Parameter, RedirectRouter
-
-from .media import MediaRouter
 
 
 class Extension(LuxExtension):
@@ -49,11 +48,12 @@ class Extension(LuxExtension):
         if is_absolute_uri(path):
             app.config['SERVE_STATIC_FILES'] = False
 
-        elif app.config['SERVE_STATIC_FILES']:
+        if os.path.isdir(app.config['SERVE_STATIC_FILES'] or ''):
             if path.endswith('/'):
                 path = path[:-1]
-            d = app.meta.media_dir
-            middleware.append(MediaRouter(path, d, show_indexes=app.debug))
+            location = app.config['SERVE_STATIC_FILES']
+            middleware.append(wsgi.MediaRouter(path, location,
+                                               show_indexes=app.debug))
 
         if app.config['REDIRECTS']:
             for url, to in app.config['REDIRECTS'].items():

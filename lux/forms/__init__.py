@@ -50,10 +50,12 @@ from .fields import (Field, CharField, TextField, BooleanField, JsonField,
                      PasswordField, UrlField, SlugField)
 from .errors import FormError, FieldError, ValidationError
 from .formsets import FormSet
-from .form import FormType, Form, BoundField, FieldList, create_form, FORMKEY
-from .serialise import Fieldset, Submit, Layout, Row, Col, as_serialised_field
+from .form import FormType, Form, BoundField, create_form
+from .serialise import (Fieldset, Submit, Layout, Row, Col, Inline,
+                        as_serialised_field)
 from .options import Options, OptionGroup
-from .views import WebFormRouter, get_form, get_form_layout, get_form_class
+from .views import (WebFormRouter, ActionsRouter, get_form, get_form_layout,
+                    get_form_class)
 from ..core.wrappers import formreg
 
 __all__ = [
@@ -81,16 +83,17 @@ __all__ = [
     'FormType',
     'Form',
     'BoundField',
-    'FieldList',
     'create_form',
-    'FORMKEY',
+    #
     'Fieldset',
+    'Inline',
     'Submit',
     'Layout',
     'Row',
     'Col',
     'as_serialised_field',
     'WebFormRouter',
+    'ActionsRouter',
     'get_form',
     'get_form_class',
     'get_form_layout',

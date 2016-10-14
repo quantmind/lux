@@ -1,295 +1,104 @@
 import os
-import mimetypes
 
 from pulsar import Http404
-from pulsar.utils.httpurl import remove_double_slash
-from pulsar.utils.slugify import slugify
 
 from lux.core import cached
-from lux.core.content import get_reader, ContentFile
-from lux.extensions.rest import RestModel, RestColumn
+from lux.extensions.rest import DictModel, RestField, Query
 from lux.utils.files import skipfile
+from lux.utils.data import as_tuple
+
+from .contents import get_reader
 
 
-COLUMNS = [
-    RestColumn('priority', sortable=True, type='int'),
-    RestColumn('order', sortable=True, type='int'),
-    RestColumn('slug', sortable=True),
-    RestColumn('path', sortable=True),
-    RestColumn('title')]
+FIELDS = [
+    RestField('priority', sortable=True, type='int'),
+    RestField('order', sortable=True, type='int'),
+    RestField('slug', sortable=True),
+    RestField('group', sortable=True),
+    RestField('title'),
+    RestField('description'),
+    RestField('body')
+]
 
 
-OPERATORS = {
-    'eq': lambda x, y: x == y,
-    'ne': lambda x, y: x != y,
-    'gt': lambda x, y: x > y,
-    'ge': lambda x, y: x >= y,
-    'lt': lambda x, y: x < y,
-    'le': lambda x, y: x <= y
-}
-
-
-class ContentModel(RestModel):
+class ContentModel(DictModel):
     '''A Content model with file-system backend
 
     This model provide read-only operations
     '''
-    def __init__(self, location, name='content', columns=None, ext='md',
-                 id_field=None, **kwargs):
+    def __init__(self, location, name='content', fields=None, ext='md', **kw):
         if not os.path.isdir(location):
             os.makedirs(location)
         self.directory = location
         self.ext = ext
-        columns = columns or COLUMNS[:]
-        super().__init__(name, columns=columns, id_field='path', **kwargs)
+        fields = fields or FIELDS[:]
+        kw['id_field'] = 'slug'
+        super().__init__(name, fields=fields, **kw)
 
-    def get_instance(self, request, path):
-        return self.serialise_model(request, self.read(request, path))
+    def get_query(self, session):
+        return ContentQuery(self, session)
 
-    def session(self, request):
-        return Query(request, self)
+    def tojson(self, request, instance, in_list=False, **kw):
+        instance = self.instance(instance)
+        data = instance.obj
+        if in_list and (not instance.fields or 'body' not in instance.fields):
+            data.pop('body', None)
+        return self.instance_urls(request, instance, data)
 
-    def query(self, request, session, *filters):
-        if filters:
-            request.logger.warning('Cannot use positional filters in %s',
-                                   request.path)
-        return session
 
-    def tojson(self, request, content, in_list=False, **kw):
-        if isinstance(content, ContentFile):
-            return content.response(request)
-        if not isinstance(content, dict):
-            content = content.json(request.app)
-            path = content.get('path')
-            if path is not None:
-                content['slug'] = slugify(path) or 'index'
-        if in_list:
-            content.pop('body', None)
-        return content
+class ContentQuery(Query):
 
-    def get_target(self, request, **extra_data):
-        '''Get a target for a form
+    def __init__(self, model, session):
+        super().__init__(model, session.request)
+        self._groups = []
 
-        Used by HTML Router to get information about the LUX REST API
-        of this Rest Model
-        '''
-        target = {'url': self.url}
-        target.update(**extra_data)
-        return target
+    def filter_field(self, field, op, value):
+        if field.name == 'group' and op == 'eq':
+            self._groups.extend(as_tuple(value))
+        super().filter_field(field, op, value)
 
-    def read(self, request, path):
-        '''Read content from file in the repository
-        '''
-        src = os.path.join(self.directory, path)
-        if os.path.isdir(src):
-            src = os.path.join(src, 'index')
+    #  INTERNALS
+    def _get_data(self):
+        if self._data is None:
+            self._data = []
+            for group in self._groups:
+                cache = cached(app=self.app, key='contents:%s' % group)
+                self._data.extend(cache(self._all)(group))
+        return self._data
 
-        if src.endswith('.html'):
-            raise Http404
-
-        # Handle files which are not html
-        content_type, _ = mimetypes.guess_type(src)
-        if content_type and os.path.isfile(src):
-            return ContentFile(src, content_type=content_type)
-
-        # Add extension
-        ext = '.%s' % self.ext
-        src = '%s%s' % (src, ext)
-        if not os.path.isfile(src):
-            raise Http404
-
-        path = os.path.relpath(src, self.directory)
-        #
-        # Add html_url if available
-        if self.html_url:
-            path = '%s/%s' % (self.html_url, path)
-        #
-        # Remove extension
-        path = path[:-len(ext)]
-        if path.endswith('index'):
-            path = path[:-5]
-        if path.endswith('/'):
-            path = path[:-1]
-        path = '/%s' % path
-        meta = dict(path=path)
-        return get_reader(request.app, src).read(src, meta)
-
-    def asset(self, filename):
-        if self.html_url:
-            path = '%s/%s' % (self.html_url, filename)
-        else:
-            path = filename
-        src = os.path.join(self.directory, filename)
-        return dict(src=src, path=path)
-
-    def all(self, request, force=False):
-        """Generator of contents in this model
-
-        :param force: if true all content is yielded, otherwise only content
-            matching the extension
+    def _all(self, group):
+        """Contents in this model group
         """
-        group = request.urlargs.get('group')
-        if not group:
-            return []
-        directory = os.path.join(self.directory, group)
-        ext = '.%s' % self.ext
+        model = self.model
+        content = self.app.config['CONTENT_GROUPS'].get(group)
+        default_meta = content.get('meta', {}) if content else {}
+        directory = os.path.join(model.directory, group)
+        if not os.path.isdir(directory):
+            if content:
+                return []
+            else:
+                raise Http404
+        ext = '.%s' % model.ext
+        reader = get_reader(self.app, ext)
+        data = []
         for dirpath, dirnames, filenames in os.walk(directory):
             for filename in filenames:
                 if skipfile(filename):
                     continue
 
-                path = os.path.relpath(dirpath, self.directory)
-                filename = os.path.join(path, filename)
+                if dirpath != directory:
+                    path = os.path.relpath(dirpath, directory)
+                    filename = os.path.join(path, filename)
 
-                if not filename.endswith(ext):
-                    if force:
-                        yield self.asset(filename)
-                else:
-                    filename = filename[:-len(ext)]
-                    yield self.read(request, filename)
-
-    # INTERNALS
-    def _path(self, request, path):
-        '''relative pathof content
-        '''
-        return remove_double_slash('/%s/%s' % (self.url, path))
-
-    def content(self, data):
-        body = data['body']
-        return body
-
-    def _do_sortby(self, request, query, field, direction):
-        return query.sortby(field, direction)
-
-    def _do_filter(self, request, query, field, op, value):
-        return query.filter(field, op, value)
-
-
-class Query:
-    _data = None
-    _limit = None
-    _offset = None
-
-    def __init__(self, request, model):
-        self.request = request
-        self.model = model
-
-    def __enter__(self):
-        return self
-
-    def __repr__(self):
-        if self._data is None:
-            return self.__class__.__name__
-        else:
-            return repr(self._data)
-    __str__ = __repr__
-
-    def __exit__(self, type, value, traceback):
-        pass
-
-    def limit(self, v):
-        self._limit = v
-        return self
-
-    def offset(self, v):
-        self._offset = v
-        return self
-
-    def count(self):
-        return len(self._get_data())
-
-    def sortby(self, field, direction):
-        data = self._get_data()
-        if direction == 'desc':
-            data = [desc(d, field) for d in data]
-        else:
-            data = [asc(d, field) for d in data]
-        self._data = [s.d for s in sorted(data)]
-        return self
-
-    def filter(self, field, op, value):
-        data = []
-        op = OPERATORS.get(op)
-        if op:
-            for content in self._get_data():
-                val = content.get(field)
-                try:
-                    if op(val, value):
-                        data.append(content)
-                except Exception:
-                    pass
-        self._data = data
-        return self
-
-    def all(self):
-        data = self._get_data()
-        if self._offset:
-            data = data[self._offset:]
-        if self._limit:
-            data = data[:self._limit]
+                if filename.endswith(ext):
+                    slug = filename[:-len(ext)]
+                    src = os.path.join(directory, filename)
+                    bits = slug.split('/')
+                    if len(bits) > 1 and bits[-1] == 'index':
+                        slug = '/'.join(bits[:-1])
+                    meta = default_meta.copy()
+                    meta.update({'path': '/%s/%s' % (group, slug),
+                                 'group': group,
+                                 'slug': slug})
+                    data.append(reader.read(src, meta).tojson())
         return data
-
-    #  INTERNALS
-    def _get_data(self):
-        if self._data is None:
-            self._data = self.read_files(self.request)
-        return self._data
-
-    def _sort(self, c):
-        if self._sort_field in c:
-            return
-
-    @cached
-    def read_files(self, request):
-        data = []
-        instances = self.model.all(request)
-        for d in self.model.serialise(request, instances):
-            if d.get('priority', 1):
-                data.append(d)
-        return data
-
-
-class asc:
-    __slots__ = ('d', 'value')
-
-    def __init__(self, d, field):
-        self.d = d
-        self.value = d.get(field)
-
-    def __eq__(self, other):
-        return self.value == other.value
-
-    def __lt__(self, other):
-        if self.value is None:
-            return False
-        elif other.value is None:
-            return True
-        else:
-            return self.value < other.value
-
-    def __gt__(self, other):
-        if other.value is None:
-            return False
-        elif self.value is None:
-            return True
-        else:
-            return self.value > other.value
-
-
-class desc(asc):
-
-    def __gt__(self, other):
-        if self.value is None:
-            return False
-        elif other.value is None:
-            return True
-        else:
-            return self.value < other.value
-
-    def __lt__(self, other):
-        if self.value is None:
-            return False
-        elif other.value is None:
-            return True
-        else:
-            return self.value > other.value

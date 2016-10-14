@@ -29,6 +29,8 @@ class Extension(LuxExtension):
                   'email address for support queries', True),
         Parameter('EMAIL_ENQUIRY_RESPONSE', [],
                   'List of email messages to be sent on reception of enquiry'),
+        Parameter('EMAIL_MESSAGE_SUCCESS',
+                  'Your message was sent! Thank You for your interest'),
         Parameter('SMTP_LOG_LEVEL', None,
                   'Logging level for email messages'),
         Parameter('SLACK_LOG_LEVEL', 'ERROR',
@@ -39,7 +41,15 @@ class Extension(LuxExtension):
                   'Usernames to include as mention in the slack message'),
         Parameter('LOG_CONTEXT_FACTORY', None,
                   'Callable returning dict with system context for logging'),
+        Parameter('CONTACT_US_URL', 'contact',
+                  'Contact us url. Set to None if not needed')
     ]
+
+    def middleware(self, app):
+        if app.config['DEFAULT_CONTENT_TYPE'] == 'text/html':
+            contact_us = app.config['CONTACT_US_URL']
+            if contact_us is not None:
+                yield ContactRouter(contact_us)
 
     def on_loaded(self, app):
         if app.callable.command == 'serve':

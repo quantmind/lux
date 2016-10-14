@@ -1,4 +1,4 @@
-cython
+pip
 psycopg2
 alembic
 unidecode
@@ -10,5 +10,5 @@ redis
 coverage
 flake8
 lxml
--e git+https://github.com/quantmind/pulsar-agile.git@master#egg=pulsar-agile
--e git+https://github.com/quantmind/pulsar-odm.git@master#egg=pulsar-odm
+recommonmark
+premailer

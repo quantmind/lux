@@ -13,7 +13,15 @@ class TestEnum(Enum):
     opt2 = '2'
 
 
-class SimpleForm(forms.Form):
+class Mixin(forms.Form):
+    random = forms.IntegerField(required=False)
+
+
+class Mixin1(forms.Form):
+    name = forms.CharField(minlength=2, maxlength=30)
+
+
+class SimpleForm(Mixin1, Mixin):
     name = forms.CharField(minlength=2, maxlength=30)
     email = forms.CharField(required=False)
     rank = forms.IntegerField(required=False)
@@ -230,3 +238,13 @@ class FormTests(test.TestCase):
         self.assertFalse(form.is_valid())
         self.assertValidationError(form.tojson(), 'name',
                                    'too long')
+
+    def test_form_message(self):
+        form = PageForm(data={})
+        self.assertFalse(form.exclude_missing)
+        self.assertFalse(form.is_valid())
+        msg = form.message()
+        self.assertTrue(msg.startswith('ERROR: '))
+
+    def test_form_mixin(self):
+        self.assertTrue('random' in SimpleForm.base_fields)

@@ -14,6 +14,19 @@ class AuthTest(web.WebsiteTest):
         bs = self.bs(request.response, 200)
         self.assertEqual(str(bs.title), '<title>website.com</title>')
 
+    async def test_login_fail(self):
+        request = await self.webclient.get('/auth/login')
+        bs = self.bs(request.response, 200)
+        credentials = self.authenticity_token(bs)
+        cookie = self.cookie(request.response)
+        credentials['username'] = 'xbjhxbhxs'
+        credentials['password'] = 'sdcsacccscd'
+        request = await self.webclient.post('/auth/login',
+                                            json=credentials,
+                                            cookie=cookie)
+        self.assertValidationError(request.response,
+                                   text='Invalid username or password')
+
     async def test_login(self):
         cookie, token = await self._login()
         self.assertTrue(cookie)

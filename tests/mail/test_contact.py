@@ -1,15 +1,8 @@
 from lux.utils import test
 
-from unittest.mock import MagicMock
-
 
 class ContactRouterTestCase(test.TestCase):
     config_file = 'tests.mail'
-
-    def application(self, **params):
-        app = super().application(**params)
-        app.email_backend.send_mail = MagicMock()
-        return app
 
     async def test_get_html(self):
         app = self.application()
@@ -26,12 +19,11 @@ class ContactRouterTestCase(test.TestCase):
             name='Pinco Pallino',
             email='pinco@pallino.com',
             body='Hi this is a test')
-        request = await client.post('/contact',
-                                    body=data,
-                                    content_type='application/json')
+        request = await client.post('/contact', json=data)
         data = self.json(request.response, 200)
-        self.assertEqual(data['message'], "Message sent")
-        self.assertEqual(app.email_backend.send_mail.call_count, 2)
+        self.assertEqual(data['message'],
+                         "Your message was sent! Thank You for your interest")
+        self.assertEqual(len(app.email_backend.sent), 2)
 
     async def test_post_one_email_form_invalid(self):
         app = self.application()
@@ -39,7 +31,5 @@ class ContactRouterTestCase(test.TestCase):
         data = dict(
             name='Pinco Pallino',
             email='pinco@pallino.com')
-        request = await client.post('/contact',
-                                    body=data,
-                                    content_type='application/json')
+        request = await client.post('/contact', json=data)
         self.assertValidationError(request.response, 'body')

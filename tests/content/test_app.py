@@ -1,7 +1,9 @@
+from urllib.parse import urlsplit
+
 from lux.utils import test
 from lux.extensions.content.github import github_signature
 
-from tests.content import remove_repo, create_content
+from tests.content import remove_repo, create_content, CONTENT_REPO
 
 
 class TestContentViews(test.AppTestCase):
@@ -18,11 +20,15 @@ class TestContentViews(test.AppTestCase):
         remove_repo()
         return super().tearDownClass()
 
+    def test_initialization(self):
+        model = self.app.models.get('contents')
+        self.assertEqual(model.directory, CONTENT_REPO)
+        self.assertEqual(model.name, 'content')
+        self.assertEqual(model.identifier, 'contents')
+
     async def test_404(self):
         request = await self.client.get('/blog/bla')
-        response = request.response
-        self.assertEqual(response.status_code, 404)
-        self.assertEqual(response.content_type, 'text/html; charset=utf-8')
+        self.html(request.response, 404)
         handler = request.app_handler
         self.assertTrue(handler)
 
@@ -30,6 +36,13 @@ class TestContentViews(test.AppTestCase):
         request = await self.client.get('/blog/foo')
         bs = self.bs(request.response, 200)
         self.assertEqual(str(bs.title), '<title>This is Foo</title>')
+
+    async def test_api_read(self):
+        path = '/api/contents/blog/foo'
+        request = await self.client.get(path)
+        data = self.json(request.response, 200)
+        self.assertTrue('api_url' in data)
+        self.assertEqual(urlsplit(data['api_url']).path, path)
 
     async def test_github_hook_400(self):
         payload = dict(zen='foo', hook_id='457356234')

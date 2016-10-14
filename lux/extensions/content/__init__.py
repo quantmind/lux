@@ -1,40 +1,33 @@
 import os
 
-from pulsar.utils.slugify import slugify
-from pulsar.apps.wsgi import MediaRouter
-
 from lux.core import Parameter, LuxExtension
 
 from .models import ContentModel
 from .rest import ContentCRUD
-from .cms import TextRouter, CMS, CmsContent, LazyContext
+from .cms import CMS, LazyContext
 from .github import GithubHook, EventHandler, PullRepo
 from .files import content_location
-from .static import StaticCache
+from .views import TemplateRouter
 
 
 __all__ = ['Content',
-           'CmsContent',
-           'TextRouter',
            'ContentCRUD',
            'CMS',
            'GithubHook',
            'EventHandler',
            'PullRepo',
-           'StaticCache',
            'LazyContext']
 
 
 class Extension(LuxExtension):
     _config = [
-        Parameter('CONTENT_MODELS', None,
-                  'List of content model configurations'),
         Parameter('CONTENT_REPO', None,
                   'Directory where content repo is located'),
         Parameter('CONTENT_LOCATION', None,
                   'Directory where content is located inside CONTENT_REPO'),
-        Parameter('STATIC_LOCATION', None,
-                  'Directory where the static site is created'),
+        Parameter('HTML_TEMPLATES_URL', 'templates',
+                  'Base url for serving HTML templates when the default '
+                  'content type is text/html. Set to None if not needed.'),
         Parameter('GITHUB_HOOK_KEY', None,
                   'Secret key for github webhook')
     ]
@@ -42,21 +35,14 @@ class Extension(LuxExtension):
     def on_config(self, app):
         self.require(app, 'lux.extensions.rest')
 
-    def context(self, request, context):
-        if request.cache.html_main:
-            context['html_main'] = request.cache.html_main
-        if 'slug' not in context:
-            context['slug'] = slugify(request.path[1:] or 'index')
-        return context
+    def middleware(self, app):
+        url = app.config['HTML_TEMPLATES_URL']
+        if app.config['DEFAULT_CONTENT_TYPE'] == 'text/html' and url:
+            yield TemplateRouter(url, serve_only=('html', 'txt'))
 
     def on_loaded(self, app):
-        if app.callable.command == 'serve_static':
-            location = app.config['STATIC_LOCATION']
-            app._handler = MediaRouter('', location, default_suffix='html')
-        #
-        # Add HTML middleware if this is a web-site server
-        elif app.config['DEFAULT_CONTENT_TYPE'] == 'text/html':
-            app.cms = CMS.build(app)
+        if app.config['DEFAULT_CONTENT_TYPE'] == 'text/html':
+            app.cms = CMS(app)
 
     def api_sections(self, app):
         location = content_location(app)
@@ -71,10 +57,13 @@ class Extension(LuxExtension):
             middleware.append(GithubHook('/refresh-content',
                                          handle_payload=PullRepo(location),
                                          secret=secret))
-        middleware.append(ContentCRUD(ContentModel(location)))
+        middleware.append(ContentCRUD('{0}/<group>',
+                                      model=ContentModel(location)))
         return middleware
 
     def get_template_full_path(self, app, name):
         repo = content_location(app)
         if repo:
             return os.path.join(repo, 'templates', name)
+        else:
+            return super().get_template_full_path(app, name)

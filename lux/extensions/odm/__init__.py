@@ -9,29 +9,25 @@ built on top of sqlalchemy, pulsar and greenlet.
 
 _ ..pulsar-odm: https://github.com/quantmind/pulsar-odm
 """
-from lux.core import Parameter, LuxExtension, app_attribute
-from lux.extensions.rest import SimpleBackend
-
 from odm import declared_attr
 
+from lux.core import Parameter, LuxExtension
+
 from .mapper import Mapper, model_base
-from .views import CRUD, RestRouter
-from .models import RestModel, RestColumn
-from .ws import WsModelRpc
+from .models import RestModel, RestField, odm_models
 
 
 __all__ = ['model_base',
            'declared_attr',
-           'CRUD',
-           'RestRouter',
            'RestModel',
-           'RestColumn']
+           'RestField']
 
 
 sql_to_broadcast = {'insert': 'create'}
+sql_delete = 'delete'
 
 
-class Extension(LuxExtension, WsModelRpc):
+class Extension(LuxExtension):
     """Object data mapper extension
 
     Uses pulsar-odm for sychronous & asynchronous data mappers
@@ -45,54 +41,52 @@ class Extension(LuxExtension, WsModelRpc):
                   'Dictionary for mapping alembic settings'),
         Parameter('DEFAULT_TEXT_SEARCH_CONFIG', 'english',
                   'Default config/language for :search full-text search '
-                  'operator'),
-        Parameter('PUBSUB_MODELS_BROADCAST', None,
-                  'Set of channels to broadcast events'),
+                  'operator')
     ]
 
     def on_config(self, app):
         '''Initialise Object Data Mapper'''
         self.require(app, 'lux.extensions.rest')
         app.odm = Odm(app)
-        app.add_events(('on_before_commit', 'on_after_commit'))
+
+    def on_before_commit(self, app, session, changes):
+        request = session.request
+        if not request:
+            return
+        for instance, event in changes.values():
+            name = instance.__class__.__name__.lower()
+            model = odm_models(app).get(name)
+            if model:
+                event = sql_to_broadcast.get(event, event)
+                if event == sql_delete:
+                    instance._json = model.tojson(
+                        request, instance, in_list=True, safe=True)
 
     def on_after_commit(self, app, session, changes):
         """
-        Called before SQLAlchemy commit.
+        Called after SQLAlchemy commit, broadcast models events into channels
 
         :param app:         Lux app object
         :param session:     SQLAlchemy session
         :param changes:     dict of model changes
         """
-        bmodels = broadcast_models(app)
-        if not bmodels:
+        request = session.request
+        if not request:
             return
-        request = app.wsgi_request()
-        request.cache.auth_backend = SimpleBackend()
         for instance, event in changes.values():
             name = instance.__class__.__name__.lower()
-            models = bmodels.get(name)
-            if not models:
-                continue
-            channels = app.channels
-            event = sql_to_broadcast.get(event, event)
-            for model in models:
-                data = model.serialise(request, instance)
-                channels.publish(model.identifier, event, data)
-
-
-@app_attribute
-def broadcast_models(app):
-    channels = app.config['PUBSUB_MODELS_BROADCAST']
-    models = {}
-    if channels:
-        for model in app.models.values():
-            if model.identifier in channels:
-                if model.name not in models:
-                    models[model.name] = [model]
+            model = odm_models(app).get(name)
+            if model:
+                event = sql_to_broadcast.get(event, event)
+                if not hasattr(instance, '_json'):
+                    data = model.tojson(
+                        request, instance, in_list=True, safe=True)
                 else:
-                    models[model.name].append(model)
-    return models
+                    data = instance._json
+                app.channels.publish(model.identifier, event, data)
+
+    def on_close(self, app):
+        app.odm().close()
 
 
 class Odm:

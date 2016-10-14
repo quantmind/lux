@@ -1,4 +1,6 @@
 from datetime import datetime, date
+from collections import Mapping
+from inspect import isclass
 
 import json
 import pytz
@@ -10,14 +12,60 @@ from pulsar.utils.pep import to_string
 from pulsar.utils.slugify import slugify
 
 from .options import Options
-from .errors import *  # noqa
+from .errors import ValidationError
+from .serialise import attributes
 
 
 standard_validation_error = 'Not a valid value'
 standard_required_error = 'required'
 
 
-class Field:
+class BaseField:
+    creation_counter = 0
+    attrs = None
+
+    def __init__(self, name, label=None, attrs=None, **kwargs):
+        self.name = name
+        self.label = label
+        self.attrs = dict(self.attrs or ())
+        self.attrs.update(attrs or ())
+        self.handle_params(**kwargs)
+        self.creation_counter = BaseField.creation_counter
+        BaseField.creation_counter += 1
+
+    def __repr__(self):
+        return self.name if self.name else self.__class__.__name__
+
+    __str__ = __repr__
+
+    @property
+    def type(self):
+        return self.attrs.get('type')
+
+    def html_name(self, prefix=None):
+        return '%s%s' % (prefix, self.name) if prefix else self.name
+
+    def handle_params(self, **kwargs):
+        '''Called during initialization for handling extra key-valued
+        parameters.'''
+        self.attrs.update(kwargs)
+
+    def getattrs(self, form=None):
+        '''Dictionary of attributes for the Html element.
+        '''
+        attrs = dict(attributes(form, self.attrs))
+        attrs['label'] = self.label or nicename(self.name)
+        return attrs
+
+    def metadata(self):
+        return {
+            'name': self.name,
+            'displayName': self.label or nicename(self.name),
+            'type': self.type
+        }
+
+
+class Field(BaseField):
     '''Base class for all fields.
     Field are specified as attribute of a form, for example::
 
@@ -50,10 +98,10 @@ class Field:
 
         Template string for validation errors
 
-    .. attribute:: transform
+    .. attribute:: validator
 
-        function that transforms a field value before the validator and
-        cleaning functions are called
+        Optional function to validate a filed value which successfully passed
+        the clean method
 
     .. attribute:: attrs
 
@@ -64,38 +112,18 @@ class Field:
     creation_counter = 0
     required_error = standard_required_error
     validation_error = standard_validation_error
-    attrs = None
 
     def __init__(self, name=None, required=None, default=None,
                  validation_error=None, help_text=None,
-                 label=None, attrs=None, validator=None,
-                 required_error=None,
-                 **kwargs):
-        self.name = name
+                 validator=None, required_error=None, **kwargs):
+        super().__init__(name, **kwargs)
         self.default = default if default is not None else self.default
         self.required = required if required is not None else self.required
         self.validation_error = validation_error or self.validation_error
         self.required_error = required_error or self.required_error
         self.help_text = escape(help_text)
-        self.label = label
         self.validator = validator
-        self.attrs = dict(self.attrs or ())
-        self.attrs.update(attrs or ())
         self.attrs['required'] = self.required
-        self.handle_params(**kwargs)
-        # Increase the creation counter, and save our local copy.
-        self.creation_counter = Field.creation_counter
-        Field.creation_counter += 1
-
-    def __repr__(self):
-        return self.name if self.name else self.__class__.__name__
-
-    __str__ = __repr__
-
-    def handle_params(self, **kwargs):
-        '''Called during initialization for handling extra key-valued
-        parameters.'''
-        self.attrs.update(kwargs)
 
     def value_from_datadict(self, data, files, key):
         """Given a dictionary of data this field name, returns the value
@@ -115,7 +143,7 @@ class Field:
         '''
         raise ValueError
 
-    def clean(self, value, bfield):
+    def clean(self, value, bfield=None):
         '''Clean the field value'''
         if value in NOTHING:
             value = self.get_default(bfield)
@@ -127,6 +155,8 @@ class Field:
 
     def validate(self, value, bfield):
         if self.validator:
+            if isclass(self.validator):
+                self.validator = self.validator()
             value = self.validator(value, bfield)
         return value
 
@@ -142,54 +172,43 @@ class Field:
     def to_json(self, value):
         return value
 
-    def html_name(self, prefix=None):
-        return '%s%s' % (prefix, self.name) if prefix else self.name
-
     def getattrs(self, form=None):
         '''Dictionary of attributes for the Html element.
         '''
-        attrs = dict(((slugify(k), v) for k, v in self.attrs.items()))
-        attrs['label'] = self.label or nicename(self.name)
+        attrs = super().getattrs(form)
         if self.required_error != standard_required_error:
             attrs['required_error'] = self.required_error
         if self.validation_error != standard_validation_error:
             attrs['validation_error'] = self.validation_error
         return attrs
 
+    def copy(self):
+        return self.__copy__()
+
+    def __copy__(self):
+        cls = self.__class__
+        field = cls.__new__(cls)
+        field.__dict__ = self.__dict__.copy()
+        field.attrs = self.attrs.copy()
+        return field
+
 
 class CharField(Field):
-    '''A text :class:`Field` which introduces three
-    optional parameter (attribute):
+    """A text :class:`.Field`
 
     .. attribute:: maxlength
 
-        If provided, the text length will be validated accordingly.
+        The maximum text length
+
+        Default ``50``.
+
+    .. attribute:: minlength
+
+        If provided, the minimum text length will be validated accordingly.
 
         Default ``None``.
-
-    .. attribute:: char_transform
-
-        One of ``None``, ``u`` for upper and ``l`` for lower. If provided
-        converts text to upper or lower.
-
-        Default ``None``.
-
-    .. attribute:: toslug
-
-        If provided it will be used to create a slug text which can be used
-        as URI without the need to escape.
-        For example, if ``toslug`` is set to "_", than::
-
-            bla foo; bee
-
-        becomes::
-
-            bla_foo_bee
-
-        Default ``None``
-    '''
+    """
     attrs = {'type': 'text', 'maxlength': 50}
-    default = ''
 
     def _clean(self, value, instance):
         try:
@@ -207,7 +226,6 @@ class CharField(Field):
 
 class TextField(Field):
     attrs = {'type': 'textarea'}
-    default = ''
 
     def _clean(self, value, instance):
         try:
@@ -276,7 +294,7 @@ class BooleanField(Field):
     default = False
     required = False
 
-    def clean(self, value, instance):
+    def clean(self, value, instance=None):
         '''Clean the field value'''
         if value in ('False', '0'):
             return False
@@ -291,8 +309,16 @@ class JsonField(TextField):
         try:
             return json.loads(value)
         except Exception:
-            raise ValidationError(
-                self.validation_error.format(value))
+            if isinstance(value, (Mapping, list, tuple)):
+                try:
+                    json.dumps(value)
+                    return value
+                except Exception:
+                    raise ValidationError(
+                        self.validation_error.format(value)) from None
+            else:
+                raise ValidationError(
+                    self.validation_error.format(value)) from None
 
 
 class MultipleMixin:

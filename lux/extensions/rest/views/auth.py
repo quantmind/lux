@@ -13,8 +13,9 @@ from pulsar import MethodNotAllowed, Http404
 from lux.core import route, JsonRouter
 from lux.forms import get_form_class
 
-from ..models import RestModel
-from . import actions, api
+from ..models import DictModel
+from .rest import RestRouter
+from . import actions
 
 
 class SignUp(JsonRouter):
@@ -36,7 +37,7 @@ class SignUp(JsonRouter):
 
         backend = request.cache.auth_backend
         data = backend.signup_confirm(request, request.urlargs['key'])
-        return self.json(request, data)
+        return self.json_response(request, data)
 
 
 class ResetPassword(JsonRouter):
@@ -61,10 +62,10 @@ class ResetPassword(JsonRouter):
         return actions.reset_password(request, key)
 
 
-class Authorization(api.RestRouter):
+class Authorization(RestRouter):
     """Authentication views for Restful APIs
     """
-    model = RestModel('authorization')
+    model = DictModel('authorization')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -114,7 +115,7 @@ class Authorization(api.RestRouter):
                       'message': 'password changed'}
         else:
             result = form.tojson()
-        return self.json(request, result)
+        return self.json_response(request, result)
 
     @route('keys/<key>', method=('head', 'options'))
     def key(self, request):

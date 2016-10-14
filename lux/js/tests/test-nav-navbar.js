@@ -1,5 +1,5 @@
 import {module, compile, _} from './tools';
-import '../';
+import * as lux from '../';
 
 
 describe('Test lux.nav -', function () {
@@ -33,8 +33,10 @@ describe('Test lux.nav -', function () {
             theme: 'inverse',
             top: true,
             fixed: true,
-            items: [{href: '/', name: 'home'},
-                {href: '/bla', name: 'bla'}]
+            itemsRight: [
+                {href: '/', name: 'home'},
+                {href: '/bla', name: 'bla'}
+            ]
         };
         var template = '<lux-navbar navbar="_navbar_tests_.navbar1"></lux-navbar>',
             element = compile(template),
@@ -47,6 +49,15 @@ describe('Test lux.nav -', function () {
         expect(nav.hasClass('navbar-static-top')).toBe(true);
         expect(nav.hasClass('navbar-fixed-top')).toBe(true);
         expect(nav.attr('id')).toBe('navbar1');
+        //
+        var right = lux.querySelector(nav, '.navbar-right');
+        expect(right.length).toBe(1);
+        expect(right.children().length).toBe(2);
+        _.forEach(right.children(), (child) => {
+            var li = _.element(child);
+            expect(li[0].tagName).toBe('LI');
+            expect(li.children().length).toBe(1);
+        });
     });
 
 });

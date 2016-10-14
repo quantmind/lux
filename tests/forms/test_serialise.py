@@ -23,13 +23,16 @@ class PageForm(forms.Form):
 PageForm1 = Layout(PageForm)
 
 
-class FormAngularLayoutTests(test.TestCase):
+class LayoutMixin:
 
-    def _field(self, data, idx):
-        self.assertEqual(len(data['children']), 1)
-        data = data['children'][0]
+    def _field(self, data, idx, child=0, children_expected=1):
+        self.assertEqual(len(data['children']), children_expected)
+        data = data['children'][child]
         self.assertEqual(data['type'], 'fieldset')
         return data['children'][idx]
+
+
+class FormAngularLayoutTests(test.TestCase, LayoutMixin):
 
     def test_layout_class(self):
         self.assertTrue(Layout1.form_class)

@@ -1,0 +1,17 @@
+{
+    "users": [
+        {
+            "username": "pippo",
+            "password": "pippo",
+            "email": "pippo@test.com",
+            "first_name": "Pippo",
+            "active": true
+        },
+        {
+            "username": "toni",
+            "password": "toni",
+            "email": "toni@test.com",
+            "active": true
+        }
+    ]
+}
