@@ -73,8 +73,7 @@ class CMS(core.CMS):
             if not page.name:
                 raise Http404
             path = page.urlargs.get('path') or 'index'
-            target = api_path(request, 'contents', path, group=page.name)
-            data = request.api.get(target).json()
+            data = request.api.contents[page.name].get(path).json()
             inner_html = self.data_to_html(page, data, inner_html)
         except Http404:
             if request.cache.cms_router:
@@ -91,13 +90,13 @@ class CMS(core.CMS):
 
     @cached(key='cms:context')
     def context_data(self, request):
-        path = api_path(request, 'contents', group='context')
-        if path:
-            try:
-                params = {'load_only': ['slug', 'body']}
-                return request.api.get(path, params=params).json()['result']
-            except Http404:
-                request.logger.error('Cannot find context at %s', path)
+        try:
+            params = {'load_only': ['slug', 'body']}
+            return request.api.contents.context.get(
+                params=params
+            ).json()['result']
+        except Http404:
+            request.logger.error('Cannot find context at %s', path)
         return []
 
     def html_content(self, request, path, context):

@@ -67,7 +67,7 @@ class Extension(LuxExtension):
         if canonical:
             if not isinstance(canonical, str):
                 canonical = request.absolute_uri()
-            doc.head.links.append(canonical, 'canonical')
+            doc.head.links.append(canonical, rel='canonical')
 
         type = app.config['DEFAULT_OG_TYPE']
         # add canonical if not available

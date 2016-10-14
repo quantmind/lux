@@ -11,8 +11,7 @@ from io import StringIO
 
 from pulsar import get_event_loop, as_coroutine
 from pulsar.utils.httpurl import (Headers, encode_multipart_formdata,
-                                  ENCODE_BODY_METHODS, remove_double_slash,
-                                  parse_options_header)
+                                  ENCODE_BODY_METHODS, remove_double_slash)
 from pulsar.utils.string import random_string
 from pulsar.utils.websocket import (SUPPORTED_VERSIONS, websocket_key,
                                     frame_parser)
@@ -21,7 +20,7 @@ from pulsar.apps.http import JSON_CONTENT_TYPES, full_url
 from pulsar.apps.test import test_timeout, sequential
 
 from lux.core import App
-from lux.extensions.rest import ApiClient
+from lux.extensions.rest import ApiClient, HttpResponse
 from lux.core.commands.generate_secret_key import generate_secret
 
 logger = logging.getLogger('pulsar.test')
@@ -267,7 +266,7 @@ class TestHttpApiClient(TestClient):
         response = self.app(request.environ, sr)
         green_pool = self.app.green_pool
         response = green_pool.wait(response, True) if green_pool else response
-        return Response(response)
+        return HttpResponse(response)
 
 
 class TestMixin:
@@ -640,43 +639,6 @@ class WebApiTestCase(AppTestCase):
             query = session.query(odm.registration).join(odm.user).filter(
                 odm.user.email == email)
             return query.one()
-
-
-class Response:
-    __slots__ = ('response',)
-
-    def __init__(self, response):
-        self.response = response
-
-    def _repr__(self):
-        return repr(self.response)
-
-    def __getattr__(self, name):
-        return getattr(self.response, name)
-
-    @property
-    def content(self):
-        '''Retrieve the body without flushing'''
-        return b''.join(self.response.content)
-
-    def text(self, charset=None, errors=None):
-        charset = charset or self.response.encoding or 'utf-8'
-        return self.content.decode(charset, errors or 'strict')
-
-    def json(self, charset=None, errors=None):
-        return _json.loads(self.text(charset, errors))
-
-    def decode_content(self):
-        '''Return the best possible representation of the response body.
-        '''
-        ct = self.response.content_type
-        if ct:
-            ct, _ = parse_options_header(ct)
-            if ct in JSON_CONTENT_TYPES:
-                return self.json()
-            elif ct.startswith('text/'):
-                return self.text()
-        return self.content
 
 
 class TestApp:

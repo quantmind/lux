@@ -42,7 +42,7 @@ Anything else is similar to alembic commands.
 Usual workflow
 ~~~~~~~~~~~~~~
 
-1. In new project (or in one where you want to start using migrations) use: ::
+* In new project (or in one where you want to start using migrations) use::
 
     python manage.py alembic init
 

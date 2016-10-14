@@ -26,6 +26,7 @@ is_rel_field = rest.is_rel_field
 
 
 class Query(BaseQuery):
+    """ODM based query"""
 
     def __init__(self, model, session):
         super().__init__(model, session)

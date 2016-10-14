@@ -28,9 +28,12 @@ class TokenBackendMixin:
         request.app.fire('on_token', request, token, user)
         return jwt.encode_json(token, request.config['SECRET_KEY'])
 
-    def decode_token(self, request, token):
+    def decode_token(self, request, token, key=None,
+                     algorithm=None, **options):
+        algorithm = algorithm or request.config['JWT_ALGORITHM']
+        key = key or request.config['SECRET_KEY']
         try:
-            return jwt.decode(token, request.config['SECRET_KEY'])
+            return jwt.decode(token, key, algorithm=algorithm, options=options)
         except jwt.ExpiredSignature:
             request.app.logger.warning('JWT token has expired')
             raise Http401('Token')

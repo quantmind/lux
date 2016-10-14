@@ -24,7 +24,8 @@ from lux.core import Parameter
 
 from .auth import AuthBackend, MultiAuthBackend, backend_action
 from .models import RestModel, DictModel, RestField, is_rel_field
-from .client import ApiClient
+from .api import Apis
+from .api.client import ApiClient, HttpResponse
 from .views.actions import (AuthenticationError, check_username, login,
                             logout, user_permissions)
 from .views.rest import RestRoot, RestRouter, MetadataMixin, CRUD, Rest404
@@ -50,6 +51,9 @@ __all__ = ['RestModel',
            'RestRouter',
            'MetadataMixin',
            'CRUD',
+           ""
+           "ApiClient",
+           "HttpResponse",
            #
            'Query',
            'RestSession',
@@ -143,9 +147,6 @@ class Extension(MultiAuthBackend):
         Parameter('API_LIMIT_NOAUTH', 30,
                   ('Maximum number of items returned when user is '
                    'not authenticated')),
-        Parameter('API_AUTHENTICATION_TOKEN', None,
-                  'Authentication token for the api. This is used by '
-                  'a lux application accessing a lux api'),
         Parameter('PAGINATION', 'lux.extensions.rest.Pagination',
                   'Pagination class'),
         Parameter('POST_LOGIN_URL', '',
@@ -167,6 +168,8 @@ class Extension(MultiAuthBackend):
         #
         Parameter('CORS_ALLOWED_METHODS', 'GET, PUT, POST, DELETE, HEAD',
                   'Access-Control-Allow-Methods for CORS'),
+        # TOKENS
+        Parameter('JWT_ALGORITHM', 'HS512', 'Signing algorithm'),
         #
         # SESSIONS
         Parameter('SESSION_COOKIE_NAME', 'LUX',
@@ -200,13 +203,7 @@ class Extension(MultiAuthBackend):
 
     def on_config(self, app):
         self.backends = []
-        url = app.config['API_URL']
-        if url is not None:
-            app.api_url = urlparse(app.config['API_URL'])
-            if not app.api_url.netloc:
-                app.config['API_URL'] = str(RestRoot(url))
-        else:
-            app.api_url = None
+        app.apis = Apis.make(app.config['API_URL'])
 
         if not app.config['PASSWORD_SECRET_KEY']:
             app.config['PASSWORD_SECRET_KEY'] = app.config['SECRET_KEY']
@@ -234,21 +231,17 @@ class Extension(MultiAuthBackend):
             yield key, cfg[key]
 
     def middleware(self, app):
-        url = app.config['API_URL']
         middleware = [self]
         for backend in self.backends:
             middleware.extend(backend.middleware(app) or ())
 
-        if not app.api_url:
+        # API urls not available - no middleware to add
+        if not app.apis:
             return middleware
-
-        self.api_router = RestRoot(url)
-
-        if app.config['API_DOCS_YAML_URL']:
-            self.api_router.add_child(Specification('spec.json'))
 
         # Add routers and models
         routes = OrderedDict()
+
         for extension in app.extensions.values():
             api_sections = getattr(extension, 'api_sections', None)
             if api_sections:
@@ -263,14 +256,11 @@ class Extension(MultiAuthBackend):
                 if router.model:
                     router.model.api_route = router.route
             # Add router to API root-router
-            self.api_router.add_child(router)
+            app.apis.add_child(router)
 
         # Create the rest-api handler
         app.api = app.providers['Api'](app)
 
-        # routers not required when this is a client app
-        if app.api_url.netloc:
-            return middleware
         #
         # Create paginator
         dotted_path = app.config['PAGINATION']
@@ -279,14 +269,22 @@ class Extension(MultiAuthBackend):
             raise ImproperlyConfigured('Could not load paginator "%s"',
                                        dotted_path)
         app.pagination = pagination()
-        #
-        # Add API root-router to middleware
-        middleware.append(self.api_router)
-        if url != '/':
-            # when the api is served by a path, make sure 404 is raised
-            # when no suitable routes are found
-            middleware.append(
-                Rest404(remove_double_slash('%s/<path:path>' % url)))
+
+        for api in app.apis:
+
+            # router not required when api is remote
+            if api.urlp.netloc:
+                continue
+            #
+            # Add API root-router to middleware
+            middleware.append(api.router)
+            url = str(api.router)
+            if url != '/':
+                # when the api is served by a path, make sure 404 is raised
+                # when no suitable routes are found
+                middleware.append(
+                    Rest404(remove_double_slash('%s/<path:path>' % url))
+                )
         #
         # Add the preflight and token events
         events = ('on_preflight', 'on_token')

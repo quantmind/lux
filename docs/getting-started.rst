@@ -13,10 +13,10 @@ Python Requirements
 * jinja2_ template engine
 * pytz_ timezones and countries
 * dateutil_ date utilities
+* sqlalchemy_ and pulsar-odm_ used by ``lux.extensions.odm``
 
 **Soft requirements**
 
-* sqlalchemy_ and pulsar-odm_ used by ``lux.extensions.odm``
 * pyjwt_ used by some authentication backends in ``lux.extensions.rest``
 * markdown_
 * oauthlib_ for ``lux.extensions.oauth``

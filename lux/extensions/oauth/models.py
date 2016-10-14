@@ -2,12 +2,10 @@ from sqlalchemy.orm import relationship, backref
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
 
 from odm.types import JSONType
-from odm import declared_attr, copy_models
+from odm import declared_attr
 
 import lux.extensions.auth.models as auth
 
-
-copy_models(auth, __name__)
 
 Model = auth.Model
 

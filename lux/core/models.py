@@ -283,8 +283,11 @@ class Query(ABC):
     def app(self):
         return self.model.app
 
+    @abstractmethod
     def one(self):
-        raise NotImplementedError
+        """Return a single element from this query.
+        If the query has more than one element it should return the first
+        and log an error. If no element found it should raise 404"""
 
     @abstractmethod
     def all(self):

@@ -1,14 +1,13 @@
 from copy import copy
 from itertools import chain
 from collections import Mapping, OrderedDict
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse, urlunparse
 
 from pulsar.utils.html import nicename
 from pulsar.utils.httpurl import is_absolute_uri
 
 from lux.core import LuxModel
 
-from .client import url_path
 from .query import Query, RestSession
 
 
@@ -479,3 +478,18 @@ def get_offset(offset=None):
     except Exception:
         offset = 0
     return max(0, offset)
+
+
+def url_path(base, path):
+    if path:
+        url = list(urlparse(base))
+        path = str(path)
+        if path.startswith('/'):
+            url[2] = path
+        elif path:
+            p = url[2]
+            if not p.endswith('/'):
+                p = '%s/' % p
+            url[2] = '%s%s' % (p, path)
+        return urlunparse(url)
+    return base
