@@ -24,7 +24,7 @@ ALL_EVENTS = (
 )
 
 
-class Parameter(object):
+class Parameter:
     '''Class for defining a lux :ref:`parameter <parameters>` within
     a lux :class:`.Extension`.
 
@@ -62,7 +62,7 @@ class Parameter(object):
     __str__ = __repr__
 
 
-class ExtensionMeta(object):
+class ExtensionMeta:
     '''Contains metadata for an :class:`.Extension`.
 
     .. attribute:: config
@@ -125,15 +125,24 @@ class ExtensionType(type):
     '''Little magic to setup the extension'''
     def __new__(cls, name, bases, attrs):
         config = []
+        on_config = []
         for base in bases:
             cfg = getattr(base, '_config', None)
-            if isinstance(cfg, list):
+            if isinstance(cfg, (list, tuple)):
                 config.extend(cfg)
+            cfg = getattr(base, '_on_config', None)
+            if isinstance(cfg, (list, tuple)):
+                on_config.extend(cfg)
+            elif hasattr(cfg, '__call__'):
+                on_config.append(cfg)
+
         version = attrs.pop('version', None)
         abstract = attrs.pop('abstract', False)
         cfg = attrs.get('_config') if abstract else attrs.pop('_config', None)
         if cfg:
             config.extend(cfg)
+        if on_config:
+            attrs['_on_config'] = on_config
         klass = super().__new__(cls, name, bases, attrs)
         if not abstract:
             meta = getattr(klass, 'meta', None)
@@ -253,6 +262,15 @@ class EventHandler:
 class EventMixin:
     events = None
 
+    def bind_event(self, name, handler):
+        if self.events is None:
+            self.events = {}
+        events = self.events
+        if name not in events:
+            events[name] = []
+        handlers = events[name]
+        handlers.append(handler)
+
     def bind_events(self, extension, all_events=None, exclude=None):
         '''Bind ``all_events`` to an ``extension``.
 
@@ -261,19 +279,19 @@ class EventMixin:
             the default lux events are used.
         :param exclude: optional list of event to exclude
         '''
-        if self.events is None:
-            self.events = {}
-        events = self.events
         all_events = all_events or ALL_EVENTS
         exclude = set(exclude or ())
         for name in all_events:
             if name in exclude:
                 continue
-            if name not in events:
-                events[name] = []
-            handlers = events[name]
             if hasattr(extension, name):
-                handlers.append(EventHandler(extension, name))
+                self.bind_event(name, EventHandler(extension, name))
+
+    def add_events(self, event_names):
+        """Add additional event names to the event dictionary
+        """
+        for ext in self.extensions.values():
+            self.bind_events(ext, event_names)
 
     def fire(self, event, *args, safe=False, **kwargs):
         '''Fire an ``event``.'''

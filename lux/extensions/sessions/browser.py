@@ -1,7 +1,6 @@
 """Backends for Browser based Authentication
 """
 import uuid
-from urllib.parse import urlencode
 
 from pulsar import Http401, PermissionDenied, Http404, HttpRedirect
 from pulsar.utils.slugify import slugify
@@ -12,39 +11,28 @@ from .mixins import SessionBackendMixin
 from .registration import RegistrationMixin
 from .. import (AuthenticationError, AuthBackend, session_backend,
                 User, Session)
-from ..auth import ProxyBackend
-from ..views.browser import Login, Logout, SignUp, ForgotPassword
 
 
 NotAuthorised = (Http401, PermissionDenied)
 
 
-class BrowserBackend(RegistrationMixin, AuthBackend):
-    """Authentication backend for rendering Forms in the Browser
 
-    It can be used by web servers delegating authentication to a backend API
-    or handling authentication on the same site.
+class SessionBackend(SessionBackendMixin,
+                     RegistrationMixin,
+                     PemissionsMixin,
+                     AuthBackend):
+    """SessionBackend is used when the client is a web browser
+
+    It maintain a session via a cookie key
     """
-    def middleware(self, app):
-        cfg = app.config
-
-        if cfg['LOGIN_URL']:
-            yield Login(cfg['LOGIN_URL'])
-
-        if cfg['LOGOUT_URL']:
-            yield Logout(cfg['LOGOUT_URL'])
-
-        if cfg['REGISTER_URL']:
-            yield SignUp(cfg['REGISTER_URL'])
-
-        if cfg['RESET_PASSWORD_URL']:
-            yield ForgotPassword(cfg['RESET_PASSWORD_URL'])
+    def create_session(self, request, user=None):
+        user = user or request.cache.user
+        return self.create_token(request, user,
+                                 expiry=self.session_expiry(request))
 
 
-class ApiSessionBackend(ProxyBackend,
-                        SessionBackendMixin,
-                        BrowserBackend):
-    """A browser backend which is a proxy for a RESTful HTTP API backend.
+class ApiSessionBackend(SessionBackendMixin):
+    """A browser backend which is a proxy for a REST API backend.
 
     This backend requires a real cache backend, it cannot work with dummy
     cache and will raise an error.
@@ -59,9 +47,6 @@ class ApiSessionBackend(ProxyBackend,
     * Create the session with same id as the token id and set the user as
       session key
     * Save the session in cache and return the original encoded token
-    """
-    permissions_url = 'user/permissions'
-    """url for user permissions.
     """
     signup_url = 'authorizations/signup'
     """url for signup a user.
@@ -93,12 +78,10 @@ class ApiSessionBackend(ProxyBackend,
     def signup(self, request, **data):
         """Create a new user from the api
         """
-        return request.api.post('authorizations/signup', json=data).json()
+        return request.api.user.signup.post(json=data).json()
 
     def signup_confirm(self, request, key):
-        api = request.app.api(request)
-        response = api.post('%s/%s' % (self.signup_url, key))
-        return response.json()
+        return request.api.user.signup.post(key)
 
     def signup_confirmation(self, request, username):
         api = request.app.api(request)
@@ -176,7 +159,6 @@ class ApiSessionBackend(ProxyBackend,
 
     # INTERNALS
     def _get_permissions(self, request, resources, actions=None):
-        assert self.permissions_url, "permission url not available"
         if not isinstance(resources, (list, tuple)):
             resources = (resources,)
         query = [('resource', resource) for resource in resources]
@@ -184,10 +166,8 @@ class ApiSessionBackend(ProxyBackend,
             if not isinstance(actions, (list, tuple)):
                 actions = (actions,)
             query.extend((('action', action) for action in actions))
-        query = urlencode(query)
-        api = request.app.api(request)
         try:
-            response = api.get('%s?%s' % (self.permissions_url, query))
+            response = request.api.user.permissions.get(params=query)
         except NotAuthorised:
             handle_401(request)
 

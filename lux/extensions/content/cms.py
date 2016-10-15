@@ -1,5 +1,5 @@
 from pulsar.utils.structures import AttributeDictionary
-from pulsar import Http404
+from pulsar import Http404, Http401, PermissionDenied
 
 from lux.extensions.sitemap import Sitemap, SitemapIndex
 from lux.extensions.rest import api_path
@@ -73,7 +73,10 @@ class CMS(core.CMS):
             if not page.name:
                 raise Http404
             path = page.urlargs.get('path') or 'index'
-            data = request.api.contents[page.name].get(path).json()
+            data = request.api.contents[page.name].get(
+                path,
+                auth_error=Http404
+            ).json()
             inner_html = self.data_to_html(page, data, inner_html)
         except Http404:
             if request.cache.cms_router:
@@ -93,10 +96,13 @@ class CMS(core.CMS):
         try:
             params = {'load_only': ['slug', 'body']}
             return request.api.contents.context.get(
-                params=params
+                params=params,
+                auth_error=Http404
             ).json()['result']
-        except Http404:
-            request.logger.error('Cannot find context at %s', path)
+        except Http404 as exc:
+            exc = str(exc)
+            if exc:
+                request.logger.error(exc)
         return []
 
     def html_content(self, request, path, context):

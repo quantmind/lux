@@ -37,7 +37,7 @@ from .models import ModelContainer
 from .cache import create_cache
 from .exceptions import ShellError
 from .channels import Channels
-from .auth import SimpleBackend
+from .auth import BackendMixin
 
 
 LUX_CORE = os.path.dirname(__file__)
@@ -180,7 +180,7 @@ def Http(app):
     return GreenHttp(http) if green else http
 
 
-class Application(ConsoleParser, LuxExtension, EventMixin):
+class Application(ConsoleParser, LuxExtension, EventMixin, BackendMixin):
     """The :class:`.Application` is the WSGI callable for serving
     lux applications.
 
@@ -213,7 +213,6 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
     logger = None
     admin = None
     _handler = None
-    auth_backend = None
     forms = None
     """Form registry for this application. Add/override forms via the
     on_loaded event"""
@@ -302,6 +301,7 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
                   'Default formatting for dates in JavaScript', True),
         Parameter('DEFAULT_TEMPLATE_ENGINE', 'jinja2',
                   'Default template engine'),
+        #
         # Cache
         Parameter('CACHE_SERVER', 'dummy://',
                   ('Cache server, can be a connection string to a valid '
@@ -345,12 +345,12 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         self.callable = callable
         self.meta.argv = callable._argv
         self.meta.script = callable._script
-        self.auth_backend = self
         self.threads = threading.local()
         self.providers = {'Http': Http}
         self.models = ModelContainer(self)
         self.extensions = OrderedDict()
         self.config = _build_config(self)
+
         self.fire('on_config')
 
     def __call__(self, environ, start_response):
@@ -439,7 +439,6 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
                 self.cfg = pulsar.Config(debug=self.debug)
             environ['pulsar.cfg'] = self.cfg
         request.cache.app = self
-        request.cache.auth_backend = SimpleBackend()
         return request
 
     def html_document(self, request):
@@ -729,12 +728,6 @@ class Application(ConsoleParser, LuxExtension, EventMixin):
         else:
             return path or '/'
 
-    def add_events(self, event_names):
-        """Add additional event names to the event dictionary
-        """
-        for ext in self.extensions.values():
-            self.bind_events(ext, event_names)
-
     def module_iterator(self, submodule=None, filter=None, cache=None):
         """Iterate over applications modules
         """
@@ -906,6 +899,8 @@ def _build_config(self):
     _config_from_json(configs, config)
     config.update(params)
     config['EXTENSIONS'] = tuple(apps)
+    for on in getattr(self, '_on_config', ()):
+        on(self, config)
     return config
 
 
@@ -920,7 +915,16 @@ def _build_handler(self):
         self.cms = CMS(self)
 
     extensions = list(self.extensions.values())
-    middleware, rmiddleware = _build_middleware(self, extensions, [], [])
+    middleware = [self.auth_backend.request]
+    rmiddleware = [self.auth_backend.response]
+    for extension in extensions:
+        middle = extension.middleware(self)
+        if middle:
+            middleware.extend(middle)
+        middle = extension.response_middleware(self)
+        if middle:
+            rmiddleware.extend(middle)
+    #
     # Response middleware executed in reversed order
     rmiddleware = list(reversed(rmiddleware))
     #
@@ -951,8 +955,6 @@ def _build_middleware(self, extensions, middleware, rmiddleware):
         middle = extension.response_middleware(self)
         if middle:
             rmiddleware.extend(middle)
-
-    return middleware, rmiddleware
 
 
 def _load_configs(self, config, config_module):

@@ -116,6 +116,21 @@ class UserMixin(MessageMixin):
         raise NotImplementedError
 
 
+class Anonymous(UserMixin):
+
+    def __repr__(self):
+        return self.__class__.__name__.lower()
+
+    def is_authenticated(self):
+        return False
+
+    def is_anonymous(self):
+        return True
+
+    def get_id(self):
+        return 0
+
+
 class SessionMixin:
     '''Mixin for web sessions & tokens
     '''

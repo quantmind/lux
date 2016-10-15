@@ -112,21 +112,6 @@ def api_path(request, model, *args, **params):
 class Extension(MultiAuthBackend):
 
     _config = [
-        Parameter('AUTHENTICATION_BACKENDS', [],
-                  'List of python dotted paths to classes which provide '
-                  'a backend for authentication.'),
-        Parameter('CRYPT_ALGORITHM',
-                  'lux.utils.crypt.pbkdf2',
-                  # dict(module='lux.utils.crypt.arc4', salt_size=8),
-                  'Python dotted path to module which provides the '
-                  '``encrypt`` and, optionally, ``decrypt`` method for '
-                  'password and sensitive data encryption/decryption'),
-        Parameter('PASSWORD_SECRET_KEY',
-                  '',
-                  'A string or bytes used for encrypting data. Must be unique '
-                  'to the application and long and random enough'),
-        Parameter('CHECK_USERNAME', 'lux.extensions.rest:check_username',
-                  'Dotted path to username validation function'),
         Parameter('DEFAULT_POLICY', (),
                   'List/tuple of default policy documents'),
         #
@@ -149,78 +134,18 @@ class Extension(MultiAuthBackend):
                    'not authenticated')),
         Parameter('PAGINATION', 'lux.extensions.rest.Pagination',
                   'Pagination class'),
-        Parameter('POST_LOGIN_URL', '',
-                  'URL users are redirected to after logging in', True),
-        Parameter('POST_LOGOUT_URL', None,
-                  'URL users are redirected to after logged out', True),
         Parameter('WEB_SITE_URL', None,
                   'Url of the website registering to'),
-        Parameter('LOGIN_URL', '/login', 'Url to login page', True),
-        Parameter('LOGOUT_URL', '/logout', 'Url to logout', True),
-        Parameter('REGISTER_URL', '/signup',
-                  'Url to register with site', True),
-        Parameter('TOS_URL', '/tos',
-                  'Terms of Service url',
-                  True),
-        Parameter('PRIVACY_POLICY_URL', '/privacy-policy',
-                  'The url for the privacy policy, required for signups',
-                  True),
         #
         Parameter('CORS_ALLOWED_METHODS', 'GET, PUT, POST, DELETE, HEAD',
                   'Access-Control-Allow-Methods for CORS'),
         # TOKENS
-        Parameter('JWT_ALGORITHM', 'HS512', 'Signing algorithm'),
-        #
-        # SESSIONS
-        Parameter('SESSION_COOKIE_NAME', 'LUX',
-                  'Name of the cookie which stores session id'),
-        Parameter('SESSION_EXCLUDE_URLS', (),
-                  'Tuple of urls where persistent session is not required'),
-        Parameter('SESSION_EXPIRY', 7 * 24 * 60 * 60,
-                  'Expiry for a session/token in seconds.'),
-        Parameter('SESSION_BACKEND', None,
-                  'Cache backend for session objects.'),
-        #
-        # CSRF
-        Parameter('CSRF_EXPIRY', 60 * 60,
-                  'Cross Site Request Forgery token expiry in seconds.'),
-        Parameter('CSRF_PARAM', 'authenticity_token',
-                  'CSRF parameter name in forms'),
-        Parameter('CSRF_BAD_TOKEN_MESSAGE', 'CSRF token missing or incorrect',
-                  'Message to display when CSRF is wrong'),
-        Parameter('CSRF_EXPIRED_TOKEN_MESSAGE', 'CSRF token expired',
-                  'Message to display when CSRF token has expired'),
-        #
-        #
-        Parameter('REGISTER_URL', '/signup',
-                  'Url to register with site', True),
-        Parameter('RESET_PASSWORD_URL', '/reset-password',
-                  'If given, add the router to handle password resets',
-                  True),
-        Parameter('ACCOUNT_ACTIVATION_DAYS', 2,
-                  'Number of days the activation code is valid')
+        Parameter('JWT_ALGORITHM', 'HS512', 'Signing algorithm')
     ]
 
     def on_config(self, app):
-        self.backends = []
-        app.apis = Apis.make(app.config['API_URL'])
-
-        if not app.config['PASSWORD_SECRET_KEY']:
-            app.config['PASSWORD_SECRET_KEY'] = app.config['SECRET_KEY']
-
-        for dotted_path in app.config['AUTHENTICATION_BACKENDS']:
-            backend = module_attribute(dotted_path)
-            if not backend:
-                self.logger.error('Could not load backend "%s"', dotted_path)
-                continue
-            backend = backend()
-            self.backends.append(backend)
-            app.bind_events(backend, exclude=('on_config',))
-            if hasattr(backend, 'on_config'):
-                backend.on_config(app)
-
-        app.auth_backend = self
         app.providers['Api'] = ApiClient
+        app.apis = Apis.make(app.config['API_URL'])
         app.add_events(('on_before_commit', 'on_after_commit'))
 
     def sorted_config(self):
@@ -308,9 +233,6 @@ class Extension(MultiAuthBackend):
             if api_sections:
                 for router in api_sections(app):
                     yield router
-
-    def __call__(self, environ, start_response):
-        return self.request(wsgi_request(environ))
 
     def context(self, request, context):
         """Add user to the Html template context"""

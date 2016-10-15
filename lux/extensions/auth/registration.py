@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 from pulsar import HttpGone, Http404
 
-from lux.extensions.rest import AuthenticationError, website_url
+from lux.core import AuthenticationError
 
 
 class RegistrationMixin:
@@ -13,6 +13,7 @@ class RegistrationMixin:
         days = request.config['ACCOUNT_ACTIVATION_DAYS']
         return datetime.now() + timedelta(days=days)
 
+    @backend_action
     def signup(self, request, **params):
         """Handle a signup request.
 

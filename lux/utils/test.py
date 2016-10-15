@@ -16,7 +16,7 @@ from pulsar.utils.string import random_string
 from pulsar.utils.websocket import (SUPPORTED_VERSIONS, websocket_key,
                                     frame_parser)
 from pulsar.apps.wsgi import WsgiResponse
-from pulsar.apps.http import JSON_CONTENT_TYPES, full_url
+from pulsar.apps.http import full_url
 from pulsar.apps.test import test_timeout, sequential
 
 from lux.core import App

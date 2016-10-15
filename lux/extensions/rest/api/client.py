@@ -3,7 +3,7 @@ import json as _json
 from io import BytesIO
 from urllib.parse import urlparse
 
-from pulsar import Http404
+from pulsar import Http404, Http401, PermissionDenied
 from pulsar.utils.httpurl import parse_options_header
 from pulsar.apps.http import JSON_CONTENT_TYPES
 
@@ -33,7 +33,7 @@ class ApiClient:
         return ApiClientRequest(request, self)
 
     def request(self, request, method, api, path,
-                token=None, headers=None, **kw):
+                token=None, headers=None, auth_error=None, **kw):
         http = self.http(request, api.netloc)
         url = api.url(path)
         req_headers = []
@@ -47,7 +47,13 @@ class ApiClient:
             req_headers.append(('Authorization', 'Bearer %s' % token))
 
         response = http.request(method, url, headers=req_headers, **kw)
-        raise_http_error(response)
+        try:
+            raise_http_error(response, method, url)
+        except (Http401, PermissionDenied) as exc:
+            request.logger.error(str(exc))
+            if auth_error:
+                raise auth_error from None
+            raise
         return response
 
 

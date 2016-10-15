@@ -62,36 +62,17 @@ class AuthMixin(PasswordMixin, MalingListBackendMixin):
 
     def authenticate(self, request, user_id=None, username=None, email=None,
                      user=None, password=None, **kw):
-        odm = request.app.odm()
-
-        try:
-            if not user:
-                with odm.begin() as session:
-                    query = session.query(odm.user)
-                    if user_id:
-                        user = query.get(user_id)
-                    elif username:
-                        user = query.filter_by(username=username).one()
-                    elif email:
-                        email = normalise_email(email)
-                        user = query.filter_by(email=email).one()
-                    else:
-                        raise AuthenticationError('Invalid credentials')
-            if user and self.crypt_verify(user.password, password):
-                return user
-            else:
-                raise NoResultFound
-        except NoResultFound:
-            if username:
-                raise AuthenticationError('Invalid username or password')
-            elif email:
-                raise AuthenticationError('Invalid email or password')
-            else:
-                raise AuthenticationError('Invalid credentials')
+        if not user:
+            user = self.get_user(request, user_id=user_id,
+                                 username=username, email=email)
+        if user and self.crypt_verify(user.password, password):
+            return user
+        else:
+            raise AuthenticationError('Invalid credentials')
 
     def create_user(self, request, username=None, password=None, email=None,
                     first_name=None, last_name=None, active=False,
-                    superuser=False, odm_session=None, **kwargs):
+                    superuser=False, odm_session=None, **kw):
         """Create a new user.
 
         Either ``username`` or ``email`` must be provided.

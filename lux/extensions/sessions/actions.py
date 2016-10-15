@@ -1,18 +1,22 @@
-"""Backend actions"""
+"""Authentication actions
+
+This is a self contained module implementing the most common authentication
+actions on a web site.
+
+* login
+* logout
+* signup
+* reset password
+"""
 from pulsar.apps.wsgi import Json
-from pulsar.utils.slugify import slugify
 from pulsar import HttpException, Http404, MethodNotAllowed
 
-from lux.core import json_message
+from lux.core import json_message, AuthenticationError
 from lux.forms import Form, ValidationError, get_form_class
 
 
-class AuthenticationError(ValueError):
-    pass
-
-
 def login(request):
-    """Authenticate the user
+    """Login a user
     """
     form = _auth_form(request, 'login')
 
@@ -33,7 +37,7 @@ def login(request):
 
 
 def signup(request):
-    """Signup a user
+    """Signup a new user
     """
     form = _auth_form(request, 'signup')
 
@@ -61,15 +65,6 @@ def logout(request):
         return Json({'success': True}).http_response(request)
     else:
         return Json(form.tojson()).http_response(request)
-
-
-def check_username(request, username):
-    correct = slugify(username)
-    if correct != username:
-        raise ValidationError('Username may only contain lowercase '
-                              'alphanumeric characters or single hyphens, '
-                              'and cannot begin or end with a hyphen')
-    return username
 
 
 def user_permissions(request):

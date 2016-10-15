@@ -9,28 +9,8 @@ from .user import UserMixin
 from .views.actions import AuthenticationError
 
 
-class Anonymous(UserMixin):
-
-    def __repr__(self):
-        return self.__class__.__name__.lower()
-
-    def is_authenticated(self):
-        return False
-
-    def is_anonymous(self):
-        return True
-
-    def get_id(self):
-        return 0
-
-
 class AuthBackendBase(AuthBase):
     abstract = True
-
-    def anonymous(self):
-        '''Anonymous User
-        '''
-        return Anonymous()
 
     def user_agent(self, request, max_len=80):
         agent = request.get('HTTP_USER_AGENT')
@@ -43,53 +23,6 @@ class AuthBackendBase(AuthBase):
             return username
         else:
             raise ValidationError('Username not available')
-
-
-class ProxyBackend:
-
-    def __getattr__(self, method):
-        if method in auth_backend_actions:
-            return partial(self._execute_backend_method, method)
-        else:
-            raise AttributeError("'%s' object has no attribute '%s'" %
-                                 (type(self).__name__, method))
-
-    def _execute_backend_method(self, method, request, *args, **kwargs):
-        return None
-
-
-class MultiAuthBackend(AuthBackendBase, ProxyBackend):
-    '''Aggregate several Authentication backends
-    '''
-    abstract = True
-    backends = None
-
-    def request(self, request):
-        # Inject self as the authentication backend
-        cache = request.cache
-        cache.user = self.anonymous()
-        cache.auth_backend = self
-        return self._execute_backend_method('request', request)
-
-    def has_permission(self, request, resource, action):
-        has = self._execute_backend_method('has_permission',
-                                           request, resource, action)
-        return True if has is None else has
-
-    def get_permissions(self, request, resource, actions=None):
-        return self._execute_backend_method('get_permissions',
-                                            request, resource, actions)
-
-    def __iter__(self):
-        return iter(self.backends or ())
-
-    def _execute_backend_method(self, method, request, *args, **kwargs):
-        for backend in self.backends or ():
-            backend_method = getattr(backend, method, None)
-            if backend_method:
-                result = backend_method(request, *args, **kwargs)
-                if result is not None:
-                    return result
 
 
 class AuthenticationResponses:

@@ -1,0 +1,127 @@
+import time
+
+from pulsar import PermissionDenied
+
+import jwt
+
+from lux.core import Parameter, LuxExtension
+
+from .browser import SessionBackend, ApiSessionBackend
+from .views import Login, Logout, SignUp, ForgotPassword
+
+
+__all__ = ['SessionBackend', 'ApiSessionBackend']
+
+
+class Extension(LuxExtension):
+    """Extension for persistent sessions between server and web browsers
+
+    Add CSRF to forms
+    """
+    _config = [
+        #
+        # SESSIONS
+        Parameter('SESSION_COOKIE_NAME', 'LUX',
+                  'Name of the cookie which stores session id'),
+        Parameter('SESSION_EXCLUDE_URLS', (),
+                  'Tuple of urls where persistent session is not required'),
+        Parameter('SESSION_EXPIRY', 7 * 24 * 60 * 60,
+                  'Expiry for a session/token in seconds.'),
+        Parameter('SESSION_BACKEND', None,
+                  'Cache backend for session objects.'),
+        #
+        # CSRF
+        Parameter('CSRF_EXPIRY', 60 * 60,
+                  'Cross Site Request Forgery token expiry in seconds'),
+        Parameter('CSRF_PARAM', 'authenticity_token',
+                  'CSRF parameter name in forms, set to None to skip CSRF '
+                  '(not recommended)'),
+        Parameter('CSRF_BAD_TOKEN_MESSAGE', 'CSRF token missing or incorrect',
+                  'Message to display when CSRF is wrong'),
+        Parameter('CSRF_EXPIRED_TOKEN_MESSAGE', 'CSRF token expired',
+                  'Message to display when CSRF token has expired'),
+        #
+        Parameter('POST_LOGIN_URL', '',
+                  'URL users are redirected to after logging in', True),
+        Parameter('POST_LOGOUT_URL', None,
+                  'URL users are redirected to after logged out', True),
+        Parameter('LOGIN_URL', '/login', 'Url to login page', True),
+        Parameter('LOGOUT_URL', '/logout', 'Url to logout', True),
+        Parameter('REGISTER_URL', '/signup',
+                  'Url to register with site', True),
+        Parameter('TOS_URL', '/tos',
+                  'Terms of Service url',
+                  True),
+        Parameter('PRIVACY_POLICY_URL', '/privacy-policy',
+                  'The url for the privacy policy, required for signups',
+                  True),
+        Parameter('REGISTER_URL', '/signup',
+                  'Url to register with site', True),
+        Parameter('RESET_PASSWORD_URL', '/reset-password',
+                  'If given, add the router to handle password resets',
+                  True),
+        Parameter('ACCOUNT_ACTIVATION_DAYS', 2,
+                  'Number of days the activation code is valid')
+    ]
+
+    def middleware(self, app):
+        cfg = app.config
+
+        if cfg['LOGIN_URL']:
+            yield Login(cfg['LOGIN_URL'])
+
+        if cfg['LOGOUT_URL']:
+            yield Logout(cfg['LOGOUT_URL'])
+
+        if cfg['REGISTER_URL']:
+            yield SignUp(cfg['REGISTER_URL'])
+
+        if cfg['RESET_PASSWORD_URL']:
+            yield ForgotPassword(cfg['RESET_PASSWORD_URL'])
+
+    def on_form(self, app, form):
+        """Handle CSRF on form
+        """
+        request = form.request
+        param = app.config['CSRF_PARAM']
+        if (param and form.is_bound and
+                request.method not in self.CSRF_SET):
+            token = form.rawdata.get(param)
+            self.validate_csrf_token(request, token)
+
+    def on_html_document(self, app, request, doc):
+        if request.method in self.CSRF_SET:
+            cfg = app.config
+            param = cfg['CSRF_PARAM']
+            if param:
+                csrf_token = self.csrf_token(request)
+                if csrf_token:
+                    doc.head.add_meta(name="csrf-param", content=param)
+                    doc.head.add_meta(name="csrf-token", content=csrf_token)
+
+    # CSRF
+    def csrf_token(self, request):
+        session = request.cache.session
+        if session:
+            expiry = request.config['CSRF_EXPIRY']
+            secret_key = request.config['SECRET_KEY']
+            return jwt.encode({'session': session.get_key(),
+                               'exp': time.time() + expiry},
+                              secret_key)
+
+    def validate_csrf_token(self, request, token):
+        bad_token = request.config['CSRF_BAD_TOKEN_MESSAGE']
+        expired_token = request.config['CSRF_EXPIRED_TOKEN_MESSAGE']
+        if not token:
+            raise PermissionDenied(bad_token)
+        try:
+            secret_key = request.config['SECRET_KEY']
+            token = jwt.decode(token, secret_key)
+        except jwt.ExpiredSignature:
+            raise PermissionDenied(expired_token)
+        except Exception:
+            raise PermissionDenied(bad_token)
+        else:
+            if token['session'] != request.cache.session.get_key():
+                raise PermissionDenied(bad_token)
+
