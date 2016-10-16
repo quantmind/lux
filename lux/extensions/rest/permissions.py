@@ -1,4 +1,7 @@
 from itertools import chain
+
+from lux.core.auth import ACTIONS
+from lux.core import cached
 from lux.forms import ValidationError
 
 
@@ -13,6 +16,80 @@ POLICY = dict(effect=(str, frozenset(('allow', 'deny'))),
 
 EFFECTS = {'allow': True,
            'deny': False}
+
+
+class PemissionsMixin:
+    """Implements the ``has_permission`` and ``get_permissions``
+    auth backend actions
+    """
+    def has_permission(self, request, resource, action):
+        user = request.cache.user
+        # Superuser, always true
+        if user.is_superuser():
+            return True
+        else:
+            # Get permissions list for the current request
+            policies = self.get_permission_policies(request)
+            return has_permission(request, policies, resource, action)
+
+    def get_permissions(self, request, resources, actions=None):
+        if not actions:
+            actions = tuple(ACTIONS)
+        if not isinstance(actions, (list, tuple)):
+            actions = (actions,)
+        if not isinstance(resources, (list, tuple)):
+            resources = (resources,)
+
+        obj = {}
+
+        if not request.cache.user.is_superuser():
+            permissions = self.get_permission_policies(request)
+            for resource in resources:
+                perms = {}
+                for action in actions:
+                    perms[action] = has_permission(request, permissions,
+                                                   resource, action)
+                obj[resource] = perms
+
+        else:
+            for resource in resources:
+                obj[resource] = dict(((a, True) for a in actions))
+
+        return obj
+
+    @cached(user=True)
+    def get_permission_policies(self, request):
+        """Returns a list of permission policy documents for the
+        current request
+
+        Cache results on a user basis
+        """
+        user = request.cache.user
+        users = request.app.models.get('users')
+        groups = request.app.models.get('groups')
+        perms = []
+        if not users or not groups or not user.is_authenticated():
+            return perms
+        with users.session(request) as session:
+            session.add(user)
+            for group in set(user.groups):
+                for permission in group.permissions:
+                    policy = permission.policy
+                    if not isinstance(policy, list):
+                        policy = (policy,)
+                    perms.extend(policy)
+        return perms
+
+
+def user_permissions(request):
+    """Return a dictionary of permissions for the current user
+
+    :request: a WSGI request with url data ``resource`` and ``action``.
+    """
+    backend = request.cache.auth_backend
+    resources = request.url_data.get('resource', ())
+    actions = request.url_data.get('action')
+    return backend.get_permissions(request, resources, actions=actions)
 
 
 def has_permission(request, policies, resource, action):

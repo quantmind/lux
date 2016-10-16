@@ -18,68 +18,62 @@ from collections import OrderedDict
 from pulsar import ImproperlyConfigured
 from pulsar.utils.importer import module_attribute
 from pulsar.utils.httpurl import remove_double_slash
-from pulsar.apps.wsgi import wsgi_request
 
-from lux.core import Parameter
+from lux.core import Parameter, LuxExtension
 
-from .auth import AuthBackend, MultiAuthBackend, backend_action
 from .models import RestModel, DictModel, RestField, is_rel_field
 from .api import Apis
 from .api.client import ApiClient, HttpResponse
-from .views.actions import (AuthenticationError, check_username, login,
-                            logout, user_permissions)
-from .views.rest import RestRoot, RestRouter, MetadataMixin, CRUD, Rest404
+from .views.rest import RestRouter, MetadataMixin, CRUD, Rest404
 from .views.auth import Authorization
 from .views.spec import Specification
 from .pagination import Pagination, GithubPagination
 from .forms import RelationshipField, UniqueField
 from .query import Query, RestSession
-from .user import (MessageMixin, UserMixin, SessionMixin, PasswordMixin,
-                   User, Session, session_backend)
+from .token import TokenBackend
+from .permissions import user_permissions, validate_policy
 
 
-__all__ = ['RestModel',
-           'RestField',
-           'is_rel_field',
-           'DictModel',
-           #
-           'Authorization',
-           #
-           'AuthBackend',
-           'backend_action',
-           #
-           'RestRouter',
-           'MetadataMixin',
-           'CRUD',
-           ""
-           "ApiClient",
-           "HttpResponse",
-           #
-           'Query',
-           'RestSession',
-           #
-           'Pagination',
-           'GithubPagination',
-           'AuthenticationError',
-           'MessageMixin',
-           'UserMixin',
-           'SessionMixin',
-           'PasswordMixin',
-           'User',
-           'Session',
-           'session_backend',
-           #
-           # Form fields related to rest models
-           'RelationshipField',
-           'UniqueField',
-           #
-           'api_url',
-           'api_path',
-           #
-           'login',
-           'logout',
-           'user_permissions',
-           'check_username']
+__all__ = [
+    'RestModel',
+    'RestField',
+    'is_rel_field',
+    'DictModel',
+    #
+    'Authorization',
+    #
+    'AuthBackend',
+    'backend_action',
+    #
+    'RestRouter',
+    'MetadataMixin',
+    'CRUD',
+    ""
+    "ApiClient",
+    "HttpResponse",
+    #
+    'Query',
+    'RestSession',
+    #
+    'Pagination',
+    'GithubPagination',
+    #
+    # Form fields related to rest models
+    'RelationshipField',
+    'UniqueField',
+    #
+    'api_url',
+    'api_path',
+    #
+    'login',
+    'logout',
+    'check_username',
+    #
+    'validate_policy',
+    'user_permissions',
+    #
+    'TokenBackend'
+]
 
 
 def website_url(request, location=None):
@@ -109,7 +103,7 @@ def api_path(request, model, *args, **params):
             return '%s/%s' % (path, '/'.join(args)) if args else path
 
 
-class Extension(MultiAuthBackend):
+class Extension(LuxExtension):
 
     _config = [
         Parameter('DEFAULT_POLICY', (),
@@ -136,6 +130,8 @@ class Extension(MultiAuthBackend):
                   'Pagination class'),
         Parameter('WEB_SITE_URL', None,
                   'Url of the website registering to'),
+        Parameter('MAX_TOKEN_SESSION_EXPIRY', 7 * 24 * 60 * 60,
+                  'Maximum expiry for a token used by a web site in seconds.'),
         #
         Parameter('CORS_ALLOWED_METHODS', 'GET, PUT, POST, DELETE, HEAD',
                   'Access-Control-Allow-Methods for CORS'),
@@ -218,22 +214,3 @@ class Extension(MultiAuthBackend):
             app.bind_events(backend, events)
 
         return middleware
-
-    def response_middleware(self, app):
-        middleware = []
-        for backend in self.backends:
-            middleware.extend(backend.response_middleware(app) or ())
-        return middleware
-
-    def api_sections(self, app):
-        """Called by this extension to build API middleware
-        """
-        for backend in self.backends:
-            api_sections = getattr(backend, 'api_sections', None)
-            if api_sections:
-                for router in api_sections(app):
-                    yield router
-
-    def context(self, request, context):
-        """Add user to the Html template context"""
-        context['user'] = request.cache.user

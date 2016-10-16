@@ -1,96 +1,88 @@
 """Backends for Browser based Authentication
 """
-import uuid
+from functools import wraps
+from datetime import datetime, timedelta
 
 from pulsar import Http401, PermissionDenied, Http404, HttpRedirect
-from pulsar.utils.slugify import slugify
+from pulsar.apps.wsgi import Route
 
 from lux.utils.token import decode
+from lux.core import app_attribute, backend_action, User
 
-from .mixins import SessionBackendMixin
-from .registration import RegistrationMixin
-from .. import (AuthenticationError, AuthBackend, session_backend,
-                User, Session)
+from .store import session_store
 
 
 NotAuthorised = (Http401, PermissionDenied)
 
 
+@app_attribute
+def exclude_urls(app):
+    """urls to exclude from browser sessions
+    """
+    urls = []
+    for url in app.config['SESSION_EXCLUDE_URLS']:
+        urls.append(Route(url))
+    return tuple(urls)
 
-class SessionBackend(SessionBackendMixin,
-                     RegistrationMixin,
-                     PemissionsMixin,
-                     AuthBackend):
+
+def session_backend_action(method):
+    backend_action(method)
+
+    @wraps(method)
+    def _(self, request, *args):
+        if request.cache.skip_session_backend:
+            return
+
+        return method(self, request, *args)
+
+    return _
+
+
+class SessionBackend:
     """SessionBackend is used when the client is a web browser
 
     It maintain a session via a cookie key
     """
-    def create_session(self, request, user=None):
-        user = user or request.cache.user
-        return self.create_token(request, user,
-                                 expiry=self.session_expiry(request))
+    @property
+    def authorization(self, request):
+        authorization = request.config.get('AUTHORIZATION', 'authorization')
+        return request.api[authorization]
 
-
-class ApiSessionBackend(SessionBackendMixin):
-    """A browser backend which is a proxy for a REST API backend.
-
-    This backend requires a real cache backend, it cannot work with dummy
-    cache and will raise an error.
-
-    All requests are passed to the Rest API ``authorizations`` endpoints
-
-    The workflow for authentication is the following:
-
-    * send request to Rest API for authentication
-    * If successful obtain the ``token`` from the response
-    * Create the user from decoding the JWT payload
-    * Create the session with same id as the token id and set the user as
-      session key
-    * Save the session in cache and return the original encoded token
-    """
-    signup_url = 'authorizations/signup'
-    """url for signup a user.
-    """
-    reset_password_url = 'authorizations/reset-password'
-    """url for resetting password
-    """
-    auth_keys_url = 'authorizations/keys'
-    """url for authorization keys
-    """
-    users_url = 'users'
-
-    def _execute_backend_method(self, method, request, *args, **data):
-        method = slugify(method)
-        if args:
-            request.logger.error('Positional arguments not accepted by '
-                                 '%s.%s' % (type(self).__name__, method))
-        response = request.api.post('authorizations/%s' % method, json=data)
-        return response.json()
-
+    @session_backend_action
     def authenticate(self, request, **data):
-        response = request.api.post('authorizations', json=data)
+        auth = self.authorization(request)
+        response = auth.post(json=data)
         token = response.json().get('token')
         payload = decode(token, verify=False)
-        user = User(payload)
-        user.encoded = token
-        return user
+        return User(payload, token=token)
 
-    def signup(self, request, **data):
-        """Create a new user from the api
+    @session_backend_action
+    def login(self, request, user):
+        backend = request.cache.auth_backend
+        request.cache.session = backend.create_session(request, user=user)
+
+    @session_backend_action
+    def logout(self, request):
+        """logout a user
         """
-        return request.api.user.signup.post(json=data).json()
+        backend = request.cache.auth_backend
+        session_store(request).delete(request.cache.session.id)
+        request.cache.user = backend.anonymous(request)
+        request.cache.session = backend.create_session(request)
 
-    def signup_confirm(self, request, key):
-        return request.api.user.signup.post(key)
+    @session_backend_action
+    def create_session(self, request, user=None):
+        """Create a new Session object"""
+        user = user or request.cache.user
+        seconds = request.config['SESSION_EXPIRY']
+        expiry = datetime.now() + timedelta(seconds=seconds)
+        return session_store(request).create(user=user, expiry=expiry)
 
-    def signup_confirmation(self, request, username):
-        api = request.app.api(request)
-        response = api.post('authorizations/%s' % username)
-        return response.json()
-
+    @session_backend_action
     def get_permissions(self, request, resources, actions=None):
         return self._get_permissions(request, resources, actions)
 
+    @session_backend_action
     def has_permission(self, request, resource, action):
         """Implement :class:`~AuthBackend.has_permission` method
         """
@@ -100,62 +92,48 @@ class ApiSessionBackend(SessionBackendMixin):
             return resource.get(action, False)
         return False
 
-    def password_recovery(self, request, **params):
-        return request.api.post(self.reset_password_url, data=params).json()
+    def request(self, request):
+        path = request.path[1:]
+        for url in exclude_urls(request.app):
+            if url.match(path):
+                request.cache.skip_session_backend = True
+                return
 
-    def set_password(self, request, password, user=None, auth_key=None):
-        api = request.app.api(request)
-        if not auth_key:
-            raise AuthenticationError('Missing authentication key')
-        url = '%s/%s' % (self.reset_password_url, auth_key)
-        data = {'password': password, 'password_repeat': password}
-        response = api.post(url, data=data)
-        return response.json()
-
-    def confirm_auth_key(self, request, key, **kw):
-        try:
-            request.api.head('%s/%s' % (self.auth_keys_url, key))
-        except Http404:
-            return False
-        return True
-
-    def create_session(self, request, user=None):
-        """Login and return response
-        """
+        key = request.config['SESSION_COOKIE_NAME']
+        session_key = request.cookies.get(key)
+        session = None
+        if session_key:
+            session = session_store(request).get(session_key.value)
+        if not session:
+            # Create a session
+            backend = request.cache.auth_backend
+            session = backend.create_session(request)
+        request.cache.session = session
+        user = session.get_user()
         if user:
-            user = User(user)
-            session = Session(id=user.pop('token_id'),
-                              expiry=user.pop('exp'),
-                              user=user)
-            session.encoded = session.user.pop('encoded')
-        else:
-            session = Session(id=uuid.uuid4().hex)
-        return session
-
-    def get_session(self, request, key):
-        """Get the session at key from the cache server
-        """
-        cache = session_backend(request.app)
-        session = cache.get(key)
-        if session:
-            session = Session(session)
-            if session.user:
-                user = User(session.user)
-                # Check if the token is still a valid one
+            auth = self.authorization(request)
+            auth.head(token=user.token)
+            if user.token:
+                auth = self.authorization(request)
                 try:
-                    if not session.encoded:
-                        raise Http401
-                    request.api.head('authorizations', token=session.encoded)
+                    auth.head(token=user.token)
                 except NotAuthorised:
                     handle_401(request, user)
-                session.user = user
-            return session
+            request.cache.user = user
 
-    def session_save(self, request, session):
-        data = session.all()
-        if session.user:
-            data['user'] = session.user.all()
-        session_backend(request.app).set(session.id, data)
+    @session_backend_action
+    def response(self, request, response):
+        session = request.cache.session
+        if session:
+            if response.can_set_cookies():
+                key = request.config['SESSION_COOKIE_NAME']
+                session_key = request.cookies.get(key)
+                id = session.get_key()
+                if not session_key or session_key.value != id:
+                    response.set_cookie(key, value=str(id), httponly=True,
+                                        expires=session.expiry)
+            return session_store(request).save(session)
+        return response
 
     # INTERNALS
     def _get_permissions(self, request, resources, actions=None):

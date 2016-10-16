@@ -15,7 +15,6 @@ from lux.forms import get_form_class
 
 from ..models import DictModel
 from .rest import RestRouter
-from . import actions
 
 
 class SignUp(JsonRouter):
@@ -65,10 +64,9 @@ class ResetPassword(JsonRouter):
 class Authorization(RestRouter):
     """Authentication views for Restful APIs
     """
-    model = DictModel('authorization')
-
-    def __init__(self, *args, **kwargs):
+    def __init__(self, model, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.model = DictModel(model)
         self.add_child(ResetPassword('reset-password'))
         self.add_child(SignUp('signup'))
 

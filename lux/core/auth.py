@@ -10,7 +10,7 @@ from lux.utils.data import as_tuple
 
 from .cache import cached
 from .extension import Parameter
-from .sessions import Anonymous
+from .user import Anonymous
 
 
 ACTIONS = {'read': 1,
@@ -87,8 +87,9 @@ class AuthBase:
         '''
         pass
 
-    def anonymous(self):
-        return Anonymous()
+    @backend_action
+    def anonymous(self, request):
+        pass
 
     @backend_action
     def has_permission(self, request, resource, action):
@@ -140,8 +141,8 @@ class MultiAuthBackend(AuthBase, ProxyBackendMixin):
         # Inject self as the authentication backend
         request = wsgi_request(environ)
         cache = request.cache
-        cache.user = self.anonymous()
         cache.auth_backend = self
+        cache.user = self.anonymous(request)
         return self._execute_backend_method('request', request)
 
     def response(self, environ, response):
@@ -157,9 +158,8 @@ class MultiAuthBackend(AuthBase, ProxyBackendMixin):
                                            request, resource, action)
         return True if has is None else has
 
-    def get_permissions(self, request, resource, actions=None):
-        return self._execute_backend_method('get_permissions',
-                                            request, resource, actions)
+    def default_anonymous(self, request):
+        return Anonymous()
 
     def __iter__(self):
         return iter(self.backends)
@@ -171,6 +171,9 @@ class MultiAuthBackend(AuthBase, ProxyBackendMixin):
                 result = backend_method(request, *args, **kwargs)
                 if result is not None:
                     return result
+        default = getattr(self, 'default_%s' % method, None)
+        if hasattr(default, '__call__'):
+            return default(request, *args, **kwargs)
 
 
 class Resource:

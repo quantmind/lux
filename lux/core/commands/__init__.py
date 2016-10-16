@@ -33,7 +33,7 @@ def service_parser(services, description, help=True):
     return p
 
 
-class ConsoleParser(object):
+class ConsoleParser:
     '''A class for parsing the console inputs.
 
     Used as base class for both :class:`.LuxCommand` and :class:`.App`

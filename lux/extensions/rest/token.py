@@ -1,28 +1,26 @@
+import time
+from datetime import datetime, timedelta
 from pulsar import Http401
 from pulsar.utils.pep import to_string
 
-from .mixins import TokenBackendMixin
-from .registration import RegistrationMixin
+import lux.utils.token as jwt
+from lux.core import backend_action
 from .permissions import PemissionsMixin
-from .. import AuthBackend, Authorization
+
 
 # Cross-Origin Resource Sharing header
 CORS = 'Access-Control-Allow-Origin'
 
 
-class TokenBackend(TokenBackendMixin,
-                   RegistrationMixin,
-                   PemissionsMixin,
-                   AuthBackend):
-    """Toekn Backend
+class TokenBackend(PemissionsMixin):
+    """Token Backend
     """
-    def api_sections(self, app):
-        """This backend add the authorization router to the Rest API
-        """
-        yield Authorization()
-
+    @backend_action
     def login(self, request, user):
-        expiry = self.session_expiry(request)
+        """Handle a request for a token to be used on a web browser
+        """
+        seconds = request.config['MAX_TOKEN_SESSION_EXPIRY']
+        expiry = datetime.now() + timedelta(seconds=seconds)
         token = self.create_token(request, user, expiry=expiry)
         token = to_string(token.encoded)
         request.response.status_code = 201
@@ -62,9 +60,9 @@ class TokenBackend(TokenBackendMixin,
             if user:
                 request.cache.user = user
 
-    def response(self, environ, response):
+    def response(self, response):
         if CORS not in response.headers:
-            origin = environ.get('HTTP_ORIGIN', '*')
+            origin = response.environ.get('HTTP_ORIGIN', '*')
             response[CORS] = origin
         return response
 
@@ -88,3 +86,30 @@ class TokenBackend(TokenBackendMixin,
         if not isinstance(methods, (str, list)):
             methods = list(methods)
         response['Access-Control-Allow-Methods'] = methods
+
+    def encode_token(self, request, user=None, expiry=None, **token):
+        """Encode a JWT
+        """
+        if expiry:
+            token['exp'] = int(time.mktime(expiry.timetuple()))
+
+        request.app.fire('on_token', request, token, user)
+        return jwt.encode_json(token, request.config['SECRET_KEY'])
+
+    def decode_token(self, request, token, key=None,
+                     algorithm=None, **options):
+        algorithm = algorithm or request.config['JWT_ALGORITHM']
+        key = key or request.config['SECRET_KEY']
+        try:
+            return jwt.decode(token, key, algorithm=algorithm, options=options)
+        except jwt.ExpiredSignature:
+            request.app.logger.warning('JWT token has expired')
+            raise Http401('Token')
+        except jwt.DecodeError as exc:
+            request.app.logger.warning(str(exc))
+            raise Http401('Token')
+
+    def create_token(self, request, user, **kwargs):  # pragma    nocover
+        """Create a new token and store it
+        """
+        raise NotImplementedError

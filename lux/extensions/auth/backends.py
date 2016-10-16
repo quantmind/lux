@@ -1,21 +1,20 @@
 import uuid
 
 from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy.orm import joinedload
 from datetime import datetime
 
-from lux.core import json_message
+from lux.core import (json_message, PasswordMixin, AuthenticationError,
+                      backend_action)
 from lux.utils.crypt import digest
 from lux.utils.auth import normalise_email
-from lux.extensions.rest import PasswordMixin, backends, AuthenticationError
-
-from .mail import MalingListBackendMixin, Authorization
+from lux.extensions import rest
 
 
-class AuthMixin(PasswordMixin, MalingListBackendMixin):
+class TokenBackend(PasswordMixin, rest.TokenBackend):
     """Mixin to implement authentication backend based on
     SQLAlchemy models
     """
+    @backend_action
     def get_user(self, request, user_id=None, token_id=None, username=None,
                  email=None, auth_key=None, **kw):
         """Securely fetch a user by id, username, email or auth key
@@ -186,35 +185,3 @@ class AuthMixin(PasswordMixin, MalingListBackendMixin):
                     return user
                 return True
         return False
-
-
-class TokenBackend(AuthMixin, backends.TokenBackend):
-    """Authentication backend based on JSON Web Token
-    """
-    def api_sections(self, app):
-        """Add the authorization router to the api
-        """
-        yield Authorization()
-
-
-class SessionBackend(AuthMixin, backends.SessionBackend):
-    """An authentication backend based on sessions stored in the ODM
-
-    This backend should be used with web sites not using a Rest API, in other
-    words, the API_URL should not be set.
-    """
-    def get_session(self, request, key):
-        """Retrieve a session from its key
-        """
-        odm = request.app.odm()
-        token = odm.token
-        with odm.begin() as session:
-            query = session.query(token).options(joinedload(token.user))
-            token = query.get(key)
-        return self.add_encoded(request, token)
-
-    def session_save(self, request, session):
-        odm = request.app.odm()
-        with odm.begin() as s:
-            s.add(session)
-        return session

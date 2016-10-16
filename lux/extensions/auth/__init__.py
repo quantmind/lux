@@ -7,7 +7,7 @@ how to write authentication backends and models in lux.
 """
 from lux.core import Parameter, LuxExtension
 
-from .backends import TokenBackend, SessionBackend
+from .backends import TokenBackend
 from .rest import (UserRest, UserCRUD, GroupCRUD, PermissionCRUD,
                    RegistrationCRUD, MailingListCRUD, TokenCRUD)
 from .mail import Authorization, ComingSoon
@@ -15,7 +15,6 @@ from .forms import UserModel
 
 
 __all__ = ['TokenBackend',
-           'SessionBackend',
            'Authorization',
            'ComingSoon',
            'UserModel']
@@ -32,6 +31,7 @@ class Extension(LuxExtension):
         self.require(app, 'lux.extensions.rest')
 
     def middleware(self, app):
+
         soon = app.config['COMING_SOON_URL']
         if soon:
             yield ComingSoon(soon)

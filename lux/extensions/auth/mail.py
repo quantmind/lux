@@ -31,7 +31,6 @@ class Authorization(rest.Authorization):
 
 class MalingListBackendMixin:
 
-    @rest.backend_action
     def join_mailing_list(self, request, email=None, topic=None, **kw):
         topic = topic or request.config['GENERAL_MAILING_LIST_TOPIC']
         odm = request.app.odm()

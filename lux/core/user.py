@@ -1,57 +1,13 @@
 from importlib import import_module
 
-from pulsar import ImproperlyConfigured
 from pulsar.utils.structures import AttributeDictionary
 from pulsar.utils.pep import to_bytes
-
-from .extension import app_attribute
-from .cache import create_cache
 
 
 UNUSABLE_PASSWORD = '!'
 
 
-class MessageMixin(object):
-    '''Mixin for models which support messages
-    '''
-    def success(self, message):
-        '''Store a ``success`` message to show to the web user
-        '''
-        self.message('success', message)
-
-    def info(self, message):
-        '''Store an ``info`` message to show to the web user
-        '''
-        self.message('info', message)
-
-    def warning(self, message):
-        '''Store a ``warning`` message to show to the web user
-        '''
-        self.message('warning', message)
-
-    def error(self, message):
-        '''Store an ``error`` message to show to the web user
-        '''
-        self.message('danger', message)
-
-    def message(self, level, message):
-        '''Store a ``message`` of ``level`` to show to the web user.
-
-        Must be implemented by session classes.
-        '''
-        raise NotImplementedError
-
-    def remove_message(self, data):
-        '''Remove a message from the list of messages'''
-        raise NotImplementedError
-
-    def get_messages(self):
-        '''Retrieve messages
-        '''
-        return ()
-
-
-class UserMixin(MessageMixin):
+class UserMixin:
     '''Mixin for a User model
     '''
     email = None
@@ -131,23 +87,6 @@ class Anonymous(UserMixin):
         return 0
 
 
-class SessionMixin:
-    '''Mixin for web sessions & tokens
-    '''
-    encoded = None
-    '''Encoded representation of this session'''
-
-    def get_user(self):
-        return self.user
-
-    def get_key(self):
-        return self.id
-
-    def __repr__(self):
-        return self.get_key()
-    __str__ = __repr__
-
-
 class PasswordMixin:
     '''Adds password encryption to an authentication backend.
 
@@ -210,52 +149,5 @@ class User(AttributeDictionary, UserMixin):
     def __str__(self):
         return self.username or self.email or 'user'
 
-
-class Session(AttributeDictionary, SessionMixin):
-    '''A dictionary-based Session
-
-    Used by the :class:`.ApiSessionBackend`
-    '''
-    pass
-
-
-class SessionBackend:
-    """Backend Interface for browser sessions
-    """
-    def __init__(self, cache):
-        self.cache = cache
-
-    def get(self, key):
-        """Get a session at key
-        """
-        return self.cache.get_json(self.session_key(key))
-
-    def set(self, key, data):
-        """Set session data at key
-        """
-        self.cache.set_json(self.session_key(key), data)
-
-    def delete(self, key):
-        """Delete session at key
-        """
-        self.cache.delete(self.session_key(key))
-
-    def clear(self, app_name=None):
-        """Clear all sessions for the application name
-        """
-        key = self.session_key(app_name=app_name)
-        return self.cache.clear(key)
-
-    def session_key(self, key=None, app_name=None):
-        app_name = app_name or self.cache.app.config['APP_NAME']
-        base = 'session:%s:' % app_name
-        return '%s:%s' % (base, key) if key else base
-
-
-@app_attribute
-def session_backend(app):
-    url = app.config['SESSION_BACKEND']
-    if not url:
-        raise ImproperlyConfigured('SESSION_BACKEND required by '
-                                   'authentication backend')
-    return SessionBackend(create_cache(app, url))
+    def todict(self):
+        return self.__dict__.copy()

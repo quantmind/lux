@@ -1,12 +1,12 @@
 import json
 
 from lux import forms
+from lux.core import AuthenticationError
 from lux.forms import Layout, Fieldset, Submit, formreg
 from lux.extensions.odm import RestModel
-from lux.extensions.rest import (AuthenticationError, RestField,
-                                 RelationshipField, UniqueField)
+from lux.extensions.rest import RestField, RelationshipField, UniqueField
 from lux.extensions.rest.views.forms import PasswordForm
-from lux.extensions.rest.policy import validate_policy
+from lux.extensions.rest import validate_policy
 from lux.utils.auth import ensure_authenticated
 
 

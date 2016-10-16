@@ -6,11 +6,14 @@ import jwt
 
 from lux.core import Parameter, LuxExtension
 
-from .browser import SessionBackend, ApiSessionBackend
+from .browser import SessionBackend
 from .views import Login, Logout, SignUp, ForgotPassword
 
 
-__all__ = ['SessionBackend', 'ApiSessionBackend']
+__all__ = ['SessionBackend']
+
+
+CSRF_SET = frozenset(('GET', 'HEAD', 'OPTIONS'))
 
 
 class Extension(LuxExtension):
@@ -27,7 +30,7 @@ class Extension(LuxExtension):
                   'Tuple of urls where persistent session is not required'),
         Parameter('SESSION_EXPIRY', 7 * 24 * 60 * 60,
                   'Expiry for a session/token in seconds.'),
-        Parameter('SESSION_BACKEND', None,
+        Parameter('SESSION_STORE', None,
                   'Cache backend for session objects.'),
         #
         # CSRF
@@ -83,14 +86,16 @@ class Extension(LuxExtension):
         """Handle CSRF on form
         """
         request = form.request
+        if request.cache.skip_session_backend:
+            return
         param = app.config['CSRF_PARAM']
         if (param and form.is_bound and
-                request.method not in self.CSRF_SET):
+                request.method not in CSRF_SET):
             token = form.rawdata.get(param)
             self.validate_csrf_token(request, token)
 
     def on_html_document(self, app, request, doc):
-        if request.method in self.CSRF_SET:
+        if request.method in CSRF_SET:
             cfg = app.config
             param = cfg['CSRF_PARAM']
             if param:
@@ -98,6 +103,10 @@ class Extension(LuxExtension):
                 if csrf_token:
                     doc.head.add_meta(name="csrf-param", content=param)
                     doc.head.add_meta(name="csrf-token", content=csrf_token)
+
+    def context(self, request, context):
+        """Add user to the Html template context"""
+        context['user'] = request.cache.user
 
     # CSRF
     def csrf_token(self, request):
@@ -124,4 +133,3 @@ class Extension(LuxExtension):
         else:
             if token['session'] != request.cache.session.get_key():
                 raise PermissionDenied(bad_token)
-

@@ -313,7 +313,7 @@ def app_attribute(func):
 
     @wraps(func)
     def _(app):
-
+        app = app.app
         if not hasattr(app.threads, name):
             setattr(app.threads, name, func(app))
         return getattr(app.threads, name)

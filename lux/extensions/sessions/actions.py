@@ -67,17 +67,6 @@ def logout(request):
         return Json(form.tojson()).http_response(request)
 
 
-def user_permissions(request):
-    """Return a dictionary of permissions for the current user
-
-    :request: a WSGI request with url data ``resource`` and ``action``.
-    """
-    backend = request.cache.auth_backend
-    resources = request.url_data.get('resource', ())
-    actions = request.url_data.get('action')
-    return backend.get_permissions(request, resources, actions=actions)
-
-
 def reset_password_request(request):
     """Request a reset password code/email
     """
