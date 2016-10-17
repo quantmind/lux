@@ -1,6 +1,7 @@
 import uuid
 
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.orm import joinedload
 from datetime import datetime
 
 from lux.core import (json_message, PasswordMixin, AuthenticationError,
@@ -24,10 +25,10 @@ class TokenBackend(PasswordMixin, rest.TokenBackend):
         odm = request.app.odm()
         now = datetime.utcnow()
 
-        if token_id and user_id:
+        if token_id:
             with odm.begin() as session:
                 query = session.query(odm.token)
-                query = query.filter_by(user_id=user_id, id=token_id)
+                query = query.filter_by(id=token_id)
                 query.update({'last_access': now},
                              synchronize_session=False)
                 if not query.count():
@@ -125,6 +126,14 @@ class TokenBackend(PasswordMixin, rest.TokenBackend):
                               **kwargs)
             session.add(token)
         return self.add_encoded(request, token)
+
+    def get_token(self, request, key):
+        odm = request.app.odm()
+        token = odm.token
+        with odm.begin() as session:
+            query = session.query(token).options(joinedload(token.user))
+            token = query.get(key)
+        return token
 
     def add_encoded(self, request, token):
         """Inject the ``encoded`` attribute to the token and return the token

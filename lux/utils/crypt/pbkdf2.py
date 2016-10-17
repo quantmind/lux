@@ -82,7 +82,7 @@ def b2a_hex(s):
     return _b2a_hex(s).decode('us-ascii')
 
 
-class PBKDF2(object):
+class PBKDF2:
 
     """PBKDF2.py : PKCS#5 v2.0 Password-Based Key Derivation
 

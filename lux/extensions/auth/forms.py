@@ -1,4 +1,7 @@
 import json
+from datetime import datetime, timedelta
+
+from pulsar import BadRequest, Http401
 
 from lux import forms
 from lux.core import AuthenticationError
@@ -8,6 +11,8 @@ from lux.extensions.rest import RestField, RelationshipField, UniqueField
 from lux.extensions.rest.views.forms import PasswordForm
 from lux.extensions.rest import validate_policy
 from lux.utils.auth import ensure_authenticated
+
+from .registration import send_email_confirmation
 
 
 full_name = RestField(
@@ -94,6 +99,38 @@ class TokenModel(RestModel):
         return auth.create_token(request, user, **data)
 
 
+class RegistrationModel(RestModel):
+
+    @classmethod
+    def create(cls, form=None, url=None, type=1):
+        model = cls(
+            'registration',
+            form=form,
+            url=url,
+            exclude=('user_id', 'type', 'id'),
+            id_field='email',
+            repr_field='email',
+        )
+        model.type = type
+        return model
+
+    def create_model(self, request, instance=None, data=None, **kw):
+        days = request.config['ACCOUNT_ACTIVATION_DAYS']
+        data['expiry'] = datetime.now() + timedelta(days=days)
+        data['type'] = self.type
+        reg = super().create_model(request, instance, data, **kw)
+        token = self.get_token(request)
+        send_email_confirmation(request, token, reg)
+        return reg
+
+    def get_token(self, request):
+        if request.cache.user.is_authenticated():
+            raise BadRequest
+        if not request.cache.token:
+            raise Http401
+        return request.cache.token
+
+
 # FORMS
 class PermissionForm(forms.Form):
     model = 'permissions'
@@ -141,10 +178,6 @@ class ChangePasswordForm(PasswordForm):
         except AuthenticationError as exc:
             raise forms.ValidationError(str(exc))
         return value
-
-
-class RegistrationForm(forms.Form):
-    expiry = forms.DateTimeField(required=False)
 
 
 class NewTokenForm(forms.Form):

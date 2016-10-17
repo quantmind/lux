@@ -1,5 +1,5 @@
 from pulsar.utils.structures import AttributeDictionary
-from pulsar import Http404, Http401, PermissionDenied
+from pulsar import Http404
 
 from lux.extensions.sitemap import Sitemap, SitemapIndex
 from lux.extensions.rest import api_path

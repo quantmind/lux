@@ -193,7 +193,7 @@ class SafeMIMEMultipart(MIMEMixin, MIMEMultipart):
         MIMEMultipart.__setitem__(self, name, val)
 
 
-class EmailMessage(object):
+class EmailMessage:
     """
     A container for email information.
     """
@@ -424,7 +424,7 @@ class EmailMultiAlternatives(EmailMessage):
 
 # Cache the hostname, but do it lazily: socket.getfqdn() can take a couple of
 # seconds, which slows down the restart of the server.
-class CachedDnsName(object):
+class CachedDnsName:
     def __str__(self):
         return self.get_fqdn()
 

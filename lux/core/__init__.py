@@ -75,7 +75,7 @@ __all__ = [
     'JSON_CONTENT_TYPES',
     'DEFAULT_CONTENT_TYPES',
     'GET_HEAD',
-    'POST_PUT'
+    'POST_PUT',
     #
     'UserMixin',
     'PasswordMixin',

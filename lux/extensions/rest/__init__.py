@@ -25,7 +25,6 @@ from .models import RestModel, DictModel, RestField, is_rel_field
 from .api import Apis
 from .api.client import ApiClient, HttpResponse
 from .views.rest import RestRouter, MetadataMixin, CRUD, Rest404
-from .views.auth import Authorization
 from .views.spec import Specification
 from .pagination import Pagination, GithubPagination
 from .forms import RelationshipField, UniqueField
@@ -40,14 +39,10 @@ __all__ = [
     'is_rel_field',
     'DictModel',
     #
-    'Authorization',
-    #
-    'AuthBackend',
-    'backend_action',
-    #
     'RestRouter',
     'MetadataMixin',
     'CRUD',
+    'Specification',
     ""
     "ApiClient",
     "HttpResponse",
@@ -144,21 +139,12 @@ class Extension(LuxExtension):
         app.apis = Apis.make(app.config['API_URL'])
         app.add_events(('on_before_commit', 'on_after_commit'))
 
-    def sorted_config(self):
-        cfg = self.meta.config.copy()
-        for backend in self.backends:
-            cfg.update(backend.meta.config)
-        for key in sorted(cfg):
-            yield key, cfg[key]
-
     def middleware(self, app):
-        middleware = [self]
-        for backend in self.backends:
-            middleware.extend(backend.middleware(app) or ())
-
         # API urls not available - no middleware to add
         if not app.apis:
-            return middleware
+            return
+
+        middleware = []
 
         # Add routers and models
         routes = OrderedDict()
@@ -208,9 +194,5 @@ class Extension(LuxExtension):
                 )
         #
         # Add the preflight and token events
-        events = ('on_preflight', 'on_token')
-        app.add_events(events)
-        for backend in self.backends:
-            app.bind_events(backend, events)
-
+        app.add_events(('on_preflight', 'on_token'))
         return middleware

@@ -10,7 +10,7 @@ from odm import declared_attr
 from odm.types import IPAddressType, UUIDType, JSONType
 
 from lux.extensions import odm
-from lux.extensions.rest import UserMixin, SessionMixin
+from lux.core import UserMixin
 
 
 Model = odm.model_base('auth')
@@ -96,7 +96,7 @@ class Permission(Model):
     policy = Column(JSONType)
 
 
-class Token(Model, SessionMixin):
+class Token(Model):
     """A model for an Authentication Token
     """
     id = Column(UUIDType(binary=False), primary_key=True)
@@ -126,7 +126,7 @@ class Token(Model, SessionMixin):
 class Registration(Model):
     id = Column(String(40), primary_key=True)
     expiry = Column(DateTime, nullable=False)
-    confirmed = Column(Boolean)
+    type = Column(Integer)
 
     @declared_attr
     def user_id(cls):

@@ -8,7 +8,7 @@ def identity(x, cfg):
     return x
 
 
-class Processor(object):
+class Processor:
 
     def __init__(self, name, processor=None):
         self.name = slugify(name, separator='_')
@@ -36,7 +36,7 @@ class MultiValue(Processor):
         return all
 
 
-class URLWrapper(object):
+class URLWrapper:
 
     def __init__(self, name, settings):
         self.settings = settings

@@ -217,7 +217,7 @@ class HtmlRouter(JsonRouter):
         page['templateUrl'] = '%s?template=ui' % url
 
 
-class HeadMeta(object):
+class HeadMeta:
     """Wrapper for HTML5 head metatags.
 
      Handle meta tags and the Object graph protocol (OGP_)

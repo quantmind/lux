@@ -3,9 +3,9 @@ from lux.forms import get_form_class
 from lux.extensions.rest import RestField, user_permissions, CRUD, RestRouter
 from lux.extensions.odm import RestModel
 
-from pulsar import MethodNotAllowed
+from pulsar import MethodNotAllowed, BadRequest, Http401, Http404
 
-from .forms import UserModel, TokenModel, RequestUserModel
+from .forms import UserModel, TokenModel, RequestUserModel, RegistrationModel
 
 
 class TokenCRUD(CRUD):
@@ -29,21 +29,6 @@ class GroupCRUD(CRUD):
         'group',
         id_field='name',
         fields=[RestField('permissions', model='permissions')]
-    )
-
-
-class MailingListCRUD(CRUD):
-    model = RestModel(
-        'mailinglist',
-        url='mailinglist',
-        fields=[RestField('user', field='user_id', model='users')]
-    )
-
-
-class RegistrationCRUD(CRUD):
-    model = RestModel(
-        'registration',
-        exclude=('user_id',)
     )
 
 
@@ -95,3 +80,71 @@ class UserRest(RestRouter):
 
         permissions = user_permissions(request)
         return self.json_response(request, permissions)
+
+
+class RegistrationCRUD(CRUD):
+    model = RegistrationModel.create(form='signup')
+
+
+class Passwords(RestRouter):
+    """Endpoints for password recovery
+    """
+    model = RegistrationModel.create(
+        form='password-recovery',
+        url='passwords',
+        type=2
+    )
+
+
+class Authorization(RestRouter):
+    """Authentication views for Restful APIs
+    """
+    model = RestModel(
+        'registration',
+        url='authorization',
+        exclude=('user_id',)
+    )
+
+    def head(self, request):
+        if not request.cache.token:
+            raise Http401
+        return request.response
+
+    def post(self, request):
+        """Create a new User token
+        """
+        if request.cache.user.is_authenticated():
+            raise BadRequest
+
+        form = _auth_form(request, 'login')
+
+        if form.is_valid():
+            model = self.get_model(request)
+            auth_backend = request.cache.auth_backend
+            token = auth_backend.authenticate(request, **form.cleaned_data)
+            data = model.tojson(request, token)
+        else:
+            data = form.tojson()
+        return self.json_response(request, data)
+
+    def delete(self, request):
+        """Delete the current User Token
+        """
+        if not request.cache.user.is_authenticated():
+            if not request.cache.token:
+                raise Http401
+            raise BadRequest
+        model = request.app.models.token
+        model.delete_model(request, request.cache.token)
+        request.response.status_code = 204
+        return request.response
+
+
+def _auth_form(request, form):
+    form = get_form_class(request, form)
+    if not form:
+        raise Http404
+
+    request.set_response_content_type(['application/json'])
+
+    return form(request, data=request.body_data())

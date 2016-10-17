@@ -12,12 +12,6 @@ class UserMixin:
     '''
     email = None
 
-    def __repr__(self):
-        raise NotImplementedError
-
-    def __str__(self):
-        return self.__repr__()
-
     def is_superuser(self):
         return False
 

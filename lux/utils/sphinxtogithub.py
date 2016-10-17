@@ -7,7 +7,7 @@ class NoDirectoriesError(Exception):
     "Error thrown when no directories starting with an underscore are found"
 
 
-class DirHelper(object):
+class DirHelper:
 
     def __init__(self, is_dir, list_dir, walk, rmtree):
         self.is_dir = is_dir
@@ -16,7 +16,7 @@ class DirHelper(object):
         self.rmtree = rmtree
 
 
-class FileSystemHelper(object):
+class FileSystemHelper:
 
     def __init__(self, open_, path_join, move, exists):
         self.open_ = open_
@@ -25,7 +25,7 @@ class FileSystemHelper(object):
         self.exists = exists
 
 
-class Replacer(object):
+class Replacer:
     "Encapsulates a simple text replace"
 
     def __init__(self, from_, to):
@@ -37,7 +37,7 @@ class Replacer(object):
         return text.replace(self.from_, self.to)
 
 
-class FileHandler(object):
+class FileHandler:
     "Applies a series of replacements the contents of a file inplace"
 
     def __init__(self, name, replacers, opener):
@@ -52,7 +52,7 @@ class FileHandler(object):
         self.opener(self.name, "w").write(text)
 
 
-class Remover(object):
+class Remover:
 
     def __init__(self, exists, remove):
         self.exists = exists
@@ -63,7 +63,7 @@ class Remover(object):
             self.remove(name)
 
 
-class ForceRename(object):
+class ForceRename:
 
     def __init__(self, renamer, remove):
         self.renamer = renamer
@@ -74,7 +74,7 @@ class ForceRename(object):
         self.renamer(from_, to)
 
 
-class VerboseRename(object):
+class VerboseRename:
 
     def __init__(self, renamer, stream):
         self.renamer = renamer
@@ -87,7 +87,7 @@ class VerboseRename(object):
         self.renamer(from_, to)
 
 
-class DirectoryHandler(object):
+class DirectoryHandler:
     '''Encapsulates renaming a directory by removing its first character'''
 
     def __init__(self, name, root, renamer):
@@ -113,7 +113,7 @@ class DirectoryHandler(object):
         self.renamer(from_, to)
 
 
-class HandlerFactory(object):
+class HandlerFactory:
 
     def create_file_handler(self, name, replacers, opener):
         return FileHandler(name, replacers, opener)
@@ -122,7 +122,7 @@ class HandlerFactory(object):
         return DirectoryHandler(name, root, renamer)
 
 
-class OperationsFactory(object):
+class OperationsFactory:
 
     def create_force_rename(self, renamer, remover):
         return ForceRename(renamer, remover)
@@ -137,7 +137,7 @@ class OperationsFactory(object):
         return Remover(exists, remove)
 
 
-class Layout(object):
+class Layout:
     """
     Applies a set of operations which result in the layout
     of a directory changing
@@ -154,7 +154,7 @@ class Layout(object):
             handler.process()
 
 
-class LayoutFactory(object):
+class LayoutFactory:
     "Creates a layout object"
 
     def __init__(self, operations_factory, handler_factory, file_helper,

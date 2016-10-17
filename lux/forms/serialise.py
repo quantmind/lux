@@ -211,7 +211,7 @@ class Layout(Fieldset):
                     self.children.append(field)
 
 
-class SerialisedForm(object):
+class SerialisedForm:
 
     def __init__(self, layout, form):
         self.layout = layout

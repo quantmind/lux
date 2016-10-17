@@ -327,7 +327,7 @@ class Form(metaclass=FormType):
                 container[key] = [msg]
 
 
-class BoundField(object):
+class BoundField:
     '''A bound filed contains a :class:`Form` instance,
     a :class:`Field` instance which belongs to the form,
     and field bound data.

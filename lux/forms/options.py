@@ -14,7 +14,7 @@ def options_from_enum(options):
         yield option.name
 
 
-class Options(object):
+class Options:
     '''Manage group of options for a :class:`.ChoiceField`
     '''
     def __init__(self, options):

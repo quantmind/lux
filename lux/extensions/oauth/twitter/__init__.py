@@ -46,7 +46,7 @@ class Twitter(OAuth1):
                     'Twitter card not defined but card is available')
 
 
-class TwitterCard(object):
+class TwitterCard:
     prefix = 'twitter'
     default_meta_key = 'name'
 

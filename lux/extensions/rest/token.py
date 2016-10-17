@@ -1,6 +1,6 @@
 import time
 from datetime import datetime, timedelta
-from pulsar import Http401
+from pulsar import Http401, BadRequest, PermissionDenied
 from pulsar.utils.pep import to_string
 
 import lux.utils.token as jwt
@@ -47,15 +47,16 @@ class TokenBackend(PemissionsMixin):
         user = None
         try:
             if auth_type == 'bearer':
+                token = self.get_token(request, key)
+                request.cache.token = token
+                user = token.user
+            elif auth_type == 'jwt':
                 token = self.decode_token(request, key)
-                request.cache.session = token
-                user = self.get_user(request, **token)
-            elif auth_type == 'oauth':
-                user = self.get_user(request, oauth=key)
-        except Http401:
+                request.cache.token = token
+        except (Http401, BadRequest, PermissionDenied):
             raise
         except Exception:
-            request.app.logger.exception('Could not load user')
+            request.app.logger.exception('Could not authorize')
         else:
             if user:
                 request.cache.user = user
@@ -96,20 +97,33 @@ class TokenBackend(PemissionsMixin):
         request.app.fire('on_token', request, token, user)
         return jwt.encode_json(token, request.config['SECRET_KEY'])
 
-    def decode_token(self, request, token, key=None,
-                     algorithm=None, **options):
+    def decode_jwt(self, request, token, key=None,
+                   algorithm=None, **options):
         algorithm = algorithm or request.config['JWT_ALGORITHM']
-        key = key or request.config['SECRET_KEY']
         try:
-            return jwt.decode(token, key, algorithm=algorithm, options=options)
+            return jwt.decode(token, key=key, algorithm=algorithm,
+                              options=options)
         except jwt.ExpiredSignature:
             request.app.logger.warning('JWT token has expired')
             raise Http401('Token')
         except jwt.DecodeError as exc:
             request.app.logger.warning(str(exc))
-            raise Http401('Token')
+            raise BadRequest
+
+    def decode_token(self, request, token):
+        payload = self.decode_jwt(request, token, verify_signature=False)
+        secret = self.secret_from_payload(request, payload)
+        return self.decode_jwt(request, token, secret)
+
+    def secret_from_jwt_payload(self, request, payload):
+        return request.config['SECRET_KEY']
 
     def create_token(self, request, user, **kwargs):  # pragma    nocover
         """Create a new token and store it
+        """
+        raise NotImplementedError
+
+    def get_token(self, request, token):
+        """Load a token
         """
         raise NotImplementedError

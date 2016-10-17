@@ -49,7 +49,7 @@ def get_valid_filename(s):
     return re.sub(r'(?u)[^-\w.]', '', s)
 
 
-class Filehandler(object):
+class Filehandler:
 
     def open(self, name, mode='rb'):
         """Retrieves the specified file from storage, using the optional mixin

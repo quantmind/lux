@@ -62,9 +62,7 @@ class Extension(LuxExtension):
                   'Url to register with site', True),
         Parameter('RESET_PASSWORD_URL', '/reset-password',
                   'If given, add the router to handle password resets',
-                  True),
-        Parameter('ACCOUNT_ACTIVATION_DAYS', 2,
-                  'Number of days the activation code is valid')
+                  True)
     ]
 
     def middleware(self, app):

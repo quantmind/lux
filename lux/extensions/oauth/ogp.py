@@ -8,7 +8,7 @@ def ogp_type(cls):
     return cls
 
 
-class OGP(object):
+class OGP:
 
     def __init__(self, doc):
         self.doc = doc
@@ -42,7 +42,7 @@ class OGP(object):
                 type_handler(self.doc)
 
 
-class OGPType(object):
+class OGPType:
 
     def __call__(self, doc):
         pass

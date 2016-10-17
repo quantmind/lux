@@ -1,11 +1,26 @@
-from pulsar import Http404
-from pulsar.apps.wsgi import Json
+from lux import forms
+from lux.forms import formreg, Layout, Fieldset, Submit
+from lux.extensions.odm import RestModel
+from lux.extensions.rest import CRUD, RestField
 
-from lux.core import route, json_message
-from lux.forms import (WebFormRouter, get_form_class, formreg,
-                       Layout, Fieldset, Submit)
-from lux.extensions import rest
-from lux.extensions.rest.views.forms import EmailForm
+
+def default_topic(bfield):
+    return bfield.request.config['GENERAL_MAILING_LIST_TOPIC']
+
+
+class EmailForm(forms.Form):
+    email = forms.EmailField(label='Your email address', required=False)
+    topic = forms.CharField(default=default_topic)
+
+    def clean(self):
+        data = self.cleaned_data
+        user = self.request.cache.user
+        if user:
+            email = user.email
+        else:
+            email = data.get('email')
+            if not email:
+                raise forms.ValidationError('email is required')
 
 
 formreg['mailing-list'] = Layout(
@@ -17,57 +32,17 @@ formreg['mailing-list'] = Layout(
 )
 
 
-class Authorization(rest.Authorization):
-
-    @route('join-mailing-list', method=('post', 'options'))
-    def join_mailing_list(self, request):
-        """Add a given email to a mailing list
-        """
-        if request.method == 'OPTIONS':
-            request.app.fire('on_preflight', request, methods=['POST'])
-            return request.response
-        return join_mail_list(request)
+class MailingListModel(RestModel):
+    model = RestModel(
+        'mailinglist',
+        url='mailinglist',
+        fields=[RestField('user', field='user_id', model='users')]
+    )
 
 
-class MalingListBackendMixin:
-
-    def join_mailing_list(self, request, email=None, topic=None, **kw):
-        topic = topic or request.config['GENERAL_MAILING_LIST_TOPIC']
-        odm = request.app.odm()
-
-        with odm.begin() as session:
-            q = session.query(odm.mailinglist).filter_by(email=email,
-                                                         topic=topic)
-            if not q.count():
-                entry = odm.mailinglist(email=email, topic=topic)
-                session.add(entry)
-                request.response.status_code = 201
-                return json_message(request,
-                                    'Email %s added to mailing list' % email)
-            else:
-                return json_message(request,
-                                    'Email %s already in mailing list' % email,
-                                    level='warning')
-
-
-class ComingSoon(WebFormRouter):
-    form = 'mailing-list'
-
-    def post(self, request):
-        return join_mail_list(request, self.form)
-
-
-def join_mail_list(request, form=None):
-    data = request.body_data()
-    form_class = get_form_class(request, form or 'mailing-list')
-
-    if not form_class:
-        raise Http404
-
-    form = form_class(request, data=data)
-    if form.is_valid():
-        backend = request.cache.auth_backend
-        result = backend.join_mailing_list(request, **form.cleaned_data)
-    else:
-        result = form.tojson()
-    return Json(result).http_response(request)
+class MailingListCRUD(CRUD):
+    model = RestModel(
+        'mailinglist',
+        url='mailinglist',
+        fields=[RestField('user', field='user_id', model='users')]
+    )
