@@ -180,7 +180,7 @@ class Extension(LuxExtension):
         for api in app.apis:
 
             # router not required when api is remote
-            if api.urlp.netloc:
+            if api.netloc:
                 continue
             #
             # Add API root-router to middleware

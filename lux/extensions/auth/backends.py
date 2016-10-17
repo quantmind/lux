@@ -70,6 +70,7 @@ class TokenBackend(PasswordMixin, rest.TokenBackend):
         else:
             raise AuthenticationError('Invalid credentials')
 
+    @backend_action
     def create_user(self, request, username=None, password=None, email=None,
                     first_name=None, last_name=None, active=False,
                     superuser=False, odm_session=None, **kw):
@@ -106,6 +107,7 @@ class TokenBackend(PasswordMixin, rest.TokenBackend):
 
         return user
 
+    @backend_action
     def create_superuser(self, request, **params):
         params['superuser'] = True
         params['active'] = True

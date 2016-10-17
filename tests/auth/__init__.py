@@ -5,7 +5,7 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from lux import forms
 from lux.core import LuxExtension
 from lux.extensions.rest import CRUD, RestField
-from lux.extensions.auth import rest
+from lux.extensions.auth.rest import users
 from lux.extensions import odm
 
 from tests.config import *  # noqa
@@ -78,7 +78,7 @@ class SecretCRUD(CRUD):
     model = odm.RestModel('secret', SecretForm, SecretForm)
 
 
-class UserCRUD(rest.UserCRUD):
+class UserCRUD(users.UserCRUD):
     """Override user CRUD for testing"""
-    model = rest.UserModel.create(
+    model = users.UserModel.create(
         fields=[RestField('email', type='email')])

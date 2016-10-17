@@ -8,11 +8,15 @@ how to write authentication backends and models in lux.
 from lux.core import Parameter, LuxExtension
 
 from .backends import TokenBackend
-from .rest import (UserRest, UserCRUD, GroupCRUD, PermissionCRUD,
-                   RegistrationCRUD, TokenCRUD,
-                   Authorization, Passwords)
-from .mail import MailingListCRUD
-from .forms import UserModel
+from .rest.authorization import Authorization
+from .rest.groups import GroupCRUD
+from .rest.mailinglist import MailingListCRUD
+from .rest.passwords import PasswordsCRUD
+from .rest.permissions import PermissionCRUD
+from .rest.registrations import RegistrationCRUD
+from .rest.tokens import TokenCRUD
+from .rest.user import UserRest, UserModel
+from .rest.users import UserCRUD
 
 
 __all__ = ['TokenBackend',
@@ -45,6 +49,6 @@ class Extension(LuxExtension):
                 GroupCRUD(),
                 PermissionCRUD(),
                 RegistrationCRUD(),
-                Passwords(),
+                PasswordsCRUD(),
                 MailingListCRUD(),
                 TokenCRUD())

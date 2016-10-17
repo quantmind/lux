@@ -1,8 +1,8 @@
 
 
 class RegistrationMixin:
-    """Test registration CRUD views"""
-
+    """Test registration CRUD views
+    """
     async def test_get_registrations_403(self):
         request = await self.client.get('/registrations')
         self.assertEqual(request.response.status_code, 403)

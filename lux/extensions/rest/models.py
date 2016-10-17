@@ -230,14 +230,18 @@ class RestModel(LuxModel, RestClient):
     """
     _fields = FieldsInfo
     api_route = None
+    json_docs = None
 
     def __init__(self, name, form=None, updateform=None, fields=None,
                  url=None, exclude=None, html_url=None, id_field=None,
-                 repr_field=None, hidden=None, list_exclude=None):
+                 repr_field=None, hidden=None, list_exclude=None,
+                 spec=None, json_docs=None):
         assert name, 'model name not available'
         self.name = name
         self.form = form
         self.updateform = updateform
+        self.spec = spec
+        self.json_docs = json_docs or self.json_docs or {}
         self._url = url if url is not None else '%ss' % name
         self._html_url = html_url
         self.api_name = '%s_url' % self._url.replace('/', '_')

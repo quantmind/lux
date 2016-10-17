@@ -1,137 +1,13 @@
 import json
-from datetime import datetime, timedelta
-
-from pulsar import BadRequest, Http401
 
 from lux import forms
 from lux.core import AuthenticationError
 from lux.forms import Layout, Fieldset, Submit, formreg
-from lux.extensions.odm import RestModel
-from lux.extensions.rest import RestField, RelationshipField, UniqueField
+from lux.extensions.rest import RelationshipField, UniqueField
 from lux.extensions.rest.views.forms import PasswordForm
 from lux.extensions.rest import validate_policy
-from lux.utils.auth import ensure_authenticated
-
-from .registration import send_email_confirmation
 
 
-full_name = RestField(
-    'full_name',
-    displayName='Name',
-    field=('first_name', 'last_name', 'username', 'email')
-)
-
-
-# REST Models
-class UserModelBase(RestModel):
-
-    @classmethod
-    def create(cls, url=None, exclude=None, hidden=None, fields=None):
-        exclude = exclude or ('password',)
-        fields = list(fields or ())
-        fields.extend((
-            full_name,
-            RestField('groups', model='groups')
-        ))
-        return cls(
-            'user',
-            'create-user',
-            'user',
-            url=url,
-            id_field='username',
-            repr_field='full_name',
-            exclude=exclude,
-            hidden=hidden,
-            fields=fields
-        )
-
-
-class UserModel(UserModelBase):
-
-    def create_model(self, request, instance, data, session=None):
-        '''Override create model so that it calls the backend method
-        '''
-        return request.cache.auth_backend.create_user(request, **data)
-
-
-class RequestUserModel(UserModelBase):
-
-    @classmethod
-    def create(cls, exclude=None, hidden=None, fields=None):
-        exclude = exclude or ('password',)
-        fields = list(fields or ())
-        fields.extend((
-            full_name,
-            RestField('groups', model='groups')
-        ))
-        return cls(
-            'user',
-            updateform='user-profile',
-            url='user',
-            id_field='username',
-            repr_field='full_name',
-            exclude=exclude,
-            hidden=hidden,
-            fields=fields
-        )
-
-    def get_instance(self, request, *args, **kwargs):
-        return self.instance(ensure_authenticated(request))
-
-
-class TokenModel(RestModel):
-    """REST model for tokens
-    """
-    @classmethod
-    def create(cls):
-        return cls(
-            'token',
-            'create-token',
-            fields=[
-                RestField('user', field='user_id', model='users')
-            ]
-        )
-
-    def create_model(self, request, instance, data, session=None):
-        user = ensure_authenticated(request)
-        auth = request.cache.auth_backend
-        data['session'] = False
-        return auth.create_token(request, user, **data)
-
-
-class RegistrationModel(RestModel):
-
-    @classmethod
-    def create(cls, form=None, url=None, type=1):
-        model = cls(
-            'registration',
-            form=form,
-            url=url,
-            exclude=('user_id', 'type', 'id'),
-            id_field='email',
-            repr_field='email',
-        )
-        model.type = type
-        return model
-
-    def create_model(self, request, instance=None, data=None, **kw):
-        days = request.config['ACCOUNT_ACTIVATION_DAYS']
-        data['expiry'] = datetime.now() + timedelta(days=days)
-        data['type'] = self.type
-        reg = super().create_model(request, instance, data, **kw)
-        token = self.get_token(request)
-        send_email_confirmation(request, token, reg)
-        return reg
-
-    def get_token(self, request):
-        if request.cache.user.is_authenticated():
-            raise BadRequest
-        if not request.cache.token:
-            raise Http401
-        return request.cache.token
-
-
-# FORMS
 class PermissionForm(forms.Form):
     model = 'permissions'
     name = forms.CharField()
@@ -181,7 +57,7 @@ class ChangePasswordForm(PasswordForm):
 
 
 class NewTokenForm(forms.Form):
-    """Form to create tokens for the current user
+    """Create a new Authorization ``Token`` for the authenticated ``User``.
     """
     description = forms.TextField(minlength=2, maxlength=256)
 
@@ -221,11 +97,4 @@ formreg['permission'] = Layout(
     PermissionForm,
     Fieldset(all=True),
     Submit('Update permissions')
-)
-
-
-formreg['create-token'] = Layout(
-    NewTokenForm,
-    Fieldset(all=True),
-    Submit('Create token')
 )
