@@ -3,8 +3,11 @@ import json
 from copy import copy
 from collections import OrderedDict as obj
 
+from pulsar.utils.structures import mapping_iterator
+
+from lux import forms
 from lux.core import LuxCommand
-from lux.utils.text import engine
+from lux.forms import get_form_class
 
 
 methods = ('get', 'head', 'post', 'patch', 'put', 'delete')
@@ -93,35 +96,64 @@ class Command(LuxCommand):
                 doc['responses'] = copy(responses)
             return doc
 
-        return getattr(self, 'doc_%s' % verb)(method, parameters, model)
+        return self.model_doc(verb, method, parameters, model)
 
-    def doc_get(self, method, parameters, model):
-        doc = obj(model.json_docs.get("get") or ())
+    def model_doc(self, verb, method, parameters, model):
+        doc = obj(model.json_docs.get(verb) or ())
         if "description" not in doc:
-            doc["description"] = (
-                "Return a pagination object containing a list of %s"
-                % engine.plural(model.name)
-            )
+            doc["description"] = trim_docstring(method.__doc__)
+        parameters = self.method_parameters(verb, method, parameters, model)
         if parameters:
             doc['parameters'] = parameters
+        responses = getattr(method, 'responses', None)
+        if responses:
+            doc["responses"] = dict(method_responses(responses))
         return doc
 
-    def doc_post(self, method, parameters, model):
-        pass
+    def method_parameters(self, verb, method, parameters, model):
+        form = get_form_class(self.app, getattr(method, 'form', None))
+        if not form:
+            if verb == 'post':
+                form = get_form_class(self.app, model.form)
+            elif verb == 'patch':
+                form = get_form_class(self.app, model.updateform)
 
-    def doc_put(self, method, parameters, model):
-        pass
+        if form:
+            parameters = (parameters or [])[:]
+            for name, field in form.base_fields.items():
+                parameters.append(obj((
+                    ("name", name),
+                    ("description", field.help_text or field.label or name),
+                    ("type", field_type(field)),
+                    ("required", field.required),
+                    ("in", "formData")
+                )))
+        return parameters
 
-    def doc_patch(self, method, parameters, model):
-        pass
 
-    def doc_head(self, method, parameters, model):
-        doc = obj(model.json_docs.get("get") or ())
-        if "description" not in doc:
-            doc["description"] = ""
-        if parameters:
-            doc['parameters'] = parameters
-        return doc
+def trim_docstring(doc):
+    if not doc:
+        return ""
+    lines = []
+    for line in doc.split('\n'):
+        lines.append(line.strip())
+    return '\n'.join(lines)
 
-    def doc_delete(self, method, parameters, model):
-        pass
+
+def method_responses(responses):
+    for code, info in mapping_iterator(responses):
+        if isinstance(info, str):
+            info = obj(description=info)
+        yield code, info
+
+
+def field_type(field):
+    if isinstance(field, forms.FloatField):
+        type = "number"
+    elif isinstance(field, forms.IntegerField):
+        type = "integer"
+    elif isinstance(field, forms.BooleanField):
+        type = "boolean"
+    else:
+        type = "string"
+    return type

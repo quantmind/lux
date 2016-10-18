@@ -29,7 +29,7 @@ from .views.spec import Specification
 from .pagination import Pagination, GithubPagination
 from .forms import RelationshipField, UniqueField
 from .query import Query, RestSession
-from .token import TokenBackend
+from .token import TokenBackend, ServiceUser
 from .permissions import user_permissions, validate_policy
 
 
@@ -67,7 +67,8 @@ __all__ = [
     'validate_policy',
     'user_permissions',
     #
-    'TokenBackend'
+    'TokenBackend',
+    'ServiceUser'
 ]
 
 
@@ -137,7 +138,10 @@ class Extension(LuxExtension):
     def on_config(self, app):
         app.providers['Api'] = ApiClient
         app.apis = Apis.make(app.config['API_URL'])
-        app.add_events(('on_before_commit', 'on_after_commit'))
+        app.add_events(('on_query',
+                        'on_before_flush',
+                        'on_before_commit',
+                        'on_after_commit'))
 
     def middleware(self, app):
         # API urls not available - no middleware to add

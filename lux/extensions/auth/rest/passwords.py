@@ -11,4 +11,3 @@ class PasswordsCRUD(CRUD):
         url='passwords',
         type=2
     )
-

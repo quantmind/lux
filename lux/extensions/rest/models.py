@@ -230,6 +230,7 @@ class RestModel(LuxModel, RestClient):
     """
     _fields = FieldsInfo
     api_route = None
+    spec = None
     json_docs = None
 
     def __init__(self, name, form=None, updateform=None, fields=None,
@@ -240,7 +241,7 @@ class RestModel(LuxModel, RestClient):
         self.name = name
         self.form = form
         self.updateform = updateform
-        self.spec = spec
+        self.spec = spec or self.spec
         self.json_docs = json_docs or self.json_docs or {}
         self._url = url if url is not None else '%ss' % name
         self._html_url = html_url

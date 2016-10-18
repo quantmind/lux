@@ -43,6 +43,8 @@ class Command(LuxCommand):
             interactive = True
         request = self.app.wsgi_request()
         auth_backend = self.app.auth_backend
+        auth_backend.request(request.environ)
+
         if interactive:  # pragma    nocover
             def_username = get_def_username(request, auth_backend)
             input_msg = 'Username'

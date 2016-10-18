@@ -564,7 +564,7 @@ class AppTestCase(unittest.TestCase, TestMixin):
                                         '--email', email,
                                         '--password', password])
 
-    async def _token(self, credentials):
+    async def _token(self, credentials, **kw):
         '''Return a token for a user
         '''
         if isinstance(credentials, str):
@@ -573,12 +573,14 @@ class AppTestCase(unittest.TestCase, TestMixin):
 
         # Get new token
         request = await self.client.post(self.api_url('authorizations'),
-                                         json=credentials)
+                                         json=credentials, **kw)
         data = self.json(request.response, 201)
-        self.assertTrue('token' in data)
+        self.assertTrue('id' in data)
+        self.assertTrue('expiry' in data)
+        self.assertTrue(data['session'])
         user = request.cache.user
-        self.assertFalse(user.is_authenticated())
-        return data['token']
+        self.assertTrue(user.is_anonymous())
+        return data['id']
 
 
 class WebApiTestCase(AppTestCase):

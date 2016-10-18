@@ -1,5 +1,8 @@
 import uuid
 
+from pulsar import Http404
+from pulsar.utils.importer import module_attribute
+
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm import joinedload
 from datetime import datetime
@@ -9,6 +12,10 @@ from lux.core import (json_message, PasswordMixin, AuthenticationError,
 from lux.utils.crypt import digest
 from lux.utils.auth import normalise_email
 from lux.extensions import rest
+
+
+def validate_username(request, username):
+    module_attribute(request.config['CHECK_USERNAME'])(request, username)
 
 
 class TokenBackend(PasswordMixin, rest.TokenBackend):
@@ -22,49 +29,54 @@ class TokenBackend(PasswordMixin, rest.TokenBackend):
 
         Returns user or nothing
         """
+        models = request.app.models
         odm = request.app.odm()
         now = datetime.utcnow()
 
         if token_id:
-            with odm.begin() as session:
+            with odm.begin(request=request) as session:
                 query = session.query(odm.token)
                 query = query.filter_by(id=token_id)
                 query.update({'last_access': now},
                              synchronize_session=False)
-                if not query.count():
+                try:
+                    return query.one().user
+                except NoResultFound:
+                    return None
+
+        users = models.get('users')
+        with users.session(request) as session:
+            if auth_key:
+                query = models.get('registrations').get_query(session)
+                try:
+                    reg = query.filter(id=auth_key).one()
+                except NoResultFound:
                     return
 
-        if auth_key:
-            with odm.begin() as session:
-                query = session.query(odm.registration)
-                reg = query.get(auth_key)
-                if reg and reg.expiry > now:
-                    if not reg.confirmed:
-                        user_id = reg.user_id
+                if reg.expiry > now:
+                    user_id = reg.user_id
                 else:
                     return
 
-        with odm.begin() as session:
-            query = session.query(odm.user)
+            query = users.get_query(session)
             try:
                 if user_id:
-                    user = query.get(user_id)
+                    user = query.filter(id=user_id).one()
                 elif username:
-                    user = query.filter_by(username=username).one()
+                    user = query.filter(username=username).one()
                 elif email:
-                    user = query.filter_by(email=normalise_email(email)).one()
+                    user = query.filter(email=normalise_email(email)).one()
                 else:
                     return
-            except NoResultFound:
+            except Http404:
                 return
 
-        return user
+            return user.obj
 
-    def authenticate(self, request, user_id=None, username=None, email=None,
-                     user=None, password=None, **kw):
+    @backend_action
+    def authenticate(self, request, user=None, password=None, **kw):
         if not user:
-            user = self.get_user(request, user_id=user_id,
-                                 username=username, email=email)
+            user = self.get_user(request, **kw)
         if user and self.crypt_verify(user.password, password):
             return user
         else:
@@ -73,7 +85,7 @@ class TokenBackend(PasswordMixin, rest.TokenBackend):
     @backend_action
     def create_user(self, request, username=None, password=None, email=None,
                     first_name=None, last_name=None, active=False,
-                    superuser=False, odm_session=None, **kw):
+                    superuser=False, session=None, **kw):
         """Create a new user.
 
         Either ``username`` or ``email`` must be provided.
@@ -83,9 +95,9 @@ class TokenBackend(PasswordMixin, rest.TokenBackend):
         email = normalise_email(email)
         assert username or email
         if username:
-            self.validate_username(request, username)
+            validate_username(request, username)
 
-        with odm.begin(session=odm_session) as session:
+        with odm.begin(session=session) as session:
             if not username:
                 username = email
 
@@ -102,7 +114,8 @@ class TokenBackend(PasswordMixin, rest.TokenBackend):
                             first_name=first_name,
                             last_name=last_name,
                             active=active,
-                            superuser=superuser)
+                            superuser=superuser,
+                            **kw)
             session.add(user)
 
         return user
@@ -113,21 +126,18 @@ class TokenBackend(PasswordMixin, rest.TokenBackend):
         params['active'] = True
         return self.create_user(request, **params)
 
+    @backend_action
     def create_token(self, request, user, **kwargs):
         """Create the token
         """
         odm = request.app.odm()
-        ip_address = request.get_client_address()
-        user_id = user.id if user.is_authenticated() else None
 
         with odm.begin() as session:
             token = odm.token(id=uuid.uuid4(),
-                              user_id=user_id,
-                              ip_address=ip_address,
-                              user_agent=self.user_agent(request, 80),
+                              user_id=user.id,
                               **kwargs)
             session.add(token)
-        return self.add_encoded(request, token)
+        return token
 
     def get_token(self, request, key):
         odm = request.app.odm()

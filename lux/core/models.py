@@ -257,6 +257,11 @@ class ModelInstance:
             return obj._model_instance
         return cls(model, obj, fields)
 
+    @classmethod
+    def get_model(cls, obj):
+        if hasattr(obj, '_model_instance'):
+            return obj._model_instance.model
+
     def has(self, field):
         return self.fields is None or field in self.fields
 

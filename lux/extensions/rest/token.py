@@ -4,7 +4,7 @@ from pulsar import Http401, BadRequest, PermissionDenied
 from pulsar.utils.pep import to_string
 
 import lux.utils.token as jwt
-from lux.core import backend_action
+from lux.core import backend_action, UserMixin
 from .permissions import PemissionsMixin
 
 
@@ -12,9 +12,29 @@ from .permissions import PemissionsMixin
 CORS = 'Access-Control-Allow-Origin'
 
 
+class ServiceUser(UserMixin):
+
+    def __init__(self, request):
+        self._authenticated = bool(request.cache.token)
+
+    def is_superuser(self):
+        return self._authenticated
+
+    def is_authenticated(self):
+        return self._authenticated
+
+    def is_anonymous(self):
+        return True
+
+    def is_active(self):
+        return False
+
+
 class TokenBackend(PemissionsMixin):
     """Token Backend
     """
+    service_user = ServiceUser
+
     @backend_action
     def login(self, request, user):
         """Handle a request for a token to be used on a web browser
@@ -53,6 +73,7 @@ class TokenBackend(PemissionsMixin):
             elif auth_type == 'jwt':
                 token = self.decode_token(request, key)
                 request.cache.token = token
+                user = self.service_user(request)
         except (Http401, BadRequest, PermissionDenied):
             raise
         except Exception:
@@ -112,7 +133,7 @@ class TokenBackend(PemissionsMixin):
 
     def decode_token(self, request, token):
         payload = self.decode_jwt(request, token, verify_signature=False)
-        secret = self.secret_from_payload(request, payload)
+        secret = self.secret_from_jwt_payload(request, payload)
         return self.decode_jwt(request, token, secret)
 
     def secret_from_jwt_payload(self, request, payload):

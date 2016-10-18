@@ -4,7 +4,6 @@ from pulsar import PermissionDenied
 from pulsar.utils.structures import inverse_mapping
 from pulsar.utils.importer import module_attribute
 from pulsar.apps.wsgi import wsgi_request
-from pulsar.utils.slugify import slugify
 
 from lux.utils.data import as_tuple
 
@@ -33,42 +32,16 @@ class AuthenticationError(ValueError):
     pass
 
 
-def check_username(request, username):
-    """Default function for checking username validity
-    """
-    correct = slugify(username)
-    if correct != username or len(correct) < 2:
-        raise ValueError('Username may only contain lowercase '
-                         'alphanumeric characters or single hyphens, '
-                         'cannot begin or end with a hyphen and must have '
-                         'two or more characters')
-    return username
-
-
 class BackendMixin:
     """Add authentication backends to the application
     """
     _config = [
         Parameter('AUTHENTICATION_BACKENDS', [],
                   'List of python dotted paths to classes which provide '
-                  'a backend for authentication.'),
-        Parameter('CRYPT_ALGORITHM',
-                  'lux.utils.crypt.pbkdf2',
-                  # dict(module='lux.utils.crypt.arc4', salt_size=8),
-                  'Python dotted path to module which provides the '
-                  '``encrypt`` and, optionally, ``decrypt`` method for '
-                  'password and sensitive data encryption/decryption'),
-        Parameter('PASSWORD_SECRET_KEY',
-                  None,
-                  'A string or bytes used for encrypting data. Must be unique '
-                  'to the application and long and random enough'),
-        Parameter('CHECK_USERNAME', 'lux.core.auth:check_username',
-                  'Dotted path to username validation function')
+                  'a backend for authentication.')
     ]
 
     def _on_config(self, config):
-        if not config['PASSWORD_SECRET_KEY']:
-            config['PASSWORD_SECRET_KEY'] = config['SECRET_KEY']
         self.auth_backend = MultiAuthBackend()
         for dotted_path in config['AUTHENTICATION_BACKENDS']:
             backend = module_attribute(dotted_path)
@@ -81,11 +54,6 @@ class BackendMixin:
 
 
 class AuthBase:
-
-    def request(self, request):  # pragma    nocover
-        '''Request middleware. Most backends implement this method
-        '''
-        pass
 
     @backend_action
     def anonymous(self, request):
@@ -115,20 +83,7 @@ class SimpleBackend(AuthBase):
         return dict(((r, perm.copy()) for r in as_tuple(resources)))
 
 
-class ProxyBackendMixin:
-
-    def __getattr__(self, method):
-        if method in auth_backend_actions:
-            return partial(self._execute_backend_method, method)
-        else:
-            raise AttributeError("'%s' object has no attribute '%s'" %
-                                 (type(self).__name__, method))
-
-    def _execute_backend_method(self, method, request, *args, **kwargs):
-        return None
-
-
-class MultiAuthBackend(AuthBase, ProxyBackendMixin):
+class MultiAuthBackend:
     '''Aggregate several Authentication backends
     '''
     def __init__(self):
@@ -163,6 +118,13 @@ class MultiAuthBackend(AuthBase, ProxyBackendMixin):
 
     def __iter__(self):
         return iter(self.backends)
+
+    def __getattr__(self, method):
+        if method in auth_backend_actions:
+            return partial(self._execute_backend_method, method)
+        else:
+            raise AttributeError("'%s' object has no attribute '%s'" %
+                                 (type(self).__name__, method))
 
     def _execute_backend_method(self, method, request, *args, **kwargs):
         for backend in self:
