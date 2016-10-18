@@ -50,7 +50,8 @@ class Session(AttributeDictionary, SessionMixin):
 
     Used by the :class:`.ApiSessionBackend`
     '''
-    pass
+    def todict(self):
+        return self.__dict__.copy()
 
 
 class SessionStore:
@@ -62,7 +63,9 @@ class SessionStore:
     def get(self, id):
         """Get a session at id
         """
-        return self.store.get_json(self.session_key(id))
+        obj = self.store.get_json(self.session_key(id))
+        if obj:
+            return Session(obj)
 
     def set(self, id, data):
         """Set session data at id
@@ -85,6 +88,9 @@ class SessionStore:
         if user and not isinstance(user, dict):
             user = user.todict()
         return Session(id=id, user=user, **kw)
+
+    def save(self, session):
+        self.set(session.id, session.todict())
 
     def session_key(self, id=None, app_name=None):
         app_name = app_name or self.store.app.config['APP_NAME']

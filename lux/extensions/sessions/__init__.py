@@ -111,10 +111,7 @@ class Extension(LuxExtension):
         session = request.cache.session
         if session:
             expiry = request.config['CSRF_EXPIRY']
-            secret_key = request.config['SECRET_KEY']
-            return jwt.encode({'session': session.get_key(),
-                               'exp': time.time() + expiry},
-                              secret_key)
+            return jwt.encode({'exp': time.time() + expiry}, session.id)
 
     def validate_csrf_token(self, request, token):
         bad_token = request.config['CSRF_BAD_TOKEN_MESSAGE']
@@ -122,12 +119,8 @@ class Extension(LuxExtension):
         if not token:
             raise PermissionDenied(bad_token)
         try:
-            secret_key = request.config['SECRET_KEY']
-            token = jwt.decode(token, secret_key)
+            jwt.decode(token, request.cache.session.id)
         except jwt.ExpiredSignature:
             raise PermissionDenied(expired_token)
         except Exception:
             raise PermissionDenied(bad_token)
-        else:
-            if token['session'] != request.cache.session.get_key():
-                raise PermissionDenied(bad_token)

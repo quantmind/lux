@@ -1,10 +1,10 @@
 """Backends for Browser based Authentication
 """
+import time
 from functools import wraps
-from datetime import datetime, timedelta
 
 from pulsar import Http401, PermissionDenied, Http404, HttpRedirect
-from pulsar.apps.wsgi import Route
+from pulsar.apps.wsgi import Route, wsgi_request
 
 from lux.utils.token import decode
 from lux.core import app_attribute, backend_action, User
@@ -29,11 +29,11 @@ def session_backend_action(method):
     backend_action(method)
 
     @wraps(method)
-    def _(self, request, *args):
-        if request.cache.skip_session_backend:
+    def _(self, r, *args):
+        if wsgi_request(r.environ).cache.skip_session_backend:
             return
 
-        return method(self, request, *args)
+        return method(self, r, *args)
 
     return _
 
@@ -74,8 +74,10 @@ class SessionBackend:
     def create_session(self, request, user=None):
         """Create a new Session object"""
         user = user or request.cache.user
+        if user.is_anonymous():
+            user = None
         seconds = request.config['SESSION_EXPIRY']
-        expiry = datetime.now() + timedelta(seconds=seconds)
+        expiry = time.time() + seconds
         return session_store(request).create(user=user, expiry=expiry)
 
     @session_backend_action
@@ -109,7 +111,7 @@ class SessionBackend:
             backend = request.cache.auth_backend
             session = backend.create_session(request)
         request.cache.session = session
-        user = session.get_user()
+        user = session.user
         if user:
             auth = self.authorization(request)
             auth.head(token=user.token)
@@ -122,13 +124,14 @@ class SessionBackend:
             request.cache.user = user
 
     @session_backend_action
-    def response(self, request, response):
+    def response(self, response):
+        request = wsgi_request(response.environ)
         session = request.cache.session
         if session:
             if response.can_set_cookies():
                 key = request.config['SESSION_COOKIE_NAME']
                 session_key = request.cookies.get(key)
-                id = session.get_key()
+                id = session.id
                 if not session_key or session_key.value != id:
                     response.set_cookie(key, value=str(id), httponly=True,
                                         expires=session.expiry)
