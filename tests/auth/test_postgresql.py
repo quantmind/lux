@@ -1,3 +1,5 @@
+from asyncio import gather
+
 from lux.utils import test
 
 from tests.auth.user import UserMixin
@@ -20,3 +22,10 @@ class TestPostgreSql(test.AppTestCase,
                      GroupsMixin,
                      MailListMixin):
     config_file = 'tests.auth'
+
+    @classmethod
+    async def beforeAll(cls):
+        cls.super_token, cls.pippo_token = await gather(
+            cls._token('testuser', jwt=cls.admin_jwt),
+            cls._token('pippo', jwt=cls.admin_jwt)
+        )

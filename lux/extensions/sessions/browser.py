@@ -29,11 +29,11 @@ def session_backend_action(method):
     backend_action(method)
 
     @wraps(method)
-    def _(self, r, *args):
+    def _(self, r, *args, **kwargs):
         if wsgi_request(r.environ).cache.skip_session_backend:
             return
 
-        return method(self, r, *args)
+        return method(self, r, *args, **kwargs)
 
     return _
 
@@ -43,15 +43,9 @@ class SessionBackend:
 
     It maintain a session via a cookie key
     """
-    @property
-    def authorization(self, request):
-        authorization = request.config.get('AUTHORIZATION', 'authorization')
-        return request.api[authorization]
-
     @session_backend_action
     def authenticate(self, request, **data):
-        auth = self.authorization(request)
-        response = auth.post(json=data)
+        response = request.api.authorizations.post(json=data)
         token = response.json().get('token')
         payload = decode(token, verify=False)
         return User(payload, token=token)

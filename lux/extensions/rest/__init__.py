@@ -29,7 +29,7 @@ from .views.spec import Specification
 from .pagination import Pagination, GithubPagination
 from .forms import RelationshipField, UniqueField
 from .query import Query, RestSession
-from .token import TokenBackend, ServiceUser
+from .token import TokenBackend, ServiceUser, CORS
 from .permissions import user_permissions, validate_policy
 
 
@@ -180,12 +180,15 @@ class Extension(LuxExtension):
             raise ImproperlyConfigured('Could not load paginator "%s"',
                                        dotted_path)
         app.pagination = pagination()
+        has_api = False
 
         for api in app.apis:
 
             # router not required when api is remote
             if api.netloc:
                 continue
+
+            has_api = True
             #
             # Add API root-router to middleware
             middleware.append(api.router)
@@ -198,5 +201,25 @@ class Extension(LuxExtension):
                 )
         #
         # Add the preflight and token events
-        app.add_events(('on_preflight', 'on_token'))
+        if has_api:
+            app.add_events(('on_preflight', 'on_token'))
+
         return middleware
+
+    def on_preflight(self, app, request, methods=None):
+        '''Preflight handler
+        '''
+        headers = request.get('HTTP_ACCESS_CONTROL_REQUEST_HEADERS')
+        methods = methods or app.config['CORS_ALLOWED_METHODS']
+        response = request.response
+        origin = request.get('HTTP_ORIGIN', '*')
+
+        if origin == 'null':
+            origin = '*'
+
+        response[CORS] = origin
+        if headers:
+            response['Access-Control-Allow-Headers'] = headers
+        if not isinstance(methods, (str, list)):
+            methods = list(methods)
+        response['Access-Control-Allow-Methods'] = methods

@@ -23,7 +23,6 @@ __all__ = ['model_base',
            'RestField']
 
 
-sql_to_broadcast = {'insert': 'create'}
 sql_delete = 'delete'
 
 
@@ -49,20 +48,20 @@ class Extension(LuxExtension):
         self.require(app, 'lux.extensions.rest')
         app.odm = Odm(app)
 
-    def on_before_commit(self, app, session, changes):
+    def on_before_commit(self, app, session):
         request = session.request
         if not request:
             return
-        for instance, event in changes.values():
+        for instance in session.deleted:
             name = instance.__class__.__name__.lower()
             model = odm_models(app).get(name)
             if model:
-                event = sql_to_broadcast.get(event, event)
-                if event == sql_delete:
-                    instance._json = model.tojson(
-                        request, instance, in_list=True, safe=True)
+                instance._json = model.tojson(
+                    request, instance, in_list=True,
+                    safe=True
+                )
 
-    def on_after_commit(self, app, session, changes):
+    def on_after_commit(self, app, session):
         """
         Called after SQLAlchemy commit, broadcast models events into channels
 
@@ -73,11 +72,10 @@ class Extension(LuxExtension):
         request = session.request
         if not request:
             return
-        for instance, event in changes.values():
+        for instance, event in session.changes():
             name = instance.__class__.__name__.lower()
             model = odm_models(app).get(name)
             if model:
-                event = sql_to_broadcast.get(event, event)
                 if not hasattr(instance, '_json'):
                     data = model.tojson(
                         request, instance, in_list=True, safe=True)

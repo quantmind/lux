@@ -33,10 +33,12 @@ class Authorization(RestRouter):
         """Perform a login operation. The headers must contain a valid
         ``AUTHORIZATION`` token, signed by the application sending the request
         """
+        # user must be anonymous
         if not request.cache.user.is_anonymous():
             raise BadRequest
+        # the service user must be authenticated
         if not request.cache.user.is_authenticated():
-            raise Http401
+            raise Http401('Token')
 
         form = auth_form(request, 'login')
 

@@ -1,6 +1,6 @@
 from functools import partial
 
-from pulsar import PermissionDenied
+from pulsar import PermissionDenied, Http401
 from pulsar.utils.structures import inverse_mapping
 from pulsar.utils.importer import module_attribute
 from pulsar.apps.wsgi import wsgi_request
@@ -173,7 +173,11 @@ class Resource:
     def __call__(self, request, load_only=None):
         perms = self.permissions(request)
         if perms is False:
-            raise PermissionDenied
+            user = request.cache.user
+            if user.is_anonymous():
+                raise Http401('token')
+            else:
+                raise PermissionDenied
         if load_only:
             return tuple(set(perms).intersection(load_only))
         else:

@@ -10,6 +10,8 @@ from pulsar.utils.slugify import slugify
 from lux.core import Parameter, LuxExtension
 from lux.forms import ValidationError
 
+# make sure to import forms
+from . import forms     # noqa
 from .backends import TokenBackend
 from .rest.authorization import Authorization
 from .rest.groups import GroupCRUD
@@ -45,7 +47,6 @@ class Extension(LuxExtension):
                   'Number of days the activation code is valid'),
         Parameter('CRYPT_ALGORITHM',
                   'lux.utils.crypt.pbkdf2',
-                  # dict(module='lux.utils.crypt.arc4', salt_size=8),
                   'Python dotted path to module which provides the '
                   '``encrypt`` and, optionally, ``decrypt`` method for '
                   'password and sensitive data encryption/decryption'),

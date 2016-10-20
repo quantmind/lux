@@ -30,4 +30,10 @@ def create_token(request, *args, expiry=None, **kwargs):
         token['exp'] = int(time.mktime(expiry.timetuple()))
 
     request.app.fire('on_token', request, token)
-    return jwt.encode(token, request.config['SECRET_KEY']).decode('utf-8')
+    return encode(token, request.config['SECRET_KEY']).decode('utf-8')
+
+
+def app_token(app, payload=None):
+    if not payload:
+        payload = {'app_name': app.config['APP_NAME']}
+    return encode(payload, app.config['SECRET_KEY']).decode('utf-8')

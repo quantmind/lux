@@ -81,4 +81,6 @@ class SecretCRUD(CRUD):
 class UserCRUD(users.UserCRUD):
     """Override user CRUD for testing"""
     model = users.UserModel.create(
-        fields=[RestField('email', type='email')])
+        updateform='user',
+        fields=[RestField('email', type='email')]
+    )

@@ -91,24 +91,6 @@ class TokenBackend(PemissionsMixin):
     def response_middleware(self, app):
         return [self.response]
 
-    def on_preflight(self, app, request, methods=None):
-        '''Preflight handler
-        '''
-        headers = request.get('HTTP_ACCESS_CONTROL_REQUEST_HEADERS')
-        methods = methods or app.config['CORS_ALLOWED_METHODS']
-        response = request.response
-        origin = request.get('HTTP_ORIGIN', '*')
-
-        if origin == 'null':
-            origin = '*'
-
-        response[CORS] = origin
-        if headers:
-            response['Access-Control-Allow-Headers'] = headers
-        if not isinstance(methods, (str, list)):
-            methods = list(methods)
-        response['Access-Control-Allow-Methods'] = methods
-
     def encode_token(self, request, user=None, expiry=None, **token):
         """Encode a JWT
         """

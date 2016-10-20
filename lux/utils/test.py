@@ -23,6 +23,9 @@ from lux.core import App
 from lux.extensions.rest import ApiClient, HttpResponse
 from lux.core.commands.generate_secret_key import generate_secret
 
+from .token import app_token
+
+
 logger = logging.getLogger('pulsar.test')
 
 
@@ -97,11 +100,11 @@ def test_app(test, config_file=None, config_params=True, argv=None,
 
 
 @green
-def create_users(app, items, index=None):
+def create_users(app, items, testuser, index=None):
     if not index:
         items.insert(0, {
-            "username": "testuser",
-            "password": "testuser",
+            "username": testuser,
+            "password": testuser,
             "superuser": True,
             "active": True
         })
@@ -118,10 +121,16 @@ def create_users(app, items, index=None):
     return len(processed)
 
 
-async def load_fixtures(app, path=None, api_url=None):
+async def load_fixtures(app, path=None, api_url=None, testuser=None,
+                        admin_jwt=None):
+    """Load fixtures
+
+    This function requires an authentication backend supporting user creation
+    """
     if not hasattr(app.auth_backend, 'create_user'):
         return
 
+    testuser = testuser or 'testuser'
     fpath = path if path else os.path.join(app.meta.path, 'fixtures')
     total = 0
 
@@ -140,23 +149,27 @@ async def load_fixtures(app, path=None, api_url=None):
 
     for index, fixtures in enumerate(_read_fixtures(fpath)):
 
-        total += await create_users(app, fixtures.pop('users', []), index)
+        total += await create_users(
+            app, fixtures.pop('users', []), testuser, index
+        )
 
         for model, items in fixtures.items():
-            logger.info('Creating %d fixtures for "%s"', len(items), model)
+            logger.info('%d fixtures for "%s"', len(items), model)
             for params in items:
-                user = params.pop('api_user', 'testuser')
+                user = params.pop('api_user', testuser)
+                method = params.pop('api_method', 'post')
                 url = '%s%s' % (api_url, params.pop('api_url', '/%s' % model))
                 if user not in test_tokens:
                     request = await client.post('%s/authorizations' % api_url,
                                                 json=dict(username=user,
-                                                          password=user))
-                    token = test.json(request.response, 201)['token']
+                                                          password=user),
+                                                jwt=admin_jwt)
+                    token = test.json(request.response, 201)['id']
                     test_tokens[user] = token
                 test_token = test_tokens[user]
-                request = await client.post(url,
-                                            json=params,
-                                            token=test_token)
+
+                request = await client.request(method, url, json=params,
+                                               token=test_token)
                 data = test.json(request.response)
                 code = request.response.status_code
                 if code > 201:
@@ -182,7 +195,7 @@ class TestClient:
     def request_start_response(self, method, path, HTTP_ACCEPT=None,
                                headers=None, data=None, json=None,
                                content_type=None, token=None, oauth=None,
-                               cookie=None, params=None, **extra):
+                               jwt=None, cookie=None, params=None, **extra):
         method = method.upper()
         extra['REQUEST_METHOD'] = method.upper()
         path = path or '/'
@@ -201,6 +214,8 @@ class TestClient:
             heads.append(('Authorization', 'Bearer %s' % token))
         elif oauth:
             heads.append(('Authorization', 'OAuth %s' % oauth))
+        elif jwt:
+            heads.append(('Authorization', 'JWT %s' % jwt))
         if cookie:
             heads.append(('Cookie', cookie))
 
@@ -464,12 +479,15 @@ class AppTestCase(unittest.TestCase, TestMixin):
     """Original odm handler"""
     datastore = None
     """Test class datastore dictionary"""
+    _test = TestCase()
 
     @classmethod
     async def setUpClass(cls):
         # Create the application
         cls.dbs = {}
         cls.app = cls.create_test_application()
+        cls.admin_jwt = app_token(cls.app)
+        # admin JWT token for admin operations on Token auth backends
         cls.client = cls.get_client()
         if hasattr(cls.app, 'odm'):
             # Store the original odm for removing the new databases
@@ -529,7 +547,9 @@ class AppTestCase(unittest.TestCase, TestMixin):
 
     @classmethod
     def populatedb(cls):
-        return load_fixtures(cls.app, api_url=cls.api_url())
+        return load_fixtures(cls.app,
+                             api_url=cls.api_url(),
+                             admin_jwt=cls.admin_jwt)
 
     @classmethod
     def api_url(cls, path=None):
@@ -549,6 +569,26 @@ class AppTestCase(unittest.TestCase, TestMixin):
     def beforeAll(cls):
         """Can be used to add logic before all tests"""
 
+    @classmethod
+    async def _token(cls, credentials, **kw):
+        '''Return a token for a user
+        '''
+        if isinstance(credentials, str):
+            credentials = {"username": credentials,
+                           "password": credentials}
+
+        # Get new token
+        request = await cls.client.post(cls.api_url('authorizations'),
+                                        json=credentials, **kw)
+        test = cls._test
+        data = test.json(request.response, 201)
+        test.assertTrue('id' in data)
+        test.assertTrue('expiry' in data)
+        test.assertTrue(data['session'])
+        user = request.cache.user
+        test.assertTrue(user.is_anonymous())
+        return data['id']
+
     def fetch_command(self, command, new=False):
         """Fetch a command."""
         app = self.app
@@ -563,24 +603,6 @@ class AppTestCase(unittest.TestCase, TestMixin):
                                        ['--username', username,
                                         '--email', email,
                                         '--password', password])
-
-    async def _token(self, credentials, **kw):
-        '''Return a token for a user
-        '''
-        if isinstance(credentials, str):
-            credentials = {"username": credentials,
-                           "password": credentials}
-
-        # Get new token
-        request = await self.client.post(self.api_url('authorizations'),
-                                         json=credentials, **kw)
-        data = self.json(request.response, 201)
-        self.assertTrue('id' in data)
-        self.assertTrue('expiry' in data)
-        self.assertTrue(data['session'])
-        user = request.cache.user
-        self.assertTrue(user.is_anonymous())
-        return data['id']
 
 
 class WebApiTestCase(AppTestCase):

@@ -1,7 +1,7 @@
 from pulsar import MethodNotAllowed, Http404
 from pulsar.apps.wsgi import route
 
-from lux.core import JsonRouter, GET_HEAD, POST_PUT, Resource
+from lux.core import JsonRouter, GET_HEAD, Resource
 from lux.forms import get_form_class
 
 from ..models import RestModel
@@ -9,6 +9,7 @@ from ..models import RestModel
 
 REST_CONTENT_TYPES = ['application/json']
 DIRECTIONS = ('asc', 'desc')
+POST_PUT_PATCH = frozenset(('POST', 'PUT', 'PATCH'))
 
 
 class RestRoot(JsonRouter):
@@ -194,13 +195,16 @@ class CRUD(MetadataMixin, RestRouter):
     # Additional Routes
     @route('<id>',
            position=100,
-           method=('get', 'post', 'put', 'delete', 'head', 'options'))
+           method=('get', 'patch', 'post', 'put', 'delete', 'head', 'options'))
     def read_update_delete(self, request):
+        model = self.get_model(request)
+
         if request.method == 'OPTIONS':
-            request.app.fire('on_preflight', request)
+            request.app.fire('on_preflight',
+                             request,
+                             methods=model.instance_verbs())
             return request.response
 
-        model = self.get_model(request)
         with model.session(request) as session:
             if request.method in GET_HEAD:
                 instance = self.get_instance(
@@ -211,8 +215,13 @@ class CRUD(MetadataMixin, RestRouter):
                 )
                 data = model.tojson(request, instance)
 
-            elif request.method in POST_PUT:
-                form_class = get_form_class(request, model.updateform)
+            elif request.method in POST_PUT_PATCH:
+                if request.method == 'PATCH':
+                    form_class = get_form_class(request, model.updateform)
+                elif request.method == 'POST':
+                    form_class = get_form_class(request, model.postform)
+                else:
+                    form_class = get_form_class(request, model.putform)
 
                 if not form_class:
                     raise MethodNotAllowed

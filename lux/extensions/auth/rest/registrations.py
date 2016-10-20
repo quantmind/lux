@@ -1,8 +1,10 @@
 from datetime import datetime, timedelta
 
-from pulsar import Http401, BadRequest
+from pulsar import Http401, BadRequest, PermissionDenied
 
-from lux.extensions.rest import CRUD
+from lux.core import route
+from lux.extensions.rest import CRUD, RestField
+from lux.utils.crypt import digest
 
 from . import RestModel
 
@@ -27,32 +29,74 @@ class RegistrationModel(RestModel):
             'registration',
             form=form,
             url=url,
-            exclude=('user_id', 'type', 'id'),
-            id_field='email',
-            repr_field='email',
+            fields=[RestField('user', model='users')]
         )
         model.type = type
         return model
 
     def create_model(self, request, instance=None, data=None, **kw):
-        days = request.config['ACCOUNT_ACTIVATION_DAYS']
-        data['expiry'] = datetime.now() + timedelta(days=days)
-        data['type'] = self.type
-        reg = super().create_model(request, instance, data, **kw)
         token = self.get_token(request)
+        auth_backend = request.cache.auth_backend
+        if self.type == 1:
+            # Create the user
+            data.pop('password_repeat', None)
+            user = auth_backend.create_user(request, **data)
+        else:
+            user = auth_backend.get_user(request, email=data['email'])
+
+        days = request.config['ACCOUNT_ACTIVATION_DAYS']
+        data = {
+            'id': digest(user.email),
+            'expiry': datetime.now() + timedelta(days=days),
+            'type': self.type,
+            'user_id': user.id
+        }
+        reg = super().create_model(request, instance, data, **kw)
         send_email_confirmation(request, token, reg)
         return reg
 
     def get_token(self, request):
-        if request.cache.user.is_authenticated():
+        if not request.cache.user.is_anonymous():
             raise BadRequest
-        if not request.cache.token:
-            raise Http401
+        if not request.cache.user.is_authenticated():
+            raise Http401('Token')
         return request.cache.token
 
 
 class RegistrationCRUD(CRUD):
     model = RegistrationModel.create(form='signup')
+
+    @route('<id>/activate', method=('post', 'options'),
+           docs={
+               "responses": (
+                   (204, "Activation was successful"),
+                   (401, "Token missing or expired"),
+                   (400, "Bad token")
+               )
+           })
+    def activate(self, request):
+        """Activate a user from a registration ID.
+
+        Clients should POST to this endpoint once they are happy the user
+        has confirm his/her identity. This is a one time only operation.
+        """
+        if request.method == 'OPTIONS':
+            request.app.fire('on_preflight', request, methods=('POST',))
+            return request.response
+
+        model = self.get_model(request)
+        model.get_token(request)
+
+        with model.session(request) as session:
+            reg = self.get_instance(request, session=session)
+            if reg.expiry < datetime.now():
+                raise PermissionDenied('registration token expired')
+                reg.user.active = True
+            session.add(reg.user)
+            model.delete_model(request, reg, session=session)
+
+        request.response.status_code = 204
+        return request.response
 
 
 def send_email_confirmation(request, token, reg,
@@ -63,13 +107,13 @@ def send_email_confirmation(request, token, reg,
     if not user.email:
         return
     app = request.app
-    site = token.url
-    reg_url = token.registration_url
-    psw_url = token.password_reset_url
+    site = token.get('url')
+    reg_url = token.get('registration_url')
+    psw_url = token.get('password_reset_url')
     ctx = {'auth_key': reg.id,
            'register_url': reg_url,
            'reset_password_url': psw_url,
-           'expiration': reg['expiry'],
+           'expiration': reg.expiry,
            'email': user.email,
            'site_uri': site}
 

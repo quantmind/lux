@@ -1,4 +1,5 @@
 from os import urandom
+import uuid
 import string
 import random
 from hashlib import sha1
@@ -19,3 +20,11 @@ def generate_secret_key(length=64, allowed_chars=None):
 def digest(value, salt_size=8):
     salt = urandom(salt_size)
     return sha1(salt+value.encode('utf-8')).hexdigest()
+
+
+def create_uuid():
+    return uuid.uuid4()
+
+
+def create_token():
+    return create_uuid().hex

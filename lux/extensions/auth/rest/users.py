@@ -6,4 +6,6 @@ from .user import UserModel
 class UserCRUD(CRUD):
     """CRUD views for users
     """
-    model = UserModel.create()
+    model = UserModel.create(
+        updateform='user'
+    )

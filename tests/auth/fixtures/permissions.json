@@ -87,14 +87,17 @@
     "api": [
         {
             "api_url": "/users/pippo",
+            "api_method": "patch",
             "groups": ["users"]
         },
         {
             "api_url": "/users/pluto",
+            "api_method": "patch",
             "groups": ["power-users"]
         },
         {
             "api_url": "/users/toni",
+            "api_method": "patch",
             "groups": ["policy-makers"]
         }
     ]

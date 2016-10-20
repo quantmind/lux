@@ -6,7 +6,7 @@ from urllib.parse import urljoin, urlparse, urlunparse
 from pulsar.utils.html import nicename
 from pulsar.utils.httpurl import is_absolute_uri
 
-from lux.core import LuxModel
+from lux.core import LuxModel, GET_HEAD
 
 from .query import Query, RestSession
 
@@ -111,6 +111,7 @@ class RestClient:
         return params
 
     def api_url(self, request, instance=None, **kwargs):
+        return
         if self.api_route:
             base = request.config.get('API_URL')
             if not is_absolute_uri(base):
@@ -233,7 +234,8 @@ class RestModel(LuxModel, RestClient):
     spec = None
     json_docs = None
 
-    def __init__(self, name, form=None, updateform=None, fields=None,
+    def __init__(self, name, form=None, updateform=None,
+                 putform=None, postform=None, fields=None,
                  url=None, exclude=None, html_url=None, id_field=None,
                  repr_field=None, hidden=None, list_exclude=None,
                  spec=None, json_docs=None):
@@ -241,6 +243,8 @@ class RestModel(LuxModel, RestClient):
         self.name = name
         self.form = form
         self.updateform = updateform
+        self.postform = postform
+        self.putform = putform
         self.spec = spec or self.spec
         self.json_docs = json_docs or self.json_docs or {}
         self._url = url if url is not None else '%ss' % name
@@ -277,6 +281,17 @@ class RestModel(LuxModel, RestClient):
 
     def fields(self):
         return self._fields.load(self).map
+
+    def instance_verbs(self):
+        methods = set(GET_HEAD)
+        methods.add('DELETE')
+        if self.updateform:
+            methods.add('PATCH')
+        if self.postform:
+            methods.add('POST')
+        if self.putform:
+            methods.add('PUT')
+        return methods
 
     def column_fields(self, fields):
         """Return a list column fields from the list of fields object

@@ -1,5 +1,7 @@
 from collections import OrderedDict
 
+from sqlalchemy.event import listens_for
+
 import odm
 
 from pulsar import ImproperlyConfigured
@@ -47,8 +49,29 @@ class LuxSession(odm.OdmSession):
     def app(self):
         return self.mapper.app
 
-    @classmethod
-    def signal(cls, session, changes, event):
-        '''Signal changes on session
-        '''
-        session.app.fire(event, session, changes, safe=True)
+    def changes(self):
+        for targets, operation in ((self.new, 'create'),
+                                   (self.dirty, 'update'),
+                                   (self.deleted, 'delete')):
+            for target in targets:
+                yield target, operation
+
+
+@listens_for(LuxSession, 'before_flush')
+def before_flush(session, flush_context=None, instances=None):
+    session.app.fire('on_before_flush', session, safe=True)
+
+
+@listens_for(LuxSession, 'before_commit')
+def before_commit(session, flush_context=None, instances=None):
+    session.app.fire('on_before_commit', session, safe=True)
+
+
+@listens_for(LuxSession, 'after_commit')
+def before_flush(session, flush_context=None, instances=None):
+    session.app.fire('on_after_commit', session, safe=True)
+
+
+@listens_for(LuxSession, 'after_rollback')
+def before_flush(session, flush_context=None, instances=None):
+    session.app.fire('on_after_rollback', session, safe=True)
