@@ -2,11 +2,14 @@
 
 These views are used by the browser authentication backends
 """
-from pulsar import Http404, HttpRedirect, UnprocessableEntity
+from pulsar import (
+    Http404, HttpRedirect, UnprocessableEntity,
+    PermissionDenied, MethodNotAllowed
+)
 from pulsar.apps.wsgi import route
 
-from lux.core import Router, AuthenticationError
-from lux.forms import WebFormRouter, get_form_layout, get_form_class
+from lux.core import JsonRouter, AuthenticationError
+from lux.forms import Form, WebFormRouter, get_form_layout, get_form_class
 
 from . import actions
 
@@ -27,11 +30,7 @@ class Login(WebFormRouter):
         if form.is_valid():
             auth_backend = request.cache.auth_backend
             try:
-                user = auth_backend.authenticate(request, **form.cleaned_data)
-                if not user.is_anonymous():
-                    result = auth_backend.login(request, user)
-                else:
-                    raise AuthenticationError('Cannot login')
+                result = auth_backend.login(request, **form.cleaned_data)
             except AuthenticationError as exc:
                 raise UnprocessableEntity(str(exc)) from None
         else:
@@ -40,16 +39,36 @@ class Login(WebFormRouter):
         return self.json_response(request, result)
 
 
-class Logout(Router):
-    form_enctype = 'application/json'
-    response_content_types = ['application/json']
+class Logout(JsonRouter):
 
     def post(self, request):
-        return actions.logout(request)
+        form = Form(request, data=request.body_data() or {})
+
+        if form.is_valid():
+            request.cache.auth_backend.logout(request)
+            result = {'success': True}
+        else:
+            result = form.tojson()
+        return self.json_response(request, result)
+
+
+class Token(JsonRouter):
+
+    def post(self, request):
+        user = request.cache.user
+        if not user.is_authenticated():
+            raise PermissionDenied
+        form = Form(request, data=request.body_data() or {})
+        if form.is_valid():
+            data = {'token': request.cache.session.token}
+        else:
+            data = form.tojson()
+
+        return self.json_response(request, data)
 
 
 class SignUp(WebFormRouter):
-    """Display a signup form anf handle signup
+    """Display a signup form and handle signup
     """
     form = 'signup'
 

@@ -411,6 +411,7 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
         doc.meta = HeadMeta(doc.head)
         doc.jscontext = dict(self._config_context())
         doc.jscontext['lux_version'] = __version__
+        doc.jscontext['debug'] = request.app.debug
         # Locale
         lang = cfg['LOCALE'][:2]
         doc.attr('lang', lang)

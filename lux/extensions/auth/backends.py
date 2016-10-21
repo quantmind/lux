@@ -9,7 +9,6 @@ from datetime import datetime
 
 from lux.core import (json_message, PasswordMixin, AuthenticationError,
                       backend_action)
-from lux.utils.crypt import digest
 from lux.utils.auth import normalise_email
 from lux.extensions import rest
 

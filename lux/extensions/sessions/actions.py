@@ -9,30 +9,10 @@ actions on a web site.
 * reset password
 """
 from pulsar.apps.wsgi import Json
-from pulsar import HttpException, Http404, MethodNotAllowed
+from pulsar import Http404, MethodNotAllowed
 
 from lux.core import json_message, AuthenticationError
 from lux.forms import Form, ValidationError, get_form_class
-
-
-def login(request):
-    """Login a user
-    """
-    form = _auth_form(request, 'login')
-
-    if form.is_valid():
-        auth_backend = request.cache.auth_backend
-        try:
-            user = auth_backend.authenticate(request, **form.cleaned_data)
-            if not user.is_anonymous():
-                result = auth_backend.login(request, user)
-                return Json(result).http_response(request)
-            else:
-                raise AuthenticationError('Cannot login')
-        except AuthenticationError as exc:
-            raise HttpException(str(exc), 422) from exc
-
-    return Json(form.tojson()).http_response(request)
 
 
 def signup(request):

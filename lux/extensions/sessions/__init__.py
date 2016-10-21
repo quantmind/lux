@@ -7,7 +7,7 @@ import jwt
 from lux.core import Parameter, LuxExtension
 
 from .browser import SessionBackend
-from .views import Login, Logout, SignUp, ForgotPassword
+from .views import Login, Logout, SignUp, ForgotPassword, Token
 
 
 __all__ = ['SessionBackend']
@@ -52,6 +52,8 @@ class Extension(LuxExtension):
                   'URL users are redirected to after logged out', True),
         Parameter('LOGIN_URL', '/login', 'Url to login page', True),
         Parameter('LOGOUT_URL', '/logout', 'Url to logout', True),
+        Parameter('HTML_AUTH_TOKEN_URL', '/token',
+                  'URL for retrieving the authorization token'),
         Parameter('REGISTER_URL', '/signup',
                   'Url to register with site', True),
         Parameter('TOS_URL', '/tos',
@@ -72,9 +74,10 @@ class Extension(LuxExtension):
 
         if cfg['LOGIN_URL']:
             yield Login(cfg['LOGIN_URL'])
-
-        if cfg['LOGOUT_URL']:
-            yield Logout(cfg['LOGOUT_URL'])
+            if cfg['LOGOUT_URL']:
+                yield Logout(cfg['LOGOUT_URL'])
+            if cfg['HTML_AUTH_TOKEN_URL']:
+                yield Token(cfg['HTML_AUTH_TOKEN_URL'])
 
         if cfg['REGISTER_URL']:
             yield SignUp(cfg['REGISTER_URL'])

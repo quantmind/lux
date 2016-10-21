@@ -83,17 +83,23 @@ class ApiClientRequest:
         return 'api(%s)' % self.url
     __str__ = __repr__
 
+    def delete(self, path=None, **kw):
+        return self.request('DELETE', path=path, **kw)
+
     def get(self, path=None, **kw):
         return self.request('GET', path=path, **kw)
+
+    def head(self, path=None, **kw):
+        return self.request('HEAD', path=path, **kw)
+
+    def patch(self, path=None, **kw):
+        return self.request('PATCH', path=path, **kw)
 
     def post(self, path=None, **kw):
         return self.request('POST', path=path, **kw)
 
     def put(self, path=None, **kw):
         return self.request('PUT', path=path, **kw)
-
-    def head(self, path=None, **kw):
-        return self.request('HEAD', path=path, **kw)
 
     def request(self, method, path=None, **kw):
         if path:

@@ -44,20 +44,22 @@ class SessionBackend:
     It maintain a session via a cookie key
     """
     @session_backend_action
-    def authenticate(self, request, **data):
+    def login(self, request, **data):
         api = request.api
         response = api.authorizations.post(json=data, jwt=True)
         token = response.json()
-        request.cache.session = self._create_session(request, token)
-        return User(response.json())
+        session = self._create_session(request, token)
+        request.cache.session = session
+        return token
 
     @session_backend_action
     def logout(self, request):
         """logout a user
         """
-        backend = request.cache.auth_backend
-        session_store(request).delete(request.cache.session.id)
-        request.cache.user = backend.anonymous(request)
+        session = request.cache.session
+        request.api.authorizations.delete(token=session.token)
+        session_store(request).delete(session.id)
+        request.cache.user = request.cache.auth_backend.anonymous(request)
         request.cache.session = self._create_session(request)
 
     @session_backend_action
@@ -83,23 +85,25 @@ class SessionBackend:
 
         key = request.config['SESSION_COOKIE_NAME']
         session_key = request.cookies.get(key)
+        store = session_store(request)
         session = None
         if session_key:
-            session = session_store(request).get(session_key.value)
+            session = store.get(session_key.value)
+        if (session and (
+                session.expiry is None or session.expiry < time.time())):
+            store.delete(session.id)
+            session = None
         if not session:
             session = self._create_session(request)
         request.cache.session = session
-        user = session.user
-        if user:
-            auth = self.authorization(request)
-            auth.head(token=user.token)
-            if user.token:
-                auth = self.authorization(request)
-                try:
-                    auth.head(token=user.token)
-                except NotAuthorised:
-                    handle_401(request, user)
-            request.cache.user = user
+        token = session.token
+        if token:
+            try:
+                user = request.api.user.get(token=session.token).json()
+            except NotAuthorised:
+                request.cache.auth_backend.logout(request)
+                raise HttpRedirect(request.config['LOGIN_URL'])
+            request.cache.user = User(user)
 
     @session_backend_action
     def response(self, response):

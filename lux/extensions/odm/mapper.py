@@ -68,10 +68,10 @@ def before_commit(session, flush_context=None, instances=None):
 
 
 @listens_for(LuxSession, 'after_commit')
-def before_flush(session, flush_context=None, instances=None):
+def after_commit(session, flush_context=None, instances=None):
     session.app.fire('on_after_commit', session, safe=True)
 
 
 @listens_for(LuxSession, 'after_rollback')
-def before_flush(session, flush_context=None, instances=None):
+def after_rollback(session, flush_context=None, instances=None):
     session.app.fire('on_after_rollback', session, safe=True)

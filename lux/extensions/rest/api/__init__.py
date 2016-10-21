@@ -41,6 +41,8 @@ class Apis:
         self._apis = list(reversed(sorted(apis, key=lambda api: api.path)))
 
     def get(self, path=None):
+        """Get the API spec object for a given path
+        """
         if path and path.startswith('/'):
             path = path[1:]
         path = path or ''

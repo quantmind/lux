@@ -1,8 +1,8 @@
-from uuid import uuid4
 from pulsar import ImproperlyConfigured
 from pulsar.utils.structures import AttributeDictionary
 
 from lux.core import create_cache, app_attribute
+from lux.utils.crypt import create_token
 
 
 class SessionMixin:
@@ -84,9 +84,7 @@ class SessionStore:
         return self.store.clear(key)
 
     def create(self, id=None, **kw):
-        id = id or uuid4().hex
-        if user and not isinstance(user, dict):
-            user = user.todict()
+        id = id or create_token()
         return Session(id=id, **kw)
 
     def save(self, session):

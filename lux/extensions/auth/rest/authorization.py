@@ -76,7 +76,7 @@ class Authorization(RestRouter):
             if not request.cache.token:
                 raise Http401
             raise BadRequest
-        model = request.app.models.token
+        model = request.app.models['tokens']
         model.delete_model(request, request.cache.token)
         request.response.status_code = 204
         return request.response

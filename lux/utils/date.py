@@ -20,5 +20,3 @@ def to_timestamp(dt):
         return dt
     elif dt is not None:
         raise ValueError(dt)
-
-

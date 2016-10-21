@@ -157,6 +157,7 @@ class LuxModel(ABC):
         """Update a model ``instance``"""
         if data is None:
             data = {}
+        instance = self.instance(instance)
         with self.session(request, session=session) as session:
             session.add(instance.obj)
             for name, value in data.items():
@@ -168,6 +169,7 @@ class LuxModel(ABC):
 
     def delete_model(self, request, instance, session=None):
         """Delete a model ``instance``"""
+        instance = self.instance(instance)
         with self.session(request, session=session) as session:
             session.delete(instance.obj)
 

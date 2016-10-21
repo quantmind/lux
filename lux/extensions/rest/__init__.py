@@ -15,7 +15,7 @@ just after the :mod:`lux.extensions.base`::
 from urllib.parse import urljoin, urlparse
 from collections import OrderedDict
 
-from pulsar import ImproperlyConfigured
+from pulsar import ImproperlyConfigured, Http404
 from pulsar.utils.importer import module_attribute
 from pulsar.utils.httpurl import remove_double_slash
 
@@ -72,22 +72,15 @@ __all__ = [
 ]
 
 
-def website_url(request, location=None):
-    """A website url
-    """
-    url = request.config.get('WEB_SITE_URL')
-    url = url or request.absolute_uri('/')
-    if location:
-        url = urljoin(url, location)
-    return url
-
-
 def api_url(request, location=None):
-    url = request.config.get('API_URL')
-    url = url or request.absolute_uri('/')
-    if location:
-        url = urljoin(url, location)
-    return url
+    try:
+        api = request.app.apis.get(location)
+        return api.url(location)
+    except Http404:
+        url = request.absolute_uri('/')
+        if location:
+            url = urljoin(url, location)
+        return url
 
 
 def api_path(request, model, *args, **params):
@@ -124,8 +117,6 @@ class Extension(LuxExtension):
                    'not authenticated')),
         Parameter('PAGINATION', 'lux.extensions.rest.Pagination',
                   'Pagination class'),
-        Parameter('WEB_SITE_URL', None,
-                  'Url of the website registering to'),
         Parameter('MAX_TOKEN_SESSION_EXPIRY', 7 * 24 * 60 * 60,
                   'Maximum expiry for a token used by a web site in seconds.'),
         #
