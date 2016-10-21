@@ -57,6 +57,7 @@ class TokenBackend(PemissionsMixin):
         if auth and user.is_anonymous():
             self.authorize(request, auth)
 
+    @backend_action
     def authorize(self, request, auth):
         """Authorize claim
 
