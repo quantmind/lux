@@ -160,21 +160,6 @@ class TokenBackend(PasswordMixin, rest.TokenBackend):
                                                   expiry=token.expiry)
         return token
 
-    def create_auth_key(self, request, user, expiry=None, **kw):
-        """Create a registration entry and return the registration id
-        """
-        if not expiry:
-            expiry = request.cache.auth_backend.auth_key_expiry(request)
-        odm = request.app.odm()
-        with odm.begin() as session:
-            reg = odm.registration(id=digest(user.username),
-                                   user_id=user.id,
-                                   expiry=expiry,
-                                   confirmed=False)
-            session.add(reg)
-
-        return reg.id
-
     def set_password(self, request, password, user=None, auth_key=None):
         """Set a new password for user
         """

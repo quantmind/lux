@@ -24,12 +24,11 @@ def login(request):
         auth_backend = request.cache.auth_backend
         try:
             user = auth_backend.authenticate(request, **form.cleaned_data)
-            if user.is_active():
+            if not user.is_anonymous():
                 result = auth_backend.login(request, user)
                 return Json(result).http_response(request)
             else:
-                return auth_backend.inactive_user_login_response(request,
-                                                                 user)
+                raise AuthenticationError('Cannot login')
         except AuthenticationError as exc:
             raise HttpException(str(exc), 422) from exc
 

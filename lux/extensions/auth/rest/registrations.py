@@ -47,7 +47,7 @@ class RegistrationModel(RestModel):
         days = request.config['ACCOUNT_ACTIVATION_DAYS']
         data = {
             'id': digest(user.email),
-            'expiry': datetime.now() + timedelta(days=days),
+            'expiry': datetime.utcnow() + timedelta(days=days),
             'type': self.type,
             'user_id': user.id
         }
@@ -89,7 +89,7 @@ class RegistrationCRUD(CRUD):
 
         with model.session(request) as session:
             reg = self.get_instance(request, session=session)
-            if reg.expiry < datetime.now():
+            if reg.expiry < datetime.utcnow():
                 raise PermissionDenied('registration token expired')
                 reg.user.active = True
             session.add(reg.user)

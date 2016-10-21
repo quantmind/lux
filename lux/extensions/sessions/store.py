@@ -83,11 +83,11 @@ class SessionStore:
         key = self.session_key(app_name=app_name)
         return self.store.clear(key)
 
-    def create(self, id=None, user=None, **kw):
+    def create(self, id=None, **kw):
         id = id or uuid4().hex
         if user and not isinstance(user, dict):
             user = user.todict()
-        return Session(id=id, user=user, **kw)
+        return Session(id=id, **kw)
 
     def save(self, session):
         self.set(session.id, session.todict())

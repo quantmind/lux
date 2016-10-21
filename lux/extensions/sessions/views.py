@@ -2,11 +2,11 @@
 
 These views are used by the browser authentication backends
 """
-from pulsar import Http404, HttpRedirect
+from pulsar import Http404, HttpRedirect, UnprocessableEntity
 from pulsar.apps.wsgi import route
 
-from lux.core import Router
-from lux.forms import WebFormRouter, get_form_layout
+from lux.core import Router, AuthenticationError
+from lux.forms import WebFormRouter, get_form_layout, get_form_class
 
 from . import actions
 
@@ -22,7 +22,22 @@ class Login(WebFormRouter):
         return super().get(request)
 
     def post(self, request):
-        return actions.login(request)
+        form = _auth_form(request, 'login')
+
+        if form.is_valid():
+            auth_backend = request.cache.auth_backend
+            try:
+                user = auth_backend.authenticate(request, **form.cleaned_data)
+                if not user.is_anonymous():
+                    result = auth_backend.login(request, user)
+                else:
+                    raise AuthenticationError('Cannot login')
+            except AuthenticationError as exc:
+                raise UnprocessableEntity(str(exc)) from None
+        else:
+            result = form.tojson()
+
+        return self.json_response(request, result)
 
 
 class Logout(Router):
@@ -88,3 +103,16 @@ class ForgotPassword(WebFormRouter):
 
         else:
             return actions.reset_password(request, key)
+
+
+def _auth_form(request, form):
+    form = get_form_class(request, form)
+    if not form:
+        raise Http404
+
+    request.set_response_content_type(['application/json'])
+    user = request.cache.user
+    if user.is_authenticated():
+        raise MethodNotAllowed
+
+    return form(request, data=request.body_data())

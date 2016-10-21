@@ -33,18 +33,22 @@ class ApiClient:
         return ApiClientRequest(request, self)
 
     def request(self, request, method, api, path,
-                token=None, headers=None, auth_error=None, **kw):
+                token=None, jwt=False, headers=None, auth_error=None, **kw):
         http = self.http(request, api.netloc)
         url = api.url(path)
         req_headers = []
         req_headers.extend(headers or ())
         agent = request.get('HTTP_USER_AGENT', request.config['APP_NAME'])
-        if not token and request.cache.session:
-            token = request.cache.session.encoded
-
         req_headers.append(('user-agent', agent))
-        if token:
-            req_headers.append(('Authorization', 'Bearer %s' % token))
+
+        if jwt:
+            if api.jwt:
+                req_headers.append(('Authorization', 'JWT %s' % api.jwt))
+        else:
+            if not token and request.cache.session:
+                token = request.cache.session.token
+            if token:
+                req_headers.append(('Authorization', 'Bearer %s' % token))
 
         response = http.request(method, url, headers=req_headers, **kw)
         try:

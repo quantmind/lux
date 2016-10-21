@@ -6,7 +6,7 @@ from functools import wraps
 from pulsar import Http401, PermissionDenied, Http404, HttpRedirect
 from pulsar.apps.wsgi import Route, wsgi_request
 
-from lux.utils.token import decode
+from lux.utils.date import to_timestamp
 from lux.core import app_attribute, backend_action, User
 
 from .store import session_store
@@ -45,15 +45,11 @@ class SessionBackend:
     """
     @session_backend_action
     def authenticate(self, request, **data):
-        response = request.api.authorizations.post(json=data)
-        token = response.json().get('token')
-        payload = decode(token, verify=False)
-        return User(payload, token=token)
-
-    @session_backend_action
-    def login(self, request, user):
-        backend = request.cache.auth_backend
-        request.cache.session = backend.create_session(request, user=user)
+        api = request.api
+        response = api.authorizations.post(json=data, jwt=True)
+        token = response.json()
+        request.cache.session = self._create_session(request, token)
+        return User(response.json())
 
     @session_backend_action
     def logout(self, request):
@@ -62,17 +58,7 @@ class SessionBackend:
         backend = request.cache.auth_backend
         session_store(request).delete(request.cache.session.id)
         request.cache.user = backend.anonymous(request)
-        request.cache.session = backend.create_session(request)
-
-    @session_backend_action
-    def create_session(self, request, user=None):
-        """Create a new Session object"""
-        user = user or request.cache.user
-        if user.is_anonymous():
-            user = None
-        seconds = request.config['SESSION_EXPIRY']
-        expiry = time.time() + seconds
-        return session_store(request).create(user=user, expiry=expiry)
+        request.cache.session = self._create_session(request)
 
     @session_backend_action
     def get_permissions(self, request, resources, actions=None):
@@ -101,9 +87,7 @@ class SessionBackend:
         if session_key:
             session = session_store(request).get(session_key.value)
         if not session:
-            # Create a session
-            backend = request.cache.auth_backend
-            session = backend.create_session(request)
+            session = self._create_session(request)
         request.cache.session = session
         user = session.user
         if user:
@@ -133,6 +117,18 @@ class SessionBackend:
         return response
 
     # INTERNALS
+    def _create_session(self, request, token=None):
+        """Create a new Session object"""
+        expiry = None
+        if token:
+            expiry = to_timestamp(token.get('expiry'))
+            token = token['id']
+        if not expiry:
+            seconds = request.config['SESSION_EXPIRY']
+            expiry = time.time() + seconds
+        return session_store(request).create(expiry=expiry,
+                                             token=token)
+
     def _get_permissions(self, request, resources, actions=None):
         if not isinstance(resources, (list, tuple)):
             resources = (resources,)

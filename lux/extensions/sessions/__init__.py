@@ -32,6 +32,8 @@ class Extension(LuxExtension):
                   'Expiry for a session/token in seconds.'),
         Parameter('SESSION_STORE', None,
                   'Cache backend for session objects.'),
+        Parameter('APP_JWT', None,
+                  'Application JWT'),
         #
         # CSRF
         Parameter('CSRF_EXPIRY', 60 * 60,

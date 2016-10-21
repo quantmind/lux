@@ -49,7 +49,7 @@ class Authorization(RestRouter):
             max_expiry = request.config['MAX_TOKEN_SESSION_EXPIRY']
             expiry = max(data.pop('expiry', None) or 0, 0)
             expiry = min(expiry, max_expiry) or max_expiry
-            expiry = datetime.now() + timedelta(seconds=expiry)
+            expiry = datetime.utcnow() + timedelta(seconds=expiry)
             user = auth_backend.authenticate(request, **data)
             token = auth_backend.create_token(request, user, expiry=expiry,
                                               session=True)

@@ -34,8 +34,10 @@ class Apis:
 
     def update(self, iterable):
         apis = self._apis
-        for name, url in mapping_iterator(iterable):
-            apis.append(ApiSpec(name, url))
+        for name, cfg in mapping_iterator(iterable):
+            if isinstance(cfg, str):
+                cfg = {'url': cfg}
+            apis.append(ApiSpec(name, **cfg))
         self._apis = list(reversed(sorted(apis, key=lambda api: api.path)))
 
     def get(self, path=None):
@@ -57,11 +59,12 @@ class Apis:
 class ApiSpec:
     """Information about an API
     """
-    def __init__(self, name, url, spec=None):
+    def __init__(self, name, url=None, jwt=None, spec=None):
         if name == '*':
             name = ''
         self.route = Route('%s/<path:path>' % name)
         self.urlp = urlparse(url)
+        self.jwt = jwt
         self.spec = spec
         self.router = RestRoot(self.urlp.path)
         if spec:
