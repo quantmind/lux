@@ -1,0 +1,30 @@
+<div lux-fullpage>
+    <div class="header-padding"></div>
+    <div id="page-main mw700">
+        <div class="header-padding"></div>
+        <div class="container">
+            <div class="row">
+                <div class="col-sm-4">
+                    <div class="user-info">
+                        <img src="/" alt="{{ user_page.full_name }}" class="img-rounded">
+                        <h1>{{ user_page.full_name }}</h1>
+                        <h1>{{ user_page.full_name }}</h1>
+                        <h3>{{ user_page.username }}</h3>
+                        <ul class="fa-ul">
+                        {% if user_page.link %}
+                        <li><i class="fa-li fa fa-link"></i><a href="{{ user_page.link }}">{{ user_page.link }}</a>
+                        </li>
+                        {% endif %}
+                        <li><i class="fa-li fa fa-calendar"></i>
+                            Joined {{ user_page.joined.strftime('%B %Y') }}
+                        </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-sm-8">
+                    <fluid-organisation name="{{ user_page.username }}"></fluid-organisation>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -18,6 +18,7 @@ Python Requirements
 
 **Soft requirements**
 
+* inflect_ correctly generate plurals, ordinals, indefinite articles; convert numbers to words
 * markdown_
 * oauthlib_ for ``lux.extensions.oauth``
 * premailer_ for rendering email HTML
@@ -68,3 +69,4 @@ Debugging javascript on Chrome::
 .. _flake8: https://pypi.python.org/pypi/flake8
 .. _jinja2: http://jinja.pocoo.org/docs/dev/
 .. _premailer: https://github.com/peterbe/premailer
+.. _inflect: https://github.com/pwdyson/inflect.py
