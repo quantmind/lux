@@ -24,7 +24,8 @@ class ApplicationModel(RestModel):
 
 class ApplicationCRUD(CRUD):
     model = ApplicationModel(
-        'application',
+        'appdomain',
+        url='applications',
         form=ApplicationForm,
         updateform=ApplicationForm
     )

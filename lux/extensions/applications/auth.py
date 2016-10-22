@@ -25,7 +25,7 @@ class ServiceUser(rest.ServiceUser):
         return self.application.id.hex
 
 
-class Backend(auth.TokenBackend):
+class AuthBackend(auth.TokenBackend):
     """Handle multiple applications
     """
     service_user = ServiceUser

@@ -104,9 +104,8 @@ class MultiAuthBackend:
         for backend in reversed(self.backends):
             backend_method = getattr(backend, 'response', None)
             if backend_method:
-                result = backend_method(response)
-                if result is not None:
-                    return result
+                response = backend_method(response) or response
+        return response
 
     def has_permission(self, request, resource, action):
         has = self._execute_backend_method('has_permission',

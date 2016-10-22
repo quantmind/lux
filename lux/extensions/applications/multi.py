@@ -17,7 +17,9 @@ xchars = string.digits + string.ascii_lowercase
 multi_apps = namedtuple('multi_apps', 'ids names domains')
 
 
-class Multi:
+class MultiBackend:
+    """If used, this should be the first backend
+    """
 
     def request(self, request):
         #
@@ -64,7 +66,7 @@ class Multi:
 
     def response(self, response):
         request = wsgi_request(response.environ)
-        if not request.cache.x_count > 0:
+        if request.cache.x_count > 0:
             request.cache.x_count -= 1
         else:
             loop = get_event_loop()
@@ -116,12 +118,12 @@ def reload_app(channel, event, data):
     if data:
         app = channel.app
         name = data.get('name')
-        apps = multi_applications(app)
-        if apps.names.pop(name, None):
+        app_domains = multi_applications(app)
+        app_domain = app_domains.names.pop(name, None)
+        if app_domain:
+            app_domains.domains.pop(app_domain.domain, None)
+            app_domains.ids.pop(app_domain.id.hex, None)
             app.logger.warning('reload application %s', name)
-        domain = data.get('domain')
-        if apps.domains.pop(domain, None):
-            app.logger.warning('reload application domain %s', domain)
         # if domain:
         #     check_certificate(app, domain)
 
@@ -140,11 +142,12 @@ def _get_app_domain(app, **filters):
         except NoResultFound:
             raise Http404 from None
 
+    # add app_domain object to the cache
     app_domains = multi_applications(app)
     app_domains.names[app_domain.name] = app_domain
-    app_domains.ids[app_domain.id] = app_domain.name
-    if app.domain:
-        app_domains.fomains[app_domain.domain] = app_domain.name
+    app_domains.ids[app_domain.id.hex] = app_domain.name
+    if app_domain.domain:
+        app_domains.domains[app_domain.domain] = app_domain.name
     return app_domain
 
 

@@ -3,13 +3,14 @@ from collections import Mapping
 from inspect import isclass
 
 import json
-import pytz
 
 from dateutil.parser import parse as dateparser
 
 from pulsar.utils.html import NOTHING, escape, nicename
 from pulsar.utils.pep import to_string
 from pulsar.utils.slugify import slugify
+
+from lux.utils.date import tzinfo
 
 from .options import Options
 from .errors import ValidationError
@@ -282,11 +283,10 @@ class DateTimeField(DateField):
     attrs = {'type': 'datetime'}
 
     def todate(self, value):
+
         if not hasattr(value, 'date'):
             value = datetime(value.year, value.month, value.day)
-        if isinstance(value, datetime) and not value.tzinfo:
-            value = pytz.utc.localize(value)
-        return value
+        return tzinfo(value)
 
 
 class BooleanField(Field):

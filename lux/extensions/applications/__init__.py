@@ -4,12 +4,13 @@ from lux.core import LuxExtension, Parameter
 from lux.utils.countries import common_timezones, country_names
 
 from .rest import ApplicationCRUD
-from .auth import Backend
+from .auth import AuthBackend
+from .multi import MultiBackend
 from .plugins import has_plugin, is_html
 from .info import Info, api_info_routes
 
 
-__all__ = ['Backend', 'has_plugin', 'is_html']
+__all__ = ['AuthBackend', 'MultiBackend', 'has_plugin', 'is_html']
 
 
 class Extension(LuxExtension):

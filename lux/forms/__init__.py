@@ -48,7 +48,7 @@ from .fields import (Field, CharField, TextField, BooleanField, JsonField,
                      DateField, DateTimeField, ChoiceField, IntegerField,
                      FloatField, EmailField, FileField, HiddenField,
                      PasswordField, UrlField, SlugField)
-from .errors import FormError, FieldError, ValidationError
+from .errors import FormError, FieldError, ValidationError, form_http_exception
 from .formsets import FormSet
 from .form import FormType, Form, BoundField, create_form
 from .serialise import (Fieldset, Submit, Layout, Row, Col, Inline,
@@ -102,5 +102,6 @@ __all__ = [
     # Errors
     'FormError',
     'FieldError',
-    'ValidationError'
+    'ValidationError',
+    'form_http_exception'
 ]

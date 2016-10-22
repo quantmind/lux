@@ -118,13 +118,13 @@ class OrganisationApp(Model):
 
     @odm.declared_attr
     def application_id(cls):
-        return Column(ForeignKey('lightapp.id', ondelete='CASCADE'),
+        return Column(ForeignKey('appdomain.id', ondelete='CASCADE'),
                       nullable=False, primary_key=True)
 
     @odm.declared_attr
     def application(cls):
         return relationship(
-            "LightApp",
+            "AppDomain",
             backref=backref("organisation", uselist=False)
         )
 

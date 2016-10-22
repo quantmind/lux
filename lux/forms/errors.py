@@ -1,3 +1,6 @@
+from pulsar import UnprocessableEntity
+import json
+
 
 class FormError(RuntimeError):
     pass
@@ -19,3 +22,18 @@ class ValidationError(ValueError):
     def __init__(self, msg=None, field_name=None):
         super().__init__(msg or self.msg)
         self.field_name = field_name
+
+
+def form_http_exception(form, error):
+    if isinstance(error, UnprocessableEntity):
+        try:
+            data = json.loads(error.args[0])
+        except json.JSONDecodeError:
+            form.add_error_message(str(error))
+        else:
+            form.request.response.status_code = 422
+            return data
+    else:
+        form.add_error_message(str(error))
+
+    return form.tojson()

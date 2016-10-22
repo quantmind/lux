@@ -20,7 +20,7 @@ class Command(LuxCommand):
         if not form_class:
             raise CommandError('Cannot create application')
 
-        model = self.app.models['lightapps']
+        model = self.app.models['applications']
         app_name = request.config['APP_NAME']
         ID = request.config['ADMIN_APPLICATION_ID']
         if not ID:
@@ -36,7 +36,7 @@ class Command(LuxCommand):
                 app = model.create_model(request, data=form.cleaned_data)
             else:
                 raise CommandError(form.message())
-            self.write('Successfully created application')
+            self.write('Successfully created admin application')
         data = model.tojson(request, app)
         data['jwt'] = model.jwt(request, app)
         self.write(json.dumps(data, indent=4))

@@ -9,7 +9,10 @@ from pulsar import (
 from pulsar.apps.wsgi import route
 
 from lux.core import JsonRouter, AuthenticationError
-from lux.forms import Form, WebFormRouter, get_form_layout, get_form_class
+from lux.forms import (
+    Form, WebFormRouter, get_form_layout, get_form_class,
+    form_http_exception
+)
 
 from . import actions
 
@@ -31,8 +34,8 @@ class Login(WebFormRouter):
             auth_backend = request.cache.auth_backend
             try:
                 result = auth_backend.login(request, **form.cleaned_data)
-            except AuthenticationError as exc:
-                raise UnprocessableEntity(str(exc)) from None
+            except (UnprocessableEntity, AuthenticationError) as exc:
+                result = form_http_exception(form, exc)
         else:
             result = form.tojson()
 

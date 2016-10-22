@@ -6,7 +6,7 @@ from functools import wraps
 from pulsar import Http401, PermissionDenied, Http404, HttpRedirect
 from pulsar.apps.wsgi import Route, wsgi_request
 
-from lux.utils.date import to_timestamp
+from lux.utils.date import to_timestamp, date_from_now, iso8601
 from lux.core import app_attribute, backend_action, User
 
 from .store import session_store
@@ -46,6 +46,10 @@ class SessionBackend:
     @session_backend_action
     def login(self, request, **data):
         api = request.api
+        seconds = request.config['SESSION_EXPIRY']
+        data['user_agent'] = self._user_agent(request)
+        data['ip_address'] = request.get_client_address()
+        data['expiry'] = iso8601(date_from_now(seconds))
         response = api.authorizations.post(json=data, jwt=True)
         token = response.json()
         session = self._create_session(request, token)
@@ -57,7 +61,10 @@ class SessionBackend:
         """logout a user
         """
         session = request.cache.session
-        request.api.authorizations.delete(token=session.token)
+        try:
+            request.api.authorizations.delete(token=session.token)
+        except Http401:
+            pass
         session_store(request).delete(session.id)
         request.cache.user = request.cache.auth_backend.anonymous(request)
         request.cache.session = self._create_session(request)
@@ -147,6 +154,10 @@ class SessionBackend:
             handle_401(request)
 
         return response.json()
+
+    def _user_agent(self, request, max_len=256):
+        agent = request.get('HTTP_USER_AGENT')
+        return agent[:max_len] if agent else ''
 
 
 def handle_401(request, user=None):
