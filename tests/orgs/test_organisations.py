@@ -1,10 +1,11 @@
 """Organisation and user permissions"""
-import tests
+from lux.utils import test
 
 
-class OrganisationTest(tests.AppTestCase):
+class OrganisationTest(test.AppTestCase):
+    config = 'tests.orgs.config'
 
-    @tests.green
+    @test.green
     def _test_entity(self, username, type):
         odm = self.app.odm()
         with odm.begin() as session:

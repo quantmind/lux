@@ -35,7 +35,7 @@ from .cms import CMS
 from .models import ModelContainer
 from .cache import create_cache
 from .exceptions import ShellError
-from .channels import Channels
+from .channels import LuxChannels
 from .auth import BackendMixin
 
 
@@ -788,7 +788,7 @@ def _build_handler(self):
     parameters = self.config.pop('_parameters')
     self.config = render_data(self, self.config, engine, self.config)
     self.config['_parameters'] = parameters
-    self.channels = Channels(self)
+    self.channels = LuxChannels.create(self)
 
     if not self.cms:
         self.cms = CMS(self)
@@ -809,7 +809,8 @@ def _build_handler(self):
     #
     # Use a green pool
     if self.green_pool:
-        middleware.insert(0, self.channels.green_middleware)
+        if self.channels:
+            middleware.insert(0, self.channels.middleware)
         handler = GreenWSGI(middleware, self.green_pool, rmiddleware)
     #
     # Use thread pool
