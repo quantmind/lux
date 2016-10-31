@@ -6,10 +6,9 @@ import json
 import hashlib
 import logging
 
-from lux.core.channels import Channel
-
 from pulsar import ProtocolError
 from pulsar.apps import ws
+from pulsar.apps.data.channels import Channel
 
 from .rpc import WsRpc
 

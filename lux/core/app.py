@@ -434,7 +434,10 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
         links = head.links
         for link in cfg['HTML_LINKS']:
             if isinstance(link, dict):
-                links.append(**link)
+                link = link.copy()
+                href = link.pop('href', None)
+                if href:
+                    links.append(href, **link)
             else:
                 links.append(link)
         return doc
