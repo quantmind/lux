@@ -12,3 +12,4 @@ flake8
 lxml
 recommonmark
 premailer
+-e git+http://github.com/quantmind/pulsar.git@master#egg=pulsar

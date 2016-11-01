@@ -30,6 +30,21 @@ class LuxChannels(AppComponent):
         super().__init__(app)
         self.channels = channels
 
+    def __repr__(self):
+        return repr(self.channels)
+
+    def __str__(self):
+        return self.__repr__()
+
+    def __len__(self):
+        return len(self.channels)
+
+    def __contains__(self, regex):
+        return regex in self.channels
+
+    def __iter__(self):
+        return iter(self.channels)
+
     @property
     def protocol(self):
         return self.channels.pubsub.protocol
