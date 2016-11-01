@@ -31,7 +31,7 @@ class LuxChannels(AppComponent):
     @property
     def protocol(self):
         return self.channels.pubsub.protocol
-    
+
     def register(self, channel_name, event, callback):
         return self.app.green_pool.wait(
             self.channels.register(channel_name, event, callback)

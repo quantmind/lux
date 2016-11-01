@@ -31,12 +31,30 @@ class WsChannelsRpc:
         event = wsrequest.required_param('event')
         return self.channel_subscribe(wsrequest, channel, event)
 
+    def ws_unsubscribe(self, wsrequest):
+        """Un-subscribe from an event on a channel
+
+        From the client::
+
+            client.rpc('unsubscribe', {'channel': 'mychannel',
+                                       'event': 'myevent'})
+        """
+        channel = wsrequest.required_param('channel')
+        wsrequest.check_permission(channel, 'read')
+        event = wsrequest.required_param('event')
+        return self.channel_unsubscribe(wsrequest, channel, event)
+
     def channel_subscribe(self, wsrequest, channel, event):
         ws = wsrequest.ws
         channels = ws.channels
-        return channels.register(channel, event, ws.write_message)
+        channels.register(channel, event, ws.write_message)
+
+    def channel_unsubscribe(self, wsrequest, channel, event):
+        ws = wsrequest.ws
+        channels = ws.channels
+        channels.unregister(channel, event, ws.write_message)
 
     def channel_publish(self, wsrequest, channel, event, data):
         channels = wsrequest.ws.channels
         user = wsrequest.cache.user_info
-        return channels.publish(channel, event, data, user=user)
+        channels.publish(channel, event, data, user=user)

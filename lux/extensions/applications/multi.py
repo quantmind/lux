@@ -39,6 +39,7 @@ class MultiBackend:
         channels = app.channels
         channels.register('applications', '*', reload_app)
 
+        # Get the root application
         root = get_application(app, id=app.config['ADMIN_APPLICATION_ID'])
         # The root domain is not specified - cannot use multiapp
         if not root.domain:

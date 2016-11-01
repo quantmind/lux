@@ -7,7 +7,6 @@ from pulsar.apps.wsgi import wsgi_request
 
 from lux.utils.data import as_tuple
 
-from .cache import cached
 from .extension import Parameter
 from .user import Anonymous
 
@@ -16,6 +15,8 @@ ACTIONS = {'read': 1,
            'create': 2,
            'update': 3,
            'delete': 4}
+
+EMPTY_DICT = {}
 
 ACTION_IDS = dict(inverse_mapping(ACTIONS))
 
@@ -129,7 +130,8 @@ class MultiAuthBackend:
         for backend in self:
             backend_method = getattr(backend, method, None)
             if backend_method:
-                result = backend_method(request, *args, **kwargs)
+                wait = request.app.green_pool.wait
+                result = wait(backend_method(request, *args, **kwargs))
                 if result is not None:
                     return result
         default = getattr(self, 'default_%s' % method, None)
@@ -144,7 +146,6 @@ class Resource:
         self.resource = resource
         self.action = action
         self.fields = fields
-        self.permissions = cached(key=str(self), user=True)(self._permissions)
 
     @classmethod
     def rest(cls, request, action, fields=None, pop=0, list=False):
@@ -182,18 +183,21 @@ class Resource:
         else:
             return perms
 
-    def _permissions(self, request):
-        """Permissions for this :class:`.Resource`"""
-        has = request.cache.auth_backend.has_permission
-        root_perm = has(request, self.resource, self.action)
-        if not root_perm:
-            return False
+    def permissions(self, request):
+        """Permissions for this :class:`.Resource`
 
-        if self.fields:
-            return tuple((name for name in self.fields if
-                          has(request, '%s:%s' % (self.resource, name),
-                              self.action)
-                          )
-                         )
-        else:
-            return ()
+        Return a tuple of fields names or False
+        """
+        get = request.cache.auth_backend.get_permissions
+        resources = [self.resource]
+        for name in self.fields or ():
+            resources.append('%s:%s' % (self.resource, name))
+        perms = get(request, resources, self.action)
+        if perms.get(self.resource, EMPTY_DICT).get(self.action):
+            return tuple(
+                (
+                    name for name in self.fields or () if
+                    perms.get('%s:%s' % (self.resource, name)).get(self.action)
+                )
+            )
+        return False

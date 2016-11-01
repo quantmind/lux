@@ -47,6 +47,9 @@ class UserModel(RestModel):
         return request.cache.auth_backend.create_user(request, **data)
 
     def get_instance(self, request, *args, **kwargs):
+        """When authenticated is True return the current user or
+        raise Http401
+        """
         if self.authenticated:
             user = request.cache.user
             if not user.is_authenticated():

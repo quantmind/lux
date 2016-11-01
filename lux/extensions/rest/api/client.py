@@ -114,6 +114,8 @@ class ApiClientRequest:
 
 class HttpLocalClient:
     """An internal Http client
+
+    This client create a dummy HTTP request to the REST API application
     """
     def __init__(self, request, app=None):
         self.wsgi_request = request
@@ -146,7 +148,6 @@ class HttpLocalClient:
         if parsed.netloc:
             environ['HTTP_HOST'] = parsed.netloc
         environ['RAW_URI'] = url
-        environ['HTTP_USER_AGENT'] = self.wsgi_request.config['APP_NAME']
         response = self.app(environ, self.start_response)
         return HttpResponse(response)
 

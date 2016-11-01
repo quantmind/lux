@@ -33,6 +33,9 @@ class WsgiRequest(wsgi.WsgiRequest):
     """Extend pulsar :class:`~pulsar.apps.wsgi.wrappers.WsgiRequest` with
     additional methods and attributes.
     """
+    def __repr__(self):
+        return self.first_line
+
     @property
     def app(self):
         """The :class:`.Application` running the website.
