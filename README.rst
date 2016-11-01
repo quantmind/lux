@@ -39,6 +39,7 @@ Lux is a library for developing asynchronous web applications with python 3.5 or
 
 * `Getting Started </docs/getting-started.rst>`_
 * `Extensions </docs/extensions.rst>`_
+* `Providers </docs/providers.md>`_
 * `Migrations </docs/migrations.rst>`_
 * `Changelog </docs/changelog.md>`_
 

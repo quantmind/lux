@@ -8,7 +8,6 @@ import logging
 
 from pulsar import ProtocolError
 from pulsar.apps import ws
-from pulsar.apps.data.channels import Channel
 
 from .rpc import WsRpc
 
@@ -83,12 +82,7 @@ class WsClient:
 
     def write(self, msg):
         array = [self.protocol.encode(msg)]
-        try:
-            self.transport.write('a%s' % json.dumps(array))
-        except RuntimeError:
-            # TODO: is this the best way to avoid spamming exception
-            #       when the websocket is closed by the client?
-            pass
+        self.transport.write('a%s' % json.dumps(array))
 
     def on_open(self):
         self.transport.on_open(self)
@@ -124,8 +118,6 @@ class WsClient:
         self.logger.info('closing socket %s', self)
 
     def write_message(self, channel, event, data):
-        if isinstance(channel, Channel):
-            channel = channel.name
         msg = {'event': event, 'channel': channel}
         if data:
             msg['data'] = data

@@ -18,6 +18,7 @@ from .auth import (
     backend_action, auth_backend_actions, Resource,
     SimpleBackend, AuthenticationError
 )
+from .channels import LuxChannels
 from .user import UserMixin, PasswordMixin, User
 
 
@@ -79,5 +80,7 @@ __all__ = [
     #
     'UserMixin',
     'PasswordMixin',
-    'User'
+    'User',
+    #
+    'LuxChannels'
 ]

@@ -300,7 +300,10 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
         self.meta.argv = callable._argv
         self.meta.script = callable._script
         self.threads = threading.local()
-        self.providers = {'Http': Http}
+        self.providers = {
+            'Http': Http,
+            'Channels': LuxChannels.create
+        }
         self.models = ModelContainer(self)
         self.extensions = OrderedDict()
         self.config = _build_config(self)
@@ -791,7 +794,7 @@ def _build_handler(self):
     parameters = self.config.pop('_parameters')
     self.config = render_data(self, self.config, engine, self.config)
     self.config['_parameters'] = parameters
-    self.channels = LuxChannels.create(self)
+    self.channels = self.providers['Channels'](self)
 
     if not self.cms:
         self.cms = CMS(self)

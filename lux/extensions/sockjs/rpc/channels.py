@@ -1,8 +1,14 @@
+from pulsar.apps.data.channels import Channel, CallbackError
 
 
 class WsChannelsRpc:
     """Mixin for publish/subscribe websocket RPC calls
     """
+    def channel_writer(self, ws):
+        if not hasattr(ws, 'channel_writer'):
+            ws.channel_writer = Writer(ws)
+        return ws.channel_writer
+
     def ws_publish(self, wsrequest):
         """Publish an event on a channel
 
@@ -47,14 +53,28 @@ class WsChannelsRpc:
     def channel_subscribe(self, wsrequest, channel, event):
         ws = wsrequest.ws
         channels = ws.channels
-        channels.register(channel, event, ws.write_message)
+        channels.register(channel, event, self.channel_writer(ws))
 
     def channel_unsubscribe(self, wsrequest, channel, event):
         ws = wsrequest.ws
         channels = ws.channels
-        channels.unregister(channel, event, ws.write_message)
+        channels.unregister(channel, event, self.channel_writer(ws))
 
     def channel_publish(self, wsrequest, channel, event, data):
         channels = wsrequest.ws.channels
         user = wsrequest.cache.user_info
         channels.publish(channel, event, data, user=user)
+
+
+class Writer:
+
+    def __init__(self, ws):
+        self.ws = ws
+
+    def __call__(self, channel, event, data):
+        if isinstance(channel, Channel):
+            channel = channel.name
+        try:
+            self.ws.write_message(channel, event, data)
+        except RuntimeError:
+            raise CallbackError from None
