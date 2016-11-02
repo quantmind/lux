@@ -5,4 +5,5 @@
 * [Extensions](./extensions.md)
 * [Providers](./providers.md)
 * [Migrations](./migrations.rst)
+* [Testing](./testing.md)
 * [Changelog](./changelog.md)

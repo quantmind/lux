@@ -5,8 +5,8 @@ The application is an [asynchrouns WSGI][] handler.
 
 ## app
 
-The application itself::
-```
+The application itself:
+```python
 app == app.app
 ```
 Useful when using the applicatin instead of a ``request`` object
@@ -16,7 +16,7 @@ Useful when using the applicatin instead of a ``request`` object
 Instance of the ``App`` class which created the application. The callable
 is a picklable object and thereofre it can be passed to subprocesses when
 running in multiprocessing mode.
-```
+```python
 app == app.callable.handler()
 ```
 

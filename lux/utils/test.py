@@ -486,7 +486,7 @@ class AppTestCase(unittest.TestCase, TestMixin):
         # Create the application
         cls.dbs = {}
         cls.app = cls.create_test_application()
-        cls.admin_jwt = app_token(cls.app)
+        cls.admin_jwt = await as_coroutine(cls.create_admin_jwt())
         # admin JWT token for admin operations on Token auth backends
         cls.client = cls.get_client()
         if hasattr(cls.app, 'odm'):
@@ -509,6 +509,11 @@ class AppTestCase(unittest.TestCase, TestMixin):
     def create_test_application(cls):
         """Return the lux application"""
         return test_app(cls)
+
+    @classmethod
+    def create_admin_jwt(cls):
+        """Return the lux application"""
+        return app_token(cls.app)
 
     @classmethod
     def dbname(cls, engine):

@@ -26,18 +26,21 @@ class Command(LuxCommand):
         if not ID:
             raise CommandError('ADMIN_APPLICATION_ID not available in config')
         try:
-            app = model.get_instance(request, id=ID)
+            app_domain = model.get_instance(request, id=ID)
         except Http404:
             form = form_class(request, data=dict(
                 id=ID,
                 name=app_name,
             ))
             if form.is_valid():
-                app = model.create_model(request, data=form.cleaned_data)
+                app_domain = model.create_model(
+                    request,
+                    data=form.cleaned_data
+                )
             else:
                 raise CommandError(form.message())
             self.write('Successfully created admin application')
-        data = model.tojson(request, app)
-        data['jwt'] = model.jwt(request, app)
+        data = model.tojson(request, app_domain)
+        data['jwt'] = model.jwt(request, app_domain)
         self.write(json.dumps(data, indent=4))
-        return app.name
+        return app_domain.name
