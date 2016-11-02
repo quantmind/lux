@@ -3,6 +3,17 @@ from pulsar import Http404
 
 class AuthEventsMixin:
 
+    class AppDomain:
+
+        @staticmethod
+        def create(app, session, app_domain):
+            """
+            Called when a new application is being added to the database.
+            """
+            odm = app.odm()
+            users = app.config['AUTHENTICATED_USER_GROUP']
+            session.add(odm.group(name=users, application=app_domain))
+
     class User:
 
         @staticmethod

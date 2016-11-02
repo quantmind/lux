@@ -153,12 +153,10 @@ async def load_fixtures(app, path=None, api_url=None, testuser=None,
             app, fixtures.pop('users', []), testuser, index
         )
 
-        for model, items in fixtures.items():
-            logger.info('%d fixtures for "%s"', len(items), model)
+        for name, items in fixtures.items():
+            logger.info('%d fixtures for "%s"', len(items), name)
             for params in items:
                 user = params.pop('api_user', testuser)
-                method = params.pop('api_method', 'post')
-                url = '%s%s' % (api_url, params.pop('api_url', '/%s' % model))
                 if user not in test_tokens:
                     request = await client.post('%s/authorizations' % api_url,
                                                 json=dict(username=user,
@@ -166,8 +164,16 @@ async def load_fixtures(app, path=None, api_url=None, testuser=None,
                                                 jwt=admin_jwt)
                     token = test.json(request.response, 201)['id']
                     test_tokens[user] = token
-                test_token = test_tokens[user]
 
+                test_token = test_tokens[user]
+                url = '%s%s' % (api_url, params.pop('api_url', '/%s' % name))
+                method = params.pop('api_method', 'post')
+                #
+                # Allow to patch an existing model
+                if method == 'patch':
+                    url = '%s/%s' % (
+                        url, params.pop(app.models[name].id_field)
+                    )
                 request = await client.request(method, url, json=params,
                                                token=test_token)
                 data = test.json(request.response)
@@ -245,6 +251,9 @@ class TestClient:
 
     def get(self, path=None, **extra):
         return self.request('get', path, **extra)
+
+    def patch(self, path=None, **extra):
+        return self.request('patch', path, **extra)
 
     def post(self, path=None, **extra):
         return self.request('post', path, **extra)

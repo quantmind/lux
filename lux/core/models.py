@@ -163,8 +163,8 @@ class LuxModel(ABC):
             for name, value in data.items():
                 if instance.has(name):
                     instance.set(name, value)
-            if flush:
-                session.flush()
+            # if flush:
+            #     session.flush()
         return instance
 
     def delete_model(self, request, instance, session=None):

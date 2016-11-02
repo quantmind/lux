@@ -33,6 +33,7 @@
     ],
     "groups": [
         {
+            "api_method": "patch",
             "name": "users",
             "permissions": ["authenticated-user"]
         }
