@@ -50,13 +50,17 @@ class AuthBackend(auth.TokenBackend):
 
     def create_user(self, request, application_id=False, **kw):
         if 'application_id' not in kw:
-            kw['application_id'] = request.cache.user.application_id
+            user = request.cache.user
+            if user:
+                kw['application_id'] = user.application_id
+            else:
+                kw['application_id'] = request.config['ADMIN_APPLICATION_ID']
         return super().create_user(request, **kw)
 
     def secret_from_jwt_payload(self, request, payload):
         app_id = payload.get("id")
         if not app_id:
             raise BadRequest('Missing id in JWT payload')
-        app = get_application(request, app_id)
-        request.cache.application = app
-        return app.token
+        app_domain = get_application(request.app, app_id)
+        request.cache.application = app_domain
+        return app_domain.token

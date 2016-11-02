@@ -9,6 +9,15 @@ class OrganisationTest(test.AppTestCase):
     def create_admin_jwt(cls):
         return cls.client.run_command('admin_app')
 
+    @classmethod
+    async def beforeAll(cls):
+        request = await cls.client.post(
+            cls.api_url('authorizations'),
+            json=dict(username='testuser', password='testuser'),
+            jwt=cls.admin_jwt
+        )
+        cls.super_token = cls._test.json(request.response, 201)['id']
+
     @test.green
     def _test_entity(self, username, type):
         odm = self.app.odm()
@@ -46,9 +55,6 @@ class OrganisationTest(test.AppTestCase):
         data = self.json(request.response, 200)['result']
         self.assertTrue(data)
 
-
-class d:
-
     async def test_organisation_members(self):
         request = await self.client.get(
             self.api_url('organisations/org1/members'))
@@ -77,7 +83,7 @@ class d:
         self.assertEqual(member['role'], 'owner')
         self.assertEqual(member['organisation'], 'org2')
 
-    async def test_organisation_delete_member_fail(self):
+    async def __test_organisation_delete_member_fail(self):
         request = await self.client.delete(
             self.api_url('organisations/org1/members/pippo')
         )
@@ -89,7 +95,7 @@ class d:
         )
         self.json(request.response, 403)
 
-    async def test_organisation_delete_member_fail_owner(self):
+    async def __test_organisation_delete_member_fail_owner(self):
         token = await self._token('pippo')
         request = await self.client.delete(
             self.api_url('organisations/org1/members/pippo'),
@@ -99,7 +105,7 @@ class d:
         self.assertEqual(data['message'],
                          'Cannot remove owner - only one available')
 
-    async def test_organisation_add_member(self):
+    async def __test_organisation_add_member(self):
         token = await self._token('pippo')
         request = await self.client.post(
             self.api_url('organisations'),
@@ -122,7 +128,7 @@ class d:
         data = self.json(request.response, 200)['result']
         self.assertEqual(len(data), 2)
 
-    async def test_user_organisations(self):
+    async def __test_user_organisations(self):
         token = await self._token('pippo')
         request = await self.client.get(self.api_url('user'),
                                         token=token)

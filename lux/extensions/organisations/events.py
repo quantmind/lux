@@ -1,5 +1,4 @@
-from sqlalchemy.exc import DataError
-from sqlalchemy.orm.exc import NoResultFound
+from pulsar import Http404
 
 
 class AuthEventsMixin:
@@ -7,7 +6,7 @@ class AuthEventsMixin:
     class User:
 
         @staticmethod
-        def insert(app, session, user):
+        def create(app, session, user):
             """
             Called when a new user is being added to the database.
 
@@ -18,10 +17,13 @@ class AuthEventsMixin:
             :param session:     SQLAlchemy session
             :param user:        User model instance
             """
-            odm = app.odm()
+            model = app.models.get('groups')
+            if not model:
+                return app.logger.error('No groups model')
+            users = app.config['AUTHENTICATED_USER_GROUP']
             try:
-                users = session.query(odm.group).filter_by(name='users').one()
-            except (DataError, NoResultFound):
+                users = model.get_query(session).filter(name=users).one()
+            except Http404:
                 pass
             else:
                 user.groups.append(users)
@@ -40,7 +42,7 @@ class AuthEventsMixin:
     class _Organisation:
 
         @staticmethod
-        def insert(app, session, organisation):
+        def create(app, session, organisation):
             """
             Called when a new organisation is being added to the database.
 

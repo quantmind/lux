@@ -193,7 +193,7 @@ class Resource:
         for name in self.fields or ():
             resources.append('%s:%s' % (self.resource, name))
         perms = get(request, resources, self.action)
-        if perms.get(self.resource, EMPTY_DICT).get(self.action):
+        if perms and perms.get(self.resource, EMPTY_DICT).get(self.action):
             return tuple(
                 (
                     name for name in self.fields or () if

@@ -40,6 +40,14 @@ the ``cls.get_client()`` class method.
 Dotted path to the config file used to setup the application for
 the test class.
 
+#### # cls.beforeAll()
+
+Class method invoked at the and of the ``setUpClass`` method.
+Database and fixtures are already loaded.
+By default **it does nothing**,
+override to create class level properties.
+It can be asynchronous or not.
+
 #### # cls.create_admin_jwt()
 
 Create the application admin JWT token. It can be asynchronous or not.

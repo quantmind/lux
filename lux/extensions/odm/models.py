@@ -33,7 +33,7 @@ class Query(BaseQuery):
         self.request = session.request
         self.sql_query = session.query(model.db_model())
         self.joins = set()
-        self.request.app.fire('on_query', self)
+        self.app.fire('on_query', self)
 
     @property
     def logger(self):

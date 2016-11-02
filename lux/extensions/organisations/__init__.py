@@ -9,9 +9,14 @@ from ..applications import has_plugin, is_html
 
 
 class Extension(auth.Extension, AuthEventsMixin):
-    _config = [Parameter('ORGANISATION_ADMIN_PERMISSION',
-                         'organisation:{username}:admin',
-                         'Format string for organisation admin groups')]
+    _config = [
+        Parameter('ORGANISATION_ADMIN_PERMISSION',
+                  'organisation:{username}:admin',
+                  'Format string for organisation admin groups'),
+        Parameter('AUTHENTICATED_USER_GROUP',
+                  'users',
+                  'Name of the group containing all authenticated users')
+    ]
 
     def on_config(self, app):
         self.require(app, 'lux.extensions.applications')

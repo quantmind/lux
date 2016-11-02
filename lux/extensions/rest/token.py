@@ -79,6 +79,7 @@ class TokenBackend(PemissionsMixin):
             raise
         except Exception:
             request.app.logger.exception('Could not authorize')
+            raise BadRequest from None
         else:
             if user:
                 request.cache.user = user

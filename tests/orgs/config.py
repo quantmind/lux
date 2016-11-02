@@ -9,6 +9,20 @@ EXTENSIONS = [
     'lux.extensions.organisations'
 ]
 
+AUTHENTICATION_BACKENDS = [
+    'lux.extensions.applications:AuthBackend'
+]
+
 ADMIN_APPLICATION_ID = 'cb1dc2bac69d47a1965f4c2c6fc43163'
 
 DATASTORE = 'postgresql+green://lux:luxtest@127.0.0.1:5432/luxtests'
+
+
+DEFAULT_POLICY = [
+    {
+        "resource": [
+            "organisations:*"
+        ],
+        "action": "read"
+    }
+]
