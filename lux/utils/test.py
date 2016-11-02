@@ -486,13 +486,13 @@ class AppTestCase(unittest.TestCase, TestMixin):
         # Create the application
         cls.dbs = {}
         cls.app = cls.create_test_application()
-        cls.admin_jwt = await as_coroutine(cls.create_admin_jwt())
-        # admin JWT token for admin operations on Token auth backends
         cls.client = cls.get_client()
         if hasattr(cls.app, 'odm'):
             # Store the original odm for removing the new databases
             cls.odm = cls.app.odm
             await cls.setupdb()
+        # admin JWT token for admin operations on Token auth backends
+        cls.admin_jwt = await as_coroutine(cls.create_admin_jwt())
         await as_coroutine(cls.populatedb())
         await as_coroutine(cls.beforeAll())
 

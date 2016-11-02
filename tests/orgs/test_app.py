@@ -3,12 +3,11 @@ from lux.utils import test
 
 
 class OrganisationTest(test.AppTestCase):
-    config = 'tests.orgs.config'
+    config_file = 'tests.orgs.config'
 
     @classmethod
-    @green
     def create_admin_jwt(cls):
-
+        return cls.client.run_command('admin_app')
 
     @test.green
     def _test_entity(self, username, type):

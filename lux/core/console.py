@@ -10,11 +10,21 @@ from pulsar.apps.wsgi import LazyWsgi
 
 from lux.utils.files import skipfile
 
-from .commands import ConsoleParser, CommandError
+from .commands import ConsoleParser, CommandError, service_parser
 
 
 def execute_from_config(config_file, description=None, argv=None,
-                        cmdparams=None, **params):  # pragma    nocover
+                        services=None, cmdparams=None, **params):
+
+    if services:
+        p = service_parser(services, description, False)
+        opts, argv = p.parse_known_args(argv)
+        if not opts.service and len(argv) == 1 and argv[0] in ('-h', '--help'):
+            service_parser(services, description).parse_known_args()
+        config_file = config_file % (opts.service or services[0])
+        if opts.service and description:
+            description = '%s - %s' % (description, opts.service)
+
     if argv is None:
         argv = sys.argv[:]
         params['script'] = argv.pop(0)

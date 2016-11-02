@@ -7,39 +7,56 @@ class.
 
 ## Test Classes
 
-### test.TestCase
+### TestCase
 
 This test class is designed to unit test lux components. It provides a
 set of methods useful for web applications.
 
-#### test.authenticity_token(*doc*)
+#### # self.application(**parameters)
+
+Create an application with additional config *parameters*
+
+#### # self.authenticity_token(*doc*)
 
 Return the ``CSRF`` token contained in the HTML document if it exists.
 
-### test.AppTestCase
+### AppTestCase
 
 This test class is designed to test a single lux application and
 exposes the following class properties and methods:
 
-#### testcls.client
+#### # cls.app
+
+The test class application. Created in the ``setUpClass`` method
+via the ``cls.create_test_application()`` class method.
+
+#### # cls.client
 
 A ``client`` for the application test class, created via
-the ``testcls.get_client()`` class method.
+the ``cls.get_client()`` class method.
 
-#### testcls.config
+#### # cls.config_file
 
 Dotted path to the config file used to setup the application for
-the test class
+the test class.
 
-#### testcls.create_admin_jwt()
+#### # cls.create_admin_jwt()
 
-Create the application admin JWT token
+Create the application admin JWT token. It can be asynchronous or not.
+
+#### # cls.get_client()
+
+Create a test client. It is used in the ``setUpClass`` to create
+the ``cls.client``. By default it returns:
+```python
+TestClient(cls.app)
+```
 
 ## Utilities
 
 ### TestClient
 
-The test client usid for testing lux applications:
+The test client used for testing lux applications:
 ```python
 client = TestClient(app)
 ```

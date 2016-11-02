@@ -3,6 +3,7 @@
 import json
 
 from pulsar import Http404
+from pulsar.utils.slugify import slugify
 
 from lux.core import LuxCommand, CommandError
 from lux.forms import get_form_class
@@ -21,7 +22,6 @@ class Command(LuxCommand):
             raise CommandError('Cannot create application')
 
         model = self.app.models['applications']
-        app_name = request.config['APP_NAME']
         ID = request.config['ADMIN_APPLICATION_ID']
         if not ID:
             raise CommandError('ADMIN_APPLICATION_ID not available in config')
@@ -30,7 +30,7 @@ class Command(LuxCommand):
         except Http404:
             form = form_class(request, data=dict(
                 id=ID,
-                name=app_name,
+                name=slugify(request.config['APP_NAME']),
             ))
             if form.is_valid():
                 app_domain = model.create_model(
@@ -41,6 +41,7 @@ class Command(LuxCommand):
                 raise CommandError(form.message())
             self.write('Successfully created admin application')
         data = model.tojson(request, app_domain)
-        data['jwt'] = model.jwt(request, app_domain)
+        jwt = model.jwt(request, app_domain)
+        data['jwt'] = jwt
         self.write(json.dumps(data, indent=4))
-        return app_domain.name
+        return jwt
