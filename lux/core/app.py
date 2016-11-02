@@ -6,16 +6,16 @@ import asyncio
 import threading
 from asyncio import create_subprocess_shell, subprocess
 
-from copy import copy
 from inspect import isclass
 from collections import OrderedDict
 from importlib import import_module
 
 import pulsar
 from pulsar import ImproperlyConfigured
-from pulsar.apps.wsgi import (WsgiHandler, HtmlDocument, test_wsgi_environ,
-                              LazyWsgi, wait_for_body_middleware,
-                              middleware_in_executor, wsgi_request)
+from pulsar.apps.wsgi import (
+    WsgiHandler, HtmlDocument, test_wsgi_environ, wait_for_body_middleware,
+    middleware_in_executor, wsgi_request
+)
 from pulsar.utils.log import lazyproperty
 from pulsar.utils.importer import module_attribute
 from pulsar.apps.greenio import GreenWSGI, GreenHttp
@@ -26,8 +26,8 @@ from lux import __version__
 from lux.utils.data import multi_pop
 from lux.utils.token import encode_json
 
-from .commands import ConfigError, service_parser
-from .console import ConsoleMixin, execute_app
+from .commands import ConfigError
+from .console import ConsoleMixin
 from .extension import LuxExtension, Parameter, EventMixin, app_attribute
 from .wrappers import HeadMeta, LuxContext, formreg
 from .templates import render_data, template_engine, Template
@@ -40,38 +40,6 @@ from .auth import BackendMixin
 
 
 LUX_CORE = os.path.dirname(__file__)
-
-
-def execute_from_config(config_file, services=None,
-                        description=None, argv=None,
-                        cmdparams=None, **params):     # pragma    nocover
-    """Create and run an :class:`.Application` from a ``config_file``.
-
-    This is the function to use when creating the script which runs your
-    web applications::
-
-        import lux
-
-        if __name__ == '__main__':
-            lux.execute_from_config('path.to.config')
-
-    :param config_file: the python dotted path to the config file for setting
-        up a new :class:`App`. The config file should be located in the
-        python module which implements the main application
-        of the web site.
-    """
-    if services:
-        p = service_parser(services, description, False)
-        opts, argv = p.parse_known_args(argv)
-        if not opts.service and len(argv) == 1 and argv[0] in ('-h', '--help'):
-            service_parser(services, description).parse_known_args()
-        config_file = config_file % (opts.service or services[0])
-        if opts.service and description:
-            description = '%s - %s' % (description, opts.service)
-
-    cmdparams = cmdparams or {}
-    return execute_app(App(config_file, argv=argv, **params),
-                       description=description, **cmdparams)
 
 
 def extend_config(config, parameters):
@@ -87,44 +55,6 @@ def extend_config(config, parameters):
             config[namespace] = cfg
 
 
-class App(LazyWsgi):
-
-    def __init__(self, config_file, script=None, argv=None, config=None, **kw):
-        params = config or {}
-        params.update(kw)
-        self._params = params
-        self._config_file = config_file
-        self._script = script
-        self._argv = argv
-
-    @property
-    def command(self):
-        return self._argv[0] if self._argv else None
-
-    @property
-    def argv(self):
-        return self._argv
-
-    def setup(self, environ=None, on_config=None, handler=True):
-        app = Application(self)
-        if on_config:
-            on_config(app)
-        if handler:
-            app.wsgi_handler()
-        return app
-
-    def clone(self, **kw):
-        params = self._params.copy()
-        params.update(kw)
-        app = copy(self)
-        app._params = params
-        app._argv = copy(app._argv)
-        return app
-
-    def close(self):
-        return self.handler().close()
-
-
 def Http(app):
     params = app.config['HTTP_CLIENT_PARAMETERS'] or {}
     green = app.green_pool
@@ -135,31 +65,7 @@ def Http(app):
 
 
 class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
-    """The :class:`.Application` is the WSGI callable for serving
-    lux applications.
-
-    It is a specialised :class:`~.LuxExtension` which collects
-    all extensions of your application and setup the wsgi middleware used by
-    the web server.
-    An :class:`Application` is not initialised directly, the higher level
-    :func:`.execute_from_config` or :func:`.execute_app` are
-    used instead.
-
-    .. attribute:: channels
-
-        The :class:`.Channels` manager of this application. This attribute
-        can be used to register to channels events or publish events
-        on channels. For more information check the channels documentation
-
-    .. attribute:: config
-
-        The configuration dictionary
-
-    .. attribute::  extensions
-
-        Ordered dictionary of :class:`.LuxExtension` loaded into the
-        application. Extensions are specified in the :setting:`EXTENSIONS`
-        setting parameter
+    """A WSGI callable for serving lux applications.
     """
     cfg = None
     channels = None
@@ -297,8 +203,8 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
 
     def __init__(self, callable):
         self.callable = callable
-        self.meta.argv = callable._argv
-        self.meta.script = callable._script
+        self.meta.argv = callable.argv
+        self.meta.script = callable.script
         self.threads = threading.local()
         self.providers = {
             'Http': Http,
@@ -336,7 +242,7 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
 
     @property
     def params(self):
-        return self.callable._params
+        return self.callable.params
 
     @property
     def _loop(self):
@@ -744,7 +650,7 @@ def _module_types(mod, filter, cache=None):
 
 
 def _build_config(self):
-    module_name = self.callable._config_file or 'lux'
+    module_name = self.callable.config_file or 'lux'
     module = import_module(module_name)
     self.meta = self.meta.copy(module)
     if self.meta.name != 'lux':

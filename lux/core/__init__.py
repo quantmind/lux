@@ -3,8 +3,8 @@ from pulsar.apps.wsgi import route
 from .commands import ConsoleParser, CommandError, LuxCommand, Setting
 from .extension import LuxExtension, Parameter, app_attribute
 from .models import LuxModel, Query, ModelInstance, ModelNotAvailable
-from .console import execute_app
-from .app import App, Application, execute_from_config, extend_config
+from .console import execute_from_config
+from .app import Application, extend_config
 from .wrappers import (WsgiRequest, Router, HtmlRouter,
                        JsonRouter, json_message, cached_property,
                        RedirectRouter, LuxContext,
@@ -40,10 +40,8 @@ __all__ = [
     'ModelInstance',
     'ModelNotAvailable',
     #
-    'App',
     'Application',
     'execute_from_config',
-    'execute_app',
     'extend_config',
     'register_template_engine',
     'template_engine',

@@ -1,19 +1,20 @@
 import os
 import sys
+from copy import copy
 from inspect import getfile
 from collections import OrderedDict
 from importlib import import_module
 
-from pulsar import ImproperlyConfigured
 from pulsar.utils.log import lazyproperty
+from pulsar.apps.wsgi import LazyWsgi
 
 from lux.utils.files import skipfile
 
 from .commands import ConsoleParser, CommandError
 
 
-def execute_app(app, argv=None, description=None,
-                **params):  # pragma    nocover
+def execute_from_config(config_file, description=None, argv=None,
+                        cmdparams=None, **params):  # pragma    nocover
     """Execute a given ``app``.
 
     :parameter app: the :class:`.App` to execute
@@ -23,16 +24,12 @@ def execute_app(app, argv=None, description=None,
         :class:`.Command` executing the ``app``.
     """
     if argv is None:
-        argv = app._argv
-    if argv is None:
-        argv = sys.argv
-        app._argv = argv = list(argv)
-        app._script = argv.pop(0)
-    try:
-        application = app.setup(handler=False)
-    except ImproperlyConfigured as e:
-        print('IMPROPERLY CONFUGURED: %s' % e)
-        exit(1)
+        argv = sys.argv[:]
+        params['script'] = argv.pop(0)
+
+    app = App(config_file, argv, **params)
+    application = app.setup(handler=False)
+
     # Parse for the command
     parser = application.get_parser(add_help=False, description=description)
     opts, _ = parser.parse_known_args(argv)
@@ -44,10 +41,11 @@ def execute_app(app, argv=None, description=None,
         except CommandError as e:
             print('\n'.join(('%s.' % e, 'Pass -h for list of commands')))
             exit(1)
-        argv = list(argv)
-        argv.remove(command.name)
+        app.argv.remove(command.name)
+        app.command = command.name
+        cmdparams = cmdparams or {}
         try:
-            return command(argv, **params)
+            return command(app.argv, **cmdparams)
         except CommandError as e:
             print(str(e))
             exit(1)
@@ -55,6 +53,38 @@ def execute_app(app, argv=None, description=None,
         # this should fail unless we pass -h
         parser = application.get_parser(nargs=1, description=description)
         parser.parse_args(argv)
+
+
+class App(LazyWsgi):
+
+    def __init__(self, config_file, argv, script=None, config=None, **kw):
+        params = config or {}
+        params.update(kw)
+        self.params = params
+        self.config_file = config_file
+        self.script = script
+        self.argv = argv
+        self.command = None
+
+    def setup(self, environ=None, on_config=None, handler=True):
+        from lux.core.app import Application
+        app = Application(self)
+        if on_config:
+            on_config(app)
+        if handler:
+            app.wsgi_handler()
+        return app
+
+    def clone(self, **kw):
+        params = self.params.copy()
+        params.update(kw)
+        app = copy(self)
+        app.params = params
+        app.argv = copy(app.argv)
+        return app
+
+    def close(self):
+        return self.handler().close()
 
 
 class ConsoleMixin(ConsoleParser):
