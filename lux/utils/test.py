@@ -170,7 +170,7 @@ async def load_fixtures(app, path=None, api_url=None, testuser=None,
                 method = params.pop('api_method', 'post')
                 #
                 # Allow to patch an existing model
-                if method == 'patch':
+                if method == 'patch' and name in app.models:
                     url = '%s/%s' % (
                         url, params.pop(app.models[name].id_field)
                     )
