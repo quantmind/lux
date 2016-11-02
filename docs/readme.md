@@ -1,8 +1,8 @@
 # Lux Documentation
 
-* [Getting Started](/docs/getting-started.rst)
-* [Application](/docs/application.md)
-* [Extensions](/docs/extensions/readme.md)
-* [Providers](/docs/providers.md)
-* [Migrations](/docs/migrations.rst)
-* [Changelog](/docs/changelog.md)
+* [Getting Started](./getting-started.rst)
+* [Application](./application.md)
+* [Extensions](./extensions.md)
+* [Providers](./providers.md)
+* [Migrations](./migrations.rst)
+* [Changelog](./changelog.md)

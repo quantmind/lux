@@ -15,14 +15,6 @@ from .commands import ConsoleParser, CommandError
 
 def execute_from_config(config_file, description=None, argv=None,
                         cmdparams=None, **params):  # pragma    nocover
-    """Execute a given ``app``.
-
-    :parameter app: the :class:`.App` to execute
-    :parameter argv: optional list of parameters, if not given ``sys.argv``
-        is used instead.
-    :parameter params: additional key-valued parameters to pass to the
-        :class:`.Command` executing the ``app``.
-    """
     if argv is None:
         argv = sys.argv[:]
         params['script'] = argv.pop(0)

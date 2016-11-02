@@ -1,7 +1,15 @@
 # Application
 
-This document describe the public API of a Lux Application. The application
-is an [asynchrouns WSGI][] handler.
+This document describe the public API of a Lux Application ``app``.
+The application is an [asynchrouns WSGI][] handler.
+
+## app
+
+The application itself::
+```
+app == app.app
+```
+Useful when using the applicatin instead of a ``request`` object
 
 ## callable
 
@@ -14,12 +22,21 @@ app == app.callable.handler()
 
 The callable exposes the following properties:
 
-* ``app.callable.`
+* ``app.callable.command`` name of the command executed
+* ``app.callable.argv`` list or command line parameters, without the command name 
+* ``app.callable.script`` the python script which created the application
 
 
 ## forms
 
 Dictionary of forms available
 
+## green_pool
+
+Pool of greenlets where middleware are executed
+
+## stdout & stderr
+
+Application standard output and standard error
 
 [asynchrouns WSGI]: http://quantmind.github.io/pulsar/apps/wsgi/async.html
