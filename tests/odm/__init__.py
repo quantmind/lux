@@ -8,7 +8,7 @@ from lux import forms
 from lux.forms import Layout, Fieldset, Submit
 from lux.core import LuxExtension
 from lux.extensions import odm
-from lux.extensions.odm import RestModel
+from lux.extensions.odm import RestModel, odm_models
 from lux.extensions.rest import RelationshipField, UniqueField, RestField, CRUD
 
 from odm.types import ChoiceType
@@ -20,9 +20,8 @@ EXTENSIONS = ['lux.extensions.base',
               'lux.extensions.rest',
               'lux.extensions.auth']
 
-AUTHENTICATION_BACKENDS = ['lux.extensions.auth.TokenBackend']
+AUTHENTICATION_BACKENDS = ['lux.extensions.auth:TokenBackend']
 DATASTORE = 'postgresql+green://lux:luxtest@127.0.0.1:5432/luxtests'
-CORS_ALLOWED_METHODS = 'GET, POST, DELETE'
 API_URL = ''
 DEFAULT_POLICY = [
     {
@@ -35,6 +34,14 @@ DEFAULT_POLICY = [
 class TestEnum(Enum):
     opt1 = 1
     opt2 = 2
+
+
+def odm_json(request, data):
+    models = odm_models(request.app)
+    for instance in data:
+        model = models.get(instance.__class__.__name__.lower())
+        if model:
+            yield model.tojson(request, instance, in_list=True, safe=True)
 
 
 class Extension(LuxExtension):
@@ -54,6 +61,28 @@ class Extension(LuxExtension):
             PersonForm,
             Fieldset(all=True),
             Submit('submit')
+        )
+
+    def on_after_flush(self, app, session):
+        request = session.request
+        if not request:
+            return
+        if request.cache.new_items is None:
+            request.cache.new_items = []
+            request.cache.old_items = []
+            request.cache.del_items = []
+        request.cache.new_items.extend(odm_json(request, session.new))
+        request.cache.old_items.extend(odm_json(request, session.dirty))
+        request.cache.del_items.extend(odm_json(request, session.deleted))
+
+    def on_before_commit(self, app, session):
+        request = session.request
+        if not request:
+            return
+        if request.cache.new_items_before_commit is None:
+            request.cache.new_items_before_commit = []
+        request.cache.new_items_before_commit.extend(
+            odm_json(request, session.new)
         )
 
 

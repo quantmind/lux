@@ -18,6 +18,7 @@ from .models import RestModel, RestField, odm_models
 
 
 __all__ = ['model_base',
+           'odm_models',
            'declared_attr',
            'RestModel',
            'RestField']
@@ -48,20 +49,7 @@ class Extension(LuxExtension):
         self.require(app, 'lux.extensions.rest')
         app.odm = Odm(app)
 
-    def on_before_commit(self, app, session):
-        request = session.request
-        if not request:
-            return
-        for instance in session.deleted:
-            name = instance.__class__.__name__.lower()
-            model = odm_models(app).get(name)
-            if model:
-                instance._json = model.tojson(
-                    request, instance, in_list=True,
-                    safe=True
-                )
-
-    def on_after_commit(self, app, session):
+    def on_after_flush(self, app, session):
         """
         Called after SQLAlchemy commit, broadcast models events into channels
 
@@ -70,18 +58,16 @@ class Extension(LuxExtension):
         :param changes:     dict of model changes
         """
         request = session.request
-        if not request:
+        if not app.channels or not request:
             return
+        models = odm_models(app)
         for instance, event in session.changes():
-            name = instance.__class__.__name__.lower()
-            model = odm_models(app).get(name)
+            model = models.get(instance.__class__.__name__.lower())
             if model:
-                if not hasattr(instance, '_json'):
-                    data = model.tojson(
-                        request, instance, in_list=True, safe=True)
-                else:
-                    data = instance._json
-                app.channels.publish(model.identifier, event, data)
+                data = model.tojson(request, instance, in_list=True, safe=True)
+                app.channels.publish('data-models',
+                                     '%s.%' % (model.identifier, event),
+                                     data)
 
     def on_close(self, app):
         app.odm().close()

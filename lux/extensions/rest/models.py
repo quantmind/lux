@@ -111,7 +111,6 @@ class RestClient:
         return params
 
     def api_url(self, request, instance=None, **kwargs):
-        return
         if self.api_route:
             base = request.config.get('API_URL')
             if not is_absolute_uri(base):

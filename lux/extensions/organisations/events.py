@@ -7,8 +7,7 @@ class AuthEventsMixin:
 
         @staticmethod
         def create(app, session, app_domain):
-            """
-            Called when a new application is being added to the database.
+            """Called when a new application is being added to the database.
             """
             odm = app.odm()
             users = app.config['AUTHENTICATED_USER_GROUP']
@@ -113,14 +112,7 @@ class AuthEventsMixin:
             if permission:
                 session.delete(permission)
 
-    def on_before_commit(self, app, session):  # pragma nocover
-        """
-        Called before SQLAlchemy commit.
-
-        :param app:         Lux app object
-        :param session:     SQLAlchemy session
-        :param changes:     dict of model changes
-        """
+    def on_before_flush(self, app, session):  # pragma nocover
         # We make a shallow copy of the generator as it will be
         # modified by the other callbacks
         for instance, event in tuple(session.changes()):

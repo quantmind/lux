@@ -8,9 +8,6 @@ from tests.odm.utils import SqliteMixin, OdmUtils
 class TestFiltersPsql(OdmUtils, test.AppTestCase):
 
     async def test_filter(self):
-        token = await self._token('testuser')
-        await self._create_task(token, 'A done task', done=True)
-        await self._create_task(token, 'a not done task')
         request = await self.client.get('/tasks?done=1')
         data = self.json(request.response, 200)
         result = data['result']
@@ -29,7 +26,7 @@ class TestFiltersPsql(OdmUtils, test.AppTestCase):
         for task in result:
             self.assertEqual(task['done'], False)
 
-    async def test_notequals(self):
+    async def test_not_equals(self):
         request = await self.client.get('/tasks?desc:ne=abu')
         data = self.json(request.response, 200)
         result = data['result']
@@ -90,7 +87,7 @@ class TestFiltersPsql(OdmUtils, test.AppTestCase):
         data = self.json(request.response, 200)
         result = data['result']
         self.assertIsInstance(result, list)
-        self.assertEqual(len(result), 3)
+        self.assertEqual(len(result), 4)
         for entry in result:
             self.assertEqual(len(entry), 2)
             self.assertTrue(entry['id'])
@@ -102,7 +99,7 @@ class TestFiltersPsql(OdmUtils, test.AppTestCase):
         data = self.json(request.response, 200)
         result = data['result']
         self.assertIsInstance(result, list)
-        self.assertEqual(len(result), 3)
+        self.assertEqual(len(result), 4)
         for entry in result:
             self.assertEqual(len(entry), 1)
             self.assertTrue(entry['id'])
@@ -113,7 +110,7 @@ class TestFiltersPsql(OdmUtils, test.AppTestCase):
         data = self.json(request.response, 200)
         result = data['result']
         self.assertIsInstance(result, list)
-        self.assertEqual(len(result), 3)
+        self.assertEqual(len(result), 4)
         for entry in result:
             self.assertEqual(len(entry), 2)
             self.assertTrue(entry['api_url'])

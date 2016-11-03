@@ -7,6 +7,10 @@ from tests.odm.utils import OdmUtils
 
 class TestPostgreSql(OdmUtils, test.AppTestCase):
 
+    @classmethod
+    async def beforeAll(cls):
+        cls.super_token = await cls.user_token('testuser', jwt=cls.admin_jwt)
+
     async def test_odm(self):
         tables = await self.app.odm.tables()
         self.assertTrue(tables)
@@ -44,7 +48,7 @@ class TestPostgreSql(OdmUtils, test.AppTestCase):
         self.assertFalse(user.is_superuser())
 
     async def test_get_tasks(self):
-        request = await self.client.get('/tasks')
+        request = await self.client.get(self.api_url('tasks'))
         response = request.response
         self.assertEqual(response.status_code, 200)
         data = self.json(response)
@@ -53,7 +57,7 @@ class TestPostgreSql(OdmUtils, test.AppTestCase):
         self.assertIsInstance(result, list)
 
     async def test_get_tasks_multi(self):
-        url = '/tasks?id=1&id=2&id=3'
+        url = self.api_url('tasks?id=1&id=2&id=3')
         request = await self.client.get(url)
         response = request.response
         self.assertEqual(response.status_code, 200)
@@ -63,7 +67,7 @@ class TestPostgreSql(OdmUtils, test.AppTestCase):
         self.assertIsInstance(result, list)
 
     async def test_metadata(self):
-        request = await self.client.get('/tasks/metadata')
+        request = await self.client.get(self.api_url('tasks/metadata'))
         response = request.response
         self.assertEqual(response.status_code, 200)
         data = self.json(response)
@@ -73,59 +77,53 @@ class TestPostgreSql(OdmUtils, test.AppTestCase):
         self.assertEqual(len(columns), 9)
 
     async def test_create_task(self):
-        token = await self._token('testuser')
-        await self._create_task(token)
+        await self._create_task(self.super_token)
 
     async def test_update_task(self):
-        token = await self._token('testuser')
-        task = await self._create_task(token, 'This is another task')
+        task = await self._create_task(self.super_token,
+                                       'This is another task')
+        url = self.api_url('tasks/%d' % task['id'])
         # Update task
-        request = await self.client.post(
-            '/tasks/%d' % task['id'],
-            json={'done': True})
-
-        response = request.response
-        self.assertEqual(response.status_code, 403)
+        request = await self.client.patch(
+            url,
+            json={'done': True}
+        )
+        self.json(request.response, 401)
         #
         # Update task
-        request = await self.client.post(
-            '/tasks/%d' % task['id'],
+        request = await self.client.patch(
+            url,
             json={'done': True},
-            token=token)
-
-        response = request.response
-        self.assertEqual(response.status_code, 200)
-        data = self.json(response)
+            token=self.super_token
+        )
+        data = self.json(request.response, 200)
         self.assertEqual(data['id'], task['id'])
         self.assertEqual(data['done'], True)
         #
-        request = await self.client.get('/tasks/%d' % task['id'])
-        response = request.response
-        self.assertEqual(response.status_code, 200)
+        request = await self.client.get(url)
+        data = self.json(request.response, 200)
         self.assertEqual(data['id'], task['id'])
         self.assertEqual(data['done'], True)
 
     async def test_delete_task(self):
-        token = await self._token('testuser')
-        task = await self._create_task(token, 'A task to be deleted')
+        task = await self._create_task(self.super_token,
+                                       'A task to be deleted')
         # Delete task
-        request = await self.client.delete('/tasks/%d' % task['id'])
-        response = request.response
-        self.assertEqual(response.status_code, 403)
+        url = self.api_url('tasks/%d' % task['id'])
+        request = await self.client.delete(url)
+        self.json(request.response, 401)
         # Delete task
-        request = await self.client.delete('/tasks/%d' % task['id'],
-                                           token=token)
-        response = request.response
-        self.assertEqual(response.status_code, 204)
+        request = await self.client.delete(url, token=self.super_token)
+        self.empty(request.response, 204)
+        self.assertEqual(len(request.cache.del_items), 1)
+        self.assertEqual(request.cache.del_items[0]['id'], task['id'])
         #
-        request = await self.client.get('/tasks/%d' % task['id'])
-        response = request.response
-        self.assertEqual(response.status_code, 404)
+        request = await self.client.get(url)
+        self.json(request.response, 404)
 
     async def test_sortby(self):
-        token = await self._token('testuser')
-        await self._create_task(token, 'We want to sort 1')
-        await self._create_task(token, 'We want to sort 2')
+        await self._create_task(self.super_token, 'We want to sort 1')
+        await self._create_task(self.super_token, 'We want to sort 2')
         request = await self.client.get('/tasks?sortby=created')
         data = self.json(request.response, 200)
         self.assertIsInstance(data, dict)
@@ -149,18 +147,16 @@ class TestPostgreSql(OdmUtils, test.AppTestCase):
             self.assertTrue(dt2 < dt1)
 
     async def test_sortby_non_existent(self):
-        token = await self._token('testuser')
-        await self._create_task(token, 'a task')
-        await self._create_task(token, 'another task')
+        await self._create_task(self.super_token, 'a task')
+        await self._create_task(self.super_token, 'another task')
         request = await self.client.get('/tasks?sortby=fgjsdgj')
         data = self.json(request.response, 200)
         result = data['result']
         self.assertIsInstance(result, list)
 
     async def test_relationship_field(self):
-        token = await self._token('testuser')
-        person = await self._create_person(token, 'spiderman')
-        task = await self._create_task(token,
+        person = await self._create_person(self.super_token, 'spiderman')
+        task = await self._create_task(self.super_token,
                                        'climb a wall a day',
                                        person)
         self.assertTrue('assigned' in task)
@@ -169,18 +165,20 @@ class TestPostgreSql(OdmUtils, test.AppTestCase):
         self.assertEqual(data['assigned'], task['assigned'])
 
     async def test_relationship_field_failed(self):
-        token = await self._token('testuser')
         data = {'subject': 'climb a wall a day',
                 'assigned': 6868897}
-        request = await self.client.post('/tasks', json=data, token=token)
+        request = await self.client.post('/tasks',
+                                         json=data,
+                                         token=self.super_token)
         self.assertValidationError(request.response, 'assigned',
                                    'Invalid person')
 
     async def test_unique_field(self):
-        token = await self._token('testuser')
-        await self._create_person(token, 'spiderman1', 'luca')
+        await self._create_person(self.super_token, 'spiderman1', 'luca')
         data = dict(username='spiderman1', name='john')
-        request = await self.client.post('/people', json=data, token=token)
+        request = await self.client.post('/people',
+                                         json=data,
+                                         token=self.super_token)
         self.assertValidationError(request.response, 'username',
                                    'spiderman1 not available')
 
@@ -189,16 +187,15 @@ class TestPostgreSql(OdmUtils, test.AppTestCase):
         Tests that it's not possible to update a unique field of an
         existing record to that of another
         """
-        token = await self._token('testuser')
-        await self._create_person(token, 'spiderfail1', 'luca')
-        data = await self._create_person(token, 'spiderfail2', 'pippo')
-
-        request = await self.client.post(
-            '/people/{}'.format(data['id']),
+        await self._create_person(self.super_token, 'spiderfail1', 'luca')
+        data = await self._create_person(self.super_token,
+                                         'spiderfail2', 'pippo')
+        request = await self.client.patch(
+            self.api_url('people/%s' % data['id']),
             json={'username': 'spiderfail1', 'name': 'pluto'},
-            token=token)
-        response = request.response
-        self.assertValidationError(response, 'username',
+            token=self.super_token
+        )
+        self.assertValidationError(request.response, 'username',
                                    'spiderfail1 not available')
 
     async def test_unique_field_update_unchanged(self):
@@ -206,22 +203,23 @@ class TestPostgreSql(OdmUtils, test.AppTestCase):
         Tests that an update of an existing model instance works if the the
         unique field hasn't changed
         """
-        token = await self._token('testuser')
-        data = await self._create_person(token, 'spiderstale1', 'luca')
-        await self._update_person(token, data['id'], 'spiderstale1',
+        data = await self._create_person(self.super_token,
+                                         'spiderstale1', 'luca')
+        await self._update_person(self.super_token,
+                                  data['id'],
+                                  'spiderstale1',
                                   'lucachanged')
 
     async def test_enum_field(self):
-        token = await self._token('testuser')
-        data = await self._create_task(token, enum_field='opt1')
+        data = await self._create_task(self.super_token, enum_field='opt1')
         self.assertEqual(data['enum_field'], 'opt1')
-        data = await self._get_task(token, id=data['id'])
+        data = await self._get_task(self.super_token, id=data['id'])
         self.assertEqual(data['enum_field'], 'opt1')
 
     async def test_enum_field_fail(self):
-        token = await self._token('testuser')
-        request = await self.client.post('/tasks', json={'enum_field': 'opt3'},
-                                         token=token)
+        request = await self.client.post('/tasks',
+                                         json={'enum_field': 'opt3'},
+                                         token=self.super_token)
         response = request.response
         self.assertValidationError(response, 'enum_field',
                                    'opt3 is not a valid choice')
@@ -236,32 +234,28 @@ class TestPostgreSql(OdmUtils, test.AppTestCase):
         request = await self.client.options('/users')
         response = request.response
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response['Access-Control-Allow-Methods'],
-                         'GET, POST, DELETE')
-        token = await self._token('testuser')
-        task = await self._create_task(token, 'testing preflight on id')
+        self.checkOptions(request.response, ['GET', 'POST', 'HEAD'])
+        task = await self._create_task(self.super_token,
+                                       'testing preflight on id')
         request = await self.client.options('/tasks/%s' % task['id'])
         response = request.response
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response['Access-Control-Allow-Methods'],
-                         'GET, POST, DELETE')
+        self.checkOptions(request.response,
+                          ['GET', 'PATCH', 'HEAD', 'DELETE'])
 
     async def test_head_request(self):
         request = await self.client.head('/tasks/8676097')
-        response = request.response
-        self.assertEqual(response.status_code, 404)
-        self.assertFalse(response.content)
-        token = await self._token('testuser')
-        task = await self._create_task(token, 'testing head request')
+        self.empty(request.response, 404)
+        task = await self._create_task(self.super_token,
+                                       'testing head request')
         request = await self.client.head('/tasks/%s' % task['id'])
         response = request.response
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.content)
 
     async def test_limit(self):
-        token = await self._token('testuser')
-        await self._create_task(token, 'whatever')
-        await self._create_task(token, 'do everything')
+        await self._create_task(self.super_token, 'whatever')
+        await self._create_task(self.super_token, 'do everything')
         request = await self.client.get('/tasks?limit=-1')
         data = self.json(request.response, 200)
         result = data['result']
@@ -279,37 +273,44 @@ class TestPostgreSql(OdmUtils, test.AppTestCase):
         self.assertTrue(len(result) >= 2)
 
     async def test_update_related_field(self):
-        token = await self._token('testuser')
-        person1 = await self._create_person(token, 'abcdfg1')
-        person2 = await self._create_person(token, 'abcdfg2')
-        task = await self._create_task(token,
+        person1 = await self._create_person(self.super_token, 'abcdfg1')
+        person2 = await self._create_person(self.super_token, 'abcdfg2')
+        task = await self._create_task(self.super_token,
                                        'climb a wall a day',
                                        person1)
         self.assertTrue('assigned' in task)
-        request = await self.client.get('/tasks/%s' % task['id'])
+        url = self.api_url('tasks/%s' % task['id'])
+        #
+        request = await self.client.get(url)
         data = self.json(request.response, 200)
         self.assertEqual(data['assigned']['id'], person1['id'])
         #
         # Updated with same assigned person
-        request = await self.client.post('/tasks/%s' % task['id'],
-                                         json={'assigned': person1['id']},
-                                         token=token)
+        request = await self.client.patch(
+            url,
+            json={'assigned': person1['id']},
+            token=self.super_token
+        )
         data = self.json(request.response, 200)
         self.assertEqual(data['assigned']['id'], person1['id'])
         #
         # Change the assigned person
-        request = await self.client.post('/tasks/%s' % task['id'],
-                                         json={'assigned': person2['id']},
-                                         token=token)
+        request = await self.client.patch(
+            url,
+            json={'assigned': person2['id']},
+            token=self.super_token
+        )
         data = self.json(request.response, 200)
         self.assertEqual(data['assigned']['id'], person2['id'])
         #
         # Change to non assigned
-        request = await self.client.post('/tasks/%s' % task['id'],
-                                         json={'assigned': ''},
-                                         token=token)
+        request = await self.client.patch(
+            url,
+            json={'assigned': ''},
+            token=self.super_token
+        )
         data = self.json(request.response, 200)
         self.assertTrue('assigned' not in data)
-        request = await self.client.get('/tasks/%s' % task['id'])
+        request = await self.client.get(url)
         data = self.json(request.response, 200)
         self.assertTrue('assigned' not in data)

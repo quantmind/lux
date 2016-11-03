@@ -10,6 +10,10 @@
         },
         {
             "subject": "earth is the centre of the universe"
+        },
+        {
+            "subject": "A done task",
+            "done": true
         }
     ]
 }

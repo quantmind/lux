@@ -62,6 +62,11 @@ def before_flush(session, flush_context=None, instances=None):
     session.app.fire('on_before_flush', session, safe=True)
 
 
+@listens_for(LuxSession, 'after_flush')
+def after_flush(session, flush_context=None, instances=None):
+    session.app.fire('on_after_flush', session, safe=True)
+
+
 @listens_for(LuxSession, 'before_commit')
 def before_commit(session, flush_context=None, instances=None):
     session.app.fire('on_before_commit', session, safe=True)

@@ -12,12 +12,17 @@ class OdmUtils:
         data['subject'] = subject
         if person:
             data['assigned'] = person['id']
-        request = await self.client.post('/tasks', json=data, token=token)
+        request = await self.client.post(self.api_url('tasks'),
+                                         json=data,
+                                         token=token)
         data = self.json(request.response, 201)
         self.assertIsInstance(data, dict)
         self.assertTrue('id' in data)
         self.assertEqual(data['subject'], subject)
         self.assertTrue('created' in data)
+        self.assertEqual(len(request.cache.new_items), 1)
+        self.assertEqual(request.cache.new_items[0]['id'], data['id'])
+        self.assertFalse(request.cache.new_items_before_commit)
         return data
 
     async def _get_task(self, token, id):
@@ -51,10 +56,11 @@ class OdmUtils:
         return data
 
     async def _update_person(self, token, id, username=None, name=None):
-        request = await self.client.post(
-            '/people/{}'.format(id),
+        request = await self.client.patch(
+            self.api_url('people/%s' % id),
             json={'username': username, 'name': name},
-            token=token)
+            token=token
+        )
         data = self.json(request.response, 200)
         self.assertIsInstance(data, dict)
         self.assertTrue('id' in data)

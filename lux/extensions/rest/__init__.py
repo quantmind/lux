@@ -117,6 +117,7 @@ class Extension(LuxExtension):
         app.apis = Apis.make(app.config['API_URL'])
         app.add_events(('on_query',
                         'on_before_flush',
+                        'on_after_flush',
                         'on_before_commit',
                         'on_after_commit'))
 

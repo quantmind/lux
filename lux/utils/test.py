@@ -373,6 +373,13 @@ class TestMixin:
         text = self._content(response).decode('utf-8')
         return BeautifulSoup(text, 'xml')
 
+    def empty(self, response, status_code=None):
+        """Get JSON object from response
+        """
+        if status_code:
+            self.assertEqual(response.status_code, status_code)
+        self.assertFalse(response.content)
+
     def ws_upgrade(self, response):
         from lux.extensions.sockjs import LuxWs
         self.assertEqual(response.status_code, 101)
