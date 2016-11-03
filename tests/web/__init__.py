@@ -1,9 +1,7 @@
 from lux.utils import test
 
-import tests
 
-
-class WebsiteTest(tests.AuthFixtureMixin, test.WebApiTestCase):
+class WebsiteTest(test.WebApiTestCase):
     config_file = 'example.webapi.config'
     web_config_file = 'example.website.config'
 

@@ -15,12 +15,13 @@ REDIS_OK = check_server('redis')
 class ChannelsTests(test.TestCase):
     config_file = 'tests.core'
     config_params = {'PUBSUB_STORE': redis_cache_server,
-                     'APP_NAME': 'foooo'}
+                     'PUBSUB_PREFIX': 'foooo'}
 
     def test_handler(self):
         app = self.application()
         self.assertFalse(app.channels is None)
         self.assertFalse(app.channels)
+        self.assertEqual(app.channels.namespace, 'foooo_')
 
     async def test_server_channel(self):
         app = self.application()
@@ -28,7 +29,7 @@ class ChannelsTests(test.TestCase):
         request = await client.get('/')
         self.assertEqual(request.response.status_code, 404)
         self.assertTrue(app.channels)
-        self.assertTrue('foooo-server' in app.channels)
+        self.assertTrue('server' in app.channels)
 
     async def test_reload(self):
         app = self.application()
@@ -43,8 +44,7 @@ class ChannelsTests(test.TestCase):
             future.set_result(None)
 
         app.callable.clear_local = fire
-        res = await app.reload()
-        self.assertTrue(res)
+        await app.reload()
         await future
 
     async def test_wildcard(self):
@@ -55,12 +55,9 @@ class ChannelsTests(test.TestCase):
         def fire(channel, event, data):
             future.set_result(event)
 
-        def test():
-            result = app.channels.register('test', '*', fire)
-            self.assertTrue(result)
-            app.channels.publish('test', 'boom')
+        await app.channels.register('test', '*', fire)
+        await app.channels.publish('test', 'boom')
 
-        app.green_pool.submit(test)
         result = await future
 
         self.assertEqual(result, 'boom')

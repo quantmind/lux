@@ -49,9 +49,13 @@ class LuxChannels(AppComponent):
     def protocol(self):
         return self.channels.pubsub.protocol
 
+    @property
+    def namespace(self):
+        return self.channels.namespace
+
     def register(self, channel_name, event, callback):
         return self.app.green_pool.wait(
-            self.channels.register(channel_name, event, callback)
+            self._register_connect(channel_name, event, callback)
         )
 
     def unregister(self, channel_name, event, callback):
@@ -77,6 +81,10 @@ class LuxChannels(AppComponent):
         """
         app = self.app
         self.register('server', 'reload', app.reload)
+
+    async def _register_connect(self, channel_name, event, callback):
+        await self.channels.register(channel_name, event, callback)
+        await self.channels.connect()
 
 
 class Json:

@@ -721,7 +721,7 @@ def _build_handler(self):
     #
     # Use a green pool
     if self.green_pool:
-        if self.channels:
+        if self.channels is not None:
             middleware.insert(0, self.channels.middleware)
         handler = GreenWSGI(middleware, self.green_pool, rmiddleware)
     #

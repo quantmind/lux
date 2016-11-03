@@ -1,7 +1,7 @@
-from binascii import unhexlify
+from binascii import unhexlify, a2b_hex as _a2b_hex
 
 from lux.utils import test
-
+from lux.core import PasswordMixin
 from lux.utils.crypt.pbkdf2 import (_0xffffffffL, algorithms,
                                     isbytes, isinteger, callable, binxor,
                                     b64encode, verify, b2a_hex, PBKDF2,
@@ -9,9 +9,18 @@ from lux.utils.crypt.pbkdf2 import (_0xffffffffL, algorithms,
                                     sha1, sha256, sha512)
 
 
+def a2b_hex(s):
+    return _a2b_hex(s.encode('latin-1'))
+
+
 class TestPBKDF2(test.TestCase):
-    config_params = dict(CRYPT_ALGORITHM='lux.utils.crypt.pbkdf2',
-                         EXTENSIONS=['lux.extensions.rest'])
+    # To speed up tests
+    config_params = dict(
+        CRYPT_ALGORITHM={
+            "module": "lux.utils.crypt.pbkdf2",
+            "iterations": 10
+        }
+    )
 
     def u(self, value):
         return value.encode('utf-8')
@@ -44,12 +53,6 @@ class TestPBKDF2(test.TestCase):
         self.assertEqual(b2a_hex(self.u('test')), '74657374')
 
     def test_pbkdf2(self):
-        """Module self-test"""
-        from binascii import a2b_hex as _a2b_hex
-
-        def a2b_hex(s):
-            return _a2b_hex(s.encode('latin-1'))
-
         #
         # Test vectors from RFC 3962
         #
@@ -387,7 +390,6 @@ class TestPBKDF2(test.TestCase):
         self.assertEqual(str(e.exception), "Illegal character '$' in salt")
 
     def test_password_mixin(self):
-        from lux.extensions.rest import PasswordMixin
         app = self.application(PASSWORD_SECRET_KEY='ekwjfbnerxfo8475f0cnk')
         raw = 'test-password-123'
         mixin = PasswordMixin()

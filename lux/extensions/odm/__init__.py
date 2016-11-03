@@ -50,12 +50,13 @@ class Extension(LuxExtension):
         app.odm = Odm(app)
 
     def on_after_flush(self, app, session):
-        """
-        Called after SQLAlchemy commit, broadcast models events into channels
+        """broadcast models events into the data-models channel
 
-        :param app:         Lux app object
-        :param session:     SQLAlchemy session
-        :param changes:     dict of model changes
+        channel: data-models
+        event: <model-identifier>.<event>
+        data: JSON representation of model
+
+        <event> is one of ``create``, ``update``, ``delete``
         """
         request = session.request
         if not app.channels or not request:

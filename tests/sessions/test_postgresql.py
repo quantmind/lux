@@ -8,7 +8,7 @@ class TestPostgreSql(test.AppTestCase):
     def test_backend(self):
         backend = self.app.auth_backend
         self.assertTrue(backend)
-        self.assertEqual(len(backend.backends), 3)
+        self.assertEqual(len(backend.backends), 2)
 
     @test.green
     def test_get_user_none(self):
