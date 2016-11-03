@@ -78,7 +78,7 @@ class UserRest(RestRouter):
         data = self.model.tojson(request, user)
         return self.json_response(request, data)
 
-    def post(self, request):
+    def patch(self, request):
         """Update authenticated user and/or user profile
         """
         user = self.model.get_instance(request)

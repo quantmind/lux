@@ -98,7 +98,7 @@
         {
             "api_url": "/users/toni",
             "api_method": "patch",
-            "groups": ["policy-makers"]
+            "groups": ["users", "policy-makers"]
         }
     ]
 }

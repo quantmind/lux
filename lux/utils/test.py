@@ -416,16 +416,15 @@ class TestMixin:
             data = self.json(response)
         else:
             data = response
+
+        errors = data['errors']
+        self.assertTrue(errors)
+        data = dict(((d.get('field', ''), d['message']) for d in errors))
+        msg = data.get(field or '')
         if field is not None:
-            errors = data['errors']
-            self.assertTrue(errors)
-            data = dict(((d.get('field', ''), d['message']) for d in errors))
-            self.assertTrue(field in data)
-            if text:
-                self.assertEqual(data[field], text)
-        elif text:
-            self.assertEqual(data['message'], text)
-            self.assertTrue(data['error'])
+            self.assertTrue(msg)
+        if text:
+            self.assertEqual(msg, text)
 
     def check401(self, response):
         self.json(response, 401)

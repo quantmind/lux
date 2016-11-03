@@ -27,7 +27,7 @@ class Command(LuxCommand):
         token = auth_backend.create_token(request, user)
         if token:
             self.write("token created successfully.\n")
-            self.write(token.encoded)
+            self.write(token.id.hex)
         else:
             raise CommandError("Could not create token")
-        return token
+        return token.id.hex

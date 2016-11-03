@@ -1,12 +1,12 @@
 from datetime import datetime, timedelta
 
-from pulsar import PermissionDenied, MethodNotAllowed
+from pulsar import PermissionDenied
 
 from lux.core import route
-from lux.extensions.rest import CRUD, RestField
+from lux.extensions.rest import RestField
 from lux.utils.crypt import digest
 
-from . import RestModel, ensure_service_user
+from . import RestModel, ServiceCRUD, ensure_service_user
 
 
 email_templates = {
@@ -59,15 +59,8 @@ class RegistrationModel(RestModel):
         return reg
 
 
-class RegistrationCRUD(CRUD):
+class RegistrationCRUD(ServiceCRUD):
     model = RegistrationModel.create(form='signup')
-
-    def post(self, request):
-        """Perform a login operation. The headers must contain a valid
-        ``AUTHORIZATION`` token, signed by the application sending the request
-        """
-        ensure_service_user(request, MethodNotAllowed)
-        return super().post(request)
 
     @route('<id>/activate', method=('post', 'options'),
            docs={
@@ -87,8 +80,8 @@ class RegistrationCRUD(CRUD):
             request.app.fire('on_preflight', request, methods=('POST',))
             return request.response
 
+        ensure_service_user(request)
         model = self.get_model(request)
-        model.get_token(request)
 
         with model.session(request) as session:
             reg = self.get_instance(request, session=session)

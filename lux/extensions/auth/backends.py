@@ -1,5 +1,3 @@
-import uuid
-
 from pulsar import Http404
 from pulsar.utils.importer import module_attribute
 
@@ -8,6 +6,7 @@ from sqlalchemy.orm import joinedload
 from datetime import datetime
 
 from lux.core import PasswordMixin, AuthenticationError, backend_action
+from lux.utils.crypt import create_uuid
 from lux.utils.auth import normalise_email
 from lux.extensions import rest
 
@@ -129,11 +128,9 @@ class TokenBackend(PasswordMixin, rest.TokenBackend):
         """Create the token
         """
         odm = request.app.odm()
-
         with odm.begin() as session:
-            token = odm.token(id=uuid.uuid4(),
-                              user_id=user.id,
-                              **kwargs)
+            kwargs['id'] = create_uuid()
+            token = odm.token(user=user, **kwargs)
             session.add(token)
         return token
 

@@ -22,7 +22,10 @@ COMING_SOON_URL = 'coming-soon'
 DATASTORE = 'postgresql+green://lux:luxtest@127.0.0.1:5432/luxtests'
 DEFAULT_POLICY = [
     {
-        "resource": "passwords:*",
+        "resource": [
+            "passwords:*",
+            "mailinglist:*"
+        ],
         "action": "*"
     },
     {

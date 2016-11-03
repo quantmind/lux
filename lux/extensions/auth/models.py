@@ -152,4 +152,5 @@ class MailingList(Model):
     def user(cls):
         return relationship(
             'User',
-            backref=backref("mailinglists", cascade="all, delete-orphan"))
+            backref=backref("mailinglists", cascade="all, delete-orphan")
+        )

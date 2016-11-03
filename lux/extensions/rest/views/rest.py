@@ -10,6 +10,7 @@ from ..models import RestModel
 REST_CONTENT_TYPES = ['application/json']
 DIRECTIONS = ('asc', 'desc')
 POST_PUT_PATCH = frozenset(('POST', 'PUT', 'PATCH'))
+VERBS_CHECK = frozenset(('POST', 'PUT', 'PATCH', 'DELETE', 'TRACE'))
 
 
 class RestRoot(JsonRouter):
@@ -113,7 +114,10 @@ class RestRouter(JsonRouter):
     def options(self, request):
         '''Handle the CORS preflight request
         '''
-        request.app.fire('on_preflight', request)
+        verbs = [verb for verb in VERBS_CHECK if hasattr(self, verb.lower())]
+        if hasattr(self, 'get'):
+            verbs.extend(GET_HEAD)
+        request.app.fire('on_preflight', request, methods=verbs)
         return request.response
 
 

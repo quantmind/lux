@@ -3,9 +3,8 @@
 from pulsar import MethodNotAllowed, Http404
 
 from lux.core import http_assert
-from lux.extensions.rest import CRUD
 
-from . import ensure_service_user
+from . import ServiceCRUD, ensure_service_user
 from .registrations import RegistrationModel
 
 
@@ -31,7 +30,7 @@ class PasswordResetModel(RegistrationModel):
             session.delete(reg)
 
 
-class PasswordsCRUD(CRUD):
+class PasswordsCRUD(ServiceCRUD):
     """Endpoints for password recovery
     """
     model = PasswordResetModel.create(
@@ -40,9 +39,3 @@ class PasswordsCRUD(CRUD):
         url='passwords',
         type=2
     )
-
-    def post(self, request):
-        """Request a password reset operation.
-        """
-        ensure_service_user(request, MethodNotAllowed)
-        return super().post(request)

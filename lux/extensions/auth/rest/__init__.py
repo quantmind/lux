@@ -1,7 +1,8 @@
-from pulsar import Http404, BadRequest, Http401
+from pulsar import Http404, BadRequest, Http401, MethodNotAllowed
 
 from lux.forms import get_form_class
 from lux.extensions import odm
+from lux.extensions.rest import CRUD
 
 
 class RestModel(odm.RestModel):
@@ -26,3 +27,10 @@ def ensure_service_user(request, errorCls=None):
     if not request.cache.user.is_authenticated():
         raise Http401('Token')
     return request.cache.token
+
+
+class ServiceCRUD(CRUD):
+
+    def post(self, request):
+        ensure_service_user(request, MethodNotAllowed)
+        return super().post(request)
