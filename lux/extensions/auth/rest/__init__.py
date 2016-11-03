@@ -1,4 +1,4 @@
-from pulsar import Http404
+from pulsar import Http404, BadRequest, Http401
 
 from lux.forms import get_form_class
 from lux.extensions import odm
@@ -16,3 +16,13 @@ def auth_form(request, form):
     request.set_response_content_type(['application/json'])
 
     return form(request, data=request.body_data())
+
+
+def ensure_service_user(request, errorCls=None):
+    # user must be anonymous
+    if not request.cache.user.is_anonymous():
+        raise (errorCls or BadRequest)
+    # the service user must be authenticated
+    if not request.cache.user.is_authenticated():
+        raise Http401('Token')
+    return request.cache.token

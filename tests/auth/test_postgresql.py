@@ -26,6 +26,6 @@ class TestPostgreSql(test.AppTestCase,
     @classmethod
     async def beforeAll(cls):
         cls.super_token, cls.pippo_token = await gather(
-            cls._token('testuser', jwt=cls.admin_jwt),
-            cls._token('pippo', jwt=cls.admin_jwt)
+            cls.user_token('testuser', jwt=cls.admin_jwt),
+            cls.user_token('pippo', jwt=cls.admin_jwt)
         )

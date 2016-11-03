@@ -83,20 +83,20 @@ class OrganisationTest(test.AppTestCase):
         self.assertEqual(member['role'], 'owner')
         self.assertEqual(member['organisation'], 'org2')
 
-    async def __test_organisation_delete_member_fail(self):
+    async def test_organisation_delete_member_fail(self):
         request = await self.client.delete(
             self.api_url('organisations/org1/members/pippo')
         )
-        self.json(request.response, 403)
-        token = await self._token('pluto')
+        self.json(request.response, 401)
+        token = await self.user_token('pluto', jwt=self.admin_jwt)
         request = await self.client.delete(
             self.api_url('organisations/org1/members/pippo'),
             token=token
         )
         self.json(request.response, 403)
 
-    async def __test_organisation_delete_member_fail_owner(self):
-        token = await self._token('pippo')
+    async def test_organisation_delete_member_fail_owner(self):
+        token = await self.user_token('pippo', jwt=self.admin_jwt)
         request = await self.client.delete(
             self.api_url('organisations/org1/members/pippo'),
             token=token
@@ -105,8 +105,8 @@ class OrganisationTest(test.AppTestCase):
         self.assertEqual(data['message'],
                          'Cannot remove owner - only one available')
 
-    async def __test_organisation_add_member(self):
-        token = await self._token('pippo')
+    async def test_organisation_add_member(self):
+        token = await self.user_token('pippo', jwt=self.admin_jwt)
         request = await self.client.post(
             self.api_url('organisations'),
             token=token,
@@ -129,7 +129,7 @@ class OrganisationTest(test.AppTestCase):
         self.assertEqual(len(data), 2)
 
     async def __test_user_organisations(self):
-        token = await self._token('pippo')
+        token = await self.user_token('pippo', jwt=self.admin_jwt)
         request = await self.client.get(self.api_url('user'),
                                         token=token)
         self.json(request.response, 200)

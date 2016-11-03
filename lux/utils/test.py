@@ -584,7 +584,7 @@ class AppTestCase(unittest.TestCase, TestMixin):
         """Can be used to add logic before all tests"""
 
     @classmethod
-    async def _token(cls, credentials, **kw):
+    async def user_token(cls, credentials, **kw):
         '''Return a token for a user
         '''
         if isinstance(credentials, str):

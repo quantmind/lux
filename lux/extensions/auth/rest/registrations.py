@@ -1,12 +1,12 @@
 from datetime import datetime, timedelta
 
-from pulsar import Http401, BadRequest, PermissionDenied
+from pulsar import PermissionDenied, MethodNotAllowed
 
 from lux.core import route
 from lux.extensions.rest import CRUD, RestField
 from lux.utils.crypt import digest
 
-from . import RestModel
+from . import RestModel, ensure_service_user
 
 
 email_templates = {
@@ -24,18 +24,19 @@ email_templates = {
 class RegistrationModel(RestModel):
 
     @classmethod
-    def create(cls, form=None, url=None, type=1):
+    def create(cls, form=None, url=None, type=1, **kw):
         model = cls(
             'registration',
             form=form,
             url=url,
-            fields=[RestField('user', model='users')]
+            fields=[RestField('user', model='users')],
+            **kw
         )
         model.type = type
         return model
 
-    def create_model(self, request, instance=None, data=None, **kw):
-        token = self.get_token(request)
+    def create_model(self, request, instance=None, data=None,
+                     session=None, **kw):
         auth_backend = request.cache.auth_backend
         if self.type == 1:
             # Create the user
@@ -51,20 +52,22 @@ class RegistrationModel(RestModel):
             'type': self.type,
             'user_id': user.id
         }
-        reg = super().create_model(request, instance, data, **kw)
-        send_email_confirmation(request, token, reg)
+        with self.session(request, session=session) as session:
+            reg = super().create_model(request, instance, data,
+                                       session=session, **kw)
+            send_email_confirmation(request, reg.obj)
         return reg
-
-    def get_token(self, request):
-        if not request.cache.user.is_anonymous():
-            raise BadRequest
-        if not request.cache.user.is_authenticated():
-            raise Http401('Token')
-        return request.cache.token
 
 
 class RegistrationCRUD(CRUD):
     model = RegistrationModel.create(form='signup')
+
+    def post(self, request):
+        """Perform a login operation. The headers must contain a valid
+        ``AUTHORIZATION`` token, signed by the application sending the request
+        """
+        ensure_service_user(request, MethodNotAllowed)
+        return super().post(request)
 
     @route('<id>/activate', method=('post', 'options'),
            docs={
@@ -99,14 +102,15 @@ class RegistrationCRUD(CRUD):
         return request.response
 
 
-def send_email_confirmation(request, token, reg,
-                            email_subject=None, email_message=None):
+def send_email_confirmation(request, reg, email_subject=None,
+                            email_message=None):
     """Send an email to user
     """
     user = reg.user
     if not user.email:
         return
     app = request.app
+    token = ensure_service_user(request)
     site = token.get('url')
     reg_url = token.get('registration_url')
     psw_url = token.get('password_reset_url')

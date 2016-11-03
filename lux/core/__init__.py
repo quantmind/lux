@@ -13,13 +13,13 @@ from .templates import register_template_engine, template_engine, Template
 from .cms import CMS
 from .mail import EmailBackend
 from .cache import cached, Cache, register_cache, create_cache
-from .exceptions import raise_http_error, ShellError
+from .exceptions import raise_http_error, ShellError, http_assert
 from .auth import (
     backend_action, auth_backend_actions, Resource,
-    SimpleBackend, AuthenticationError
+    SimpleBackend, AuthenticationError, PasswordMixin
 )
 from .channels import LuxChannels
-from .user import UserMixin, PasswordMixin, User
+from .user import UserMixin, User
 
 
 GET_HEAD = frozenset(('GET', 'HEAD'))
@@ -55,6 +55,7 @@ __all__ = [
     'create_cache',
     'raise_http_error',
     'ShellError',
+    'http_assert',
     #
     'Resource',
     'backend_action',

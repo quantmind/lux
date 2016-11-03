@@ -57,6 +57,25 @@ class Entity(oauth.User, AppModelMixin):
             }
 
 
+class EntityOwnership(Model):
+    """Create an ownership link between an object and an entity
+
+    The object-entityownership is a one-to-one relationship in the sense that
+    an object can be owned by one entity only.
+    """
+    object_id = Column(String(60), primary_key=True, nullable=False)
+    type = Column(String(60), primary_key=True, nullable=False)
+    private = Column(Boolean)
+
+    @odm.declared_attr
+    def entity_id(cls):
+        return Column(ForeignKey('entity.id'))
+
+    @odm.declared_attr
+    def entity(cls):
+        return relationship("Entity", backref="own_objects")
+
+
 class User(Model):
     __inherit_from__ = 'entity'
 
@@ -75,6 +94,8 @@ class Organisation(Model):
 
 
 class OrgMember(Model):
+    """Organisation Membership
+    """
     private = Column(Boolean)
     role = Column(ChoiceType(MemberRole, impl=Integer), nullable=False)
 
@@ -130,7 +151,17 @@ class OrganisationApp(Model):
 
 
 class Group(auth.Group, AppModelMixin):
+    """Groups belong to applications and, optionally, to organisations
+    """
     name = Column(String(80))
+
+    @odm.declared_attr
+    def organisation_id(cls):
+        return Column(ForeignKey('organisation.id'))
+
+    @odm.declared_attr
+    def organisation(cls):
+        return relationship("Organisation", backref="teams")
 
     @odm.declared_attr
     def __table_args__(cls):
@@ -138,6 +169,7 @@ class Group(auth.Group, AppModelMixin):
             UniqueConstraint(
                 'application_id',
                 'name',
+                'organisation_id',
                 name='_group_app_name'
             ),
         )

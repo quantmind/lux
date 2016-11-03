@@ -6,7 +6,7 @@ from lux.utils.date import date_from_now
 from lux.extensions.rest import RestRouter
 from lux.extensions.rest.views.forms import LoginForm
 
-from . import RestModel, auth_form
+from . import RestModel, auth_form, ensure_service_user
 
 
 class AuthorizeForm(LoginForm):
@@ -43,12 +43,7 @@ class Authorization(RestRouter):
         """Perform a login operation. The headers must contain a valid
         ``AUTHORIZATION`` token, signed by the application sending the request
         """
-        # user must be anonymous
-        if not request.cache.user.is_anonymous():
-            raise BadRequest
-        # the service user must be authenticated
-        if not request.cache.user.is_authenticated():
-            raise Http401('Token')
+        ensure_service_user(request)
         model = self.get_model(request)
         form = auth_form(request, model.form)
 

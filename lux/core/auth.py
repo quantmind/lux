@@ -1,9 +1,11 @@
 from functools import partial
+from importlib import import_module
 
 from pulsar import PermissionDenied, Http401
 from pulsar.utils.structures import inverse_mapping
 from pulsar.utils.importer import module_attribute
 from pulsar.apps.wsgi import wsgi_request
+from pulsar.utils.pep import to_bytes
 
 from lux.utils.data import as_tuple
 
@@ -19,6 +21,8 @@ ACTIONS = {'read': 1,
 EMPTY_DICT = {}
 
 ACTION_IDS = dict(inverse_mapping(ACTIONS))
+
+UNUSABLE_PASSWORD = '!'
 
 auth_backend_actions = set()
 
@@ -137,6 +141,55 @@ class MultiAuthBackend:
         default = getattr(self, 'default_%s' % method, None)
         if hasattr(default, '__call__'):
             return default(request, *args, **kwargs)
+
+
+class PasswordMixin:
+    '''Adds password encryption to an authentication backend.
+
+    It has two basic methods,
+    :meth:`.encrypt` and :meth:`.decrypt`.
+    '''
+    def on_config(self, app):
+        cfg = app.config
+        self.encoding = cfg['ENCODING']
+        self.secret_key = cfg['PASSWORD_SECRET_KEY'].encode()
+        ckwargs = cfg['CRYPT_ALGORITHM']
+        if not isinstance(ckwargs, dict):
+            ckwargs = dict(module=ckwargs)
+        self.ckwargs = ckwargs.copy()
+        self.crypt_module = import_module(self.ckwargs.pop('module'))
+
+    def encrypt(self, string_or_bytes):
+        '''Encrypt ``string_or_bytes`` using the algorithm specified
+        in the :setting:`CRYPT_ALGORITHM` setting.
+
+        Return an encrypted string
+        '''
+        b = to_bytes(string_or_bytes, self.encoding)
+        p = self.crypt_module.encrypt(b, self.secret_key, **self.ckwargs)
+        return p.decode(self.encoding)
+
+    def crypt_verify(self, encrypted, raw):
+        '''Verify if the ``raw`` string match the ``encrypted`` string
+        '''
+        return self.crypt_module.verify(to_bytes(encrypted),
+                                        to_bytes(raw),
+                                        self.secret_key,
+                                        **self.ckwargs)
+
+    def decrypt(self, string_or_bytes):
+        b = to_bytes(string_or_bytes, self.encoding)
+        p = self.crypt_module.decrypt(b, self.secret_key)
+        return p.decode(self.encoding)
+
+    @backend_action
+    def password(self, request, raw_password=None):
+        '''Return an encrypted password
+        '''
+        if raw_password:
+            return self.encrypt(raw_password)
+        else:
+            return UNUSABLE_PASSWORD
 
 
 class Resource:

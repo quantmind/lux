@@ -16,7 +16,7 @@ __all__ = ['AuthBackend', 'MultiBackend', 'has_plugin', 'is_html']
 class Extension(LuxExtension):
     _config = (
         Parameter('ADMIN_APPLICATION_ID', None,
-                  "Unique ID of the ADMIN application. The Admin application"
+                  "Unique ID of the MASTER application. The master application"
                   " is assumed by default when no header or JWT is available"),
         Parameter('API_INFO_URL', 'info',
                   "Url for information routes")

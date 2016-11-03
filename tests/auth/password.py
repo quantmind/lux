@@ -10,21 +10,41 @@ class PasswordMixin:
         self.assertFalse(user.is_authenticated())
 
     async def test_reset_password_errors(self):
-        token = await self._token('pippo')
-        request = await self.client.post('/authorizations/reset-password',
+        request = await self.client.post(self.api_url('passwords'),
                                          json={},
-                                         token=token)
-        # user is authenticated, method not allowed
+                                         token=self.pippo_token)
         self.json(request.response, 405)
-        request = await self.client.post('/authorizations/reset-password',
+        request = await self.client.post(self.api_url('passwords'),
                                          json={})
-        self.assertValidationError(request.response)
+        self.json(request.response, 401)
+        request = await self.client.post(self.api_url('passwords'),
+                                         json={},
+                                         jwt=self.admin_jwt)
+        self.assertValidationError(request.response, 'email', 'required')
 
-    async def test_reset_password_200(self):
+    async def test_reset_password(self):
         data = dict(email='toni@toni.com')
-        request = await self.client.post('/authorizations/reset-password',
+        request = await self.client.post(self.api_url('passwords'),
+                                         jwt=self.admin_jwt,
                                          json=data)
-        self.json(request.response, 200)
+        result = self.json(request.response, 201)
+        self.assertEqual(result['user']['email'], data['email'])
+        self.assertTrue(result['id'])
+        #
+        url = self.api_url('passwords/%s' % result['id'])
+        request = await self.client.post(url, json={})
+        self.json(request.response, 401)
+        request = await self.client.post(url, json={}, jwt=self.admin_jwt)
+        self.assertValidationError(request.response, 'password', 'required')
+        data = {'password': 'newpassword',
+                'password_repeat': 'newpassword'}
+        request = await self.client.post(url, json=data, jwt=self.admin_jwt)
+        self.assertEqual(request.response.status_code, 204)
+        request = await self.client.post(url, json=data, jwt=self.admin_jwt)
+        self.json(request.response, 404)
+
+
+class d:
 
     async def test_login_fail(self):
         data = {'username': 'jdshvsjhvcsd',
@@ -36,12 +56,11 @@ class PasswordMixin:
     async def test_corrupted_token(self):
         '''Test the response when using a corrupted token
         '''
-        token = await self._token('testuser')
         request = await self.client.get('/secrets')
         self.assertEqual(request.response.status_code, 403)
-        request = await self.client.get('/secrets', token=token)
+        request = await self.client.get('/secrets', token=self.super_token)
         self.assertEqual(request.response.status_code, 200)
-        badtoken = token[:-1]
-        self.assertNotEqual(token, badtoken)
+        badtoken = self.super_token[:-1]
+        self.assertNotEqual(self.super_token, badtoken)
         request = await self.client.get('/secrets', token=badtoken)
-        self.assertEqual(request.response.status_code, 401)
+        self.assertEqual(request.response.status_code, 400)

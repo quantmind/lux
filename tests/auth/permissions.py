@@ -5,75 +5,68 @@ class PermissionsMixin:
 
     async def test_create_permission_errors(self):
         """Test permissions CREATE/UPDATE/DELETE"""
-        token = await self._token('testuser')
         request = await self.client.post('/permissions',
                                          json=dict(name='blabla'),
-                                         token=token)
+                                         token=self.super_token)
         self.assertValidationError(request.response, 'policy', 'required')
         #
         data = dict(name='blabla', policy='{')
         request = await self.client.post('/permissions',
                                          json=data,
-                                         token=token)
+                                         token=self.super_token)
         self.assertValidationError(request.response, 'policy',
                                    'not a valid JSON string')
         #
         data = dict(name='blabla', description='hgv hh', policy='[]')
         request = await self.client.post('/permissions',
                                          json=data,
-                                         token=token)
+                                         token=self.super_token)
         self.assertValidationError(request.response, '',
                                    text='Policy empty')
         #
         data = dict(name='blabla', description='hgv hh', policy='67')
         request = await self.client.post('/permissions',
                                          json=data,
-                                         token=token)
+                                         token=self.super_token)
         self.assertValidationError(request.response, '',
                                    text='Policy should be a list or an object')
         #
         data = dict(name='blabla', description='hgv hh', policy='[45]')
         request = await self.client.post('/permissions',
                                          json=data,
-                                         token=token)
+                                         token=self.super_token)
         self.assertValidationError(request.response, '',
                                    text='Policy should be a list or an object')
         #
         data = dict(name='blabla', description='hgv hh', policy='{}')
         request = await self.client.post('/permissions',
                                          json=data,
-                                         token=token)
+                                         token=self.super_token)
         self.assertValidationError(request.response, '',
                                    text='"resource" must be defined')
 
     async def test_policy_invalid_entry(self):
         """Test permissions CREATE/UPDATE/DELETE"""
-        token = await self._token('testuser')
-        #
         data = dict(name='blabla', description='hgv hh',
                     policy=dict(foo='blabla'))
         request = await self.client.post('/permissions',
                                          json=data,
-                                         token=token)
+                                         token=self.super_token)
         self.assertValidationError(request.response, '')
 
     async def test_policy_invalid_type(self):
         """Test permissions CREATE/UPDATE/DELETE"""
-        token = await self._token('testuser')
-        #
         data = dict(name='blabla', description='hgv hh',
                     policy=dict(condition=['blabla']))
         request = await self.client.post('/permissions',
                                          json=data,
-                                         token=token)
+                                         token=self.super_token)
         self.assertValidationError(request.response, '',
                                    'not a valid condition statement')
 
     async def test_column_permissions_read(self):
         """Tests read requests against columns with permission level 0"""
-        su_token = await self._token('testuser')
-
-        objective = await self._create_objective(su_token)
+        objective = await self._create_objective(self.super_token)
 
         request = await self.client.get(
             '/objectives/{}'.format(objective['id']))
@@ -94,13 +87,16 @@ class PermissionsMixin:
             any(field['name'] == 'deadline' for field in data['columns']))
 
         request = await self.client.get(
-            '/objectives/{}'.format(objective['id']), token=su_token)
+            '/objectives/{}'.format(objective['id']),
+            token=self.super_token
+        )
         data = self.json(request.response, 200)
         self.assertTrue('id' in data)
         self.assertTrue('deadline' in data)
 
         request = await self.client.get(
-            '/objectives', token=su_token)
+            '/objectives', token=self.super_token
+        )
         data = self.json(request.response, 200)
         self.assertTrue('result' in data)
         for item in data['result']:
@@ -109,7 +105,8 @@ class PermissionsMixin:
                 self.assertTrue('deadline' in item)
 
         request = await self.client.get(
-            '/objectives/metadata', token=su_token)
+            '/objectives/metadata', token=self.super_token
+        )
         data = self.json(request.response, 200)
         self.assertTrue(
             any(field['name'] == 'deadline' for field in data['columns']))
@@ -153,17 +150,17 @@ class PermissionsMixin:
         Checks that a custom policy works on a column with default access
         level 0
         """
-        user_token = await self._token('pippo')
-        objective = await self._create_objective(user_token)
+        objective = await self._create_objective(self.pippo_token)
 
         request = await self.client.get(
-            '/objectives/{}'.format(objective['id']), token=user_token)
+            '/objectives/{}'.format(objective['id']), token=self.pippo_token)
         data = self.json(request.response, 200)
         self.assertTrue('id' in data)
         self.assertTrue('subject' in data)
 
         request = await self.client.get(
-            '/objectives', token=user_token)
+            '/objectives', token=self.pippo_token
+        )
         data = self.json(request.response, 200)
         self.assertTrue('result' in data)
         for item in data['result']:
@@ -171,14 +168,15 @@ class PermissionsMixin:
             self.assertTrue('subject' in item)
 
         request = await self.client.get(
-            '/objectives/metadata', token=user_token)
+            '/objectives/metadata', token=self.pippo_token
+        )
         data = self.json(request.response, 200)
         self.assertTrue(
             any(field['name'] == 'deadline' for field in data['columns']))
 
         request = await self.client.post(
             '/objectives/{}'.format(objective['id']),
-            token=user_token,
+            token=self.pippo_token,
             json={'subject': 'subject changed',
                   'deadline': deadline(20)}
         )

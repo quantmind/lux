@@ -7,8 +7,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm import joinedload
 from datetime import datetime
 
-from lux.core import (json_message, PasswordMixin, AuthenticationError,
-                      backend_action)
+from lux.core import PasswordMixin, AuthenticationError, backend_action
 from lux.utils.auth import normalise_email
 from lux.extensions import rest
 
@@ -108,7 +107,7 @@ class TokenBackend(PasswordMixin, rest.TokenBackend):
                 raise ValueError('Email not available')
 
             user = odm.user(username=username,
-                            password=self.password(password),
+                            password=self.password(request, password),
                             email=email,
                             first_name=first_name,
                             last_name=last_name,
@@ -145,48 +144,3 @@ class TokenBackend(PasswordMixin, rest.TokenBackend):
             query = session.query(token).options(joinedload(token.user))
             token = query.get(key)
         return token
-
-    def add_encoded(self, request, token):
-        """Inject the ``encoded`` attribute to the token and return the token
-        """
-        if token:
-            odm = request.app.odm()
-            with odm.begin() as session:
-                session.add(token)
-                token.encoded = self.encode_token(request,
-                                                  token_id=token.id.hex,
-                                                  user=token.user,
-                                                  expiry=token.expiry)
-        return token
-
-    def set_password(self, request, password, user=None, auth_key=None):
-        """Set a new password for user
-        """
-        if not user and auth_key:
-            user = self.confirm_auth_key(request, auth_key, True)
-
-        if not user:
-            raise AuthenticationError('No user')
-
-        with request.app.odm().begin() as session:
-            user.password = self.password(password)
-            session.add(user)
-
-        return json_message(request, 'password changed')
-
-    def confirm_auth_key(self, request, key, confirm=False):
-        odm = request.app.odm()
-        with odm.begin() as session:
-            reg = session.query(odm.registration).get(key)
-            now = datetime.utcnow()
-            if reg and not reg.confirmed and reg.expiry > now:
-                if confirm:
-                    user = reg.user
-                    user.active = True
-                    reg.confirmed = True
-                    reg.expiry = now
-                    session.add(user)
-                    session.add(reg)
-                    return user
-                return True
-        return False

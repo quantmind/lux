@@ -24,3 +24,8 @@ class ShellError(Exception):
     def __init__(self, msg, code):
         super().__init__(msg)
         self.code = code
+
+
+def http_assert(assertion, errorCls, *args):
+    if not assertion:
+        raise errorCls(*args)

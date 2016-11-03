@@ -216,7 +216,9 @@ class CRUD(MetadataMixin, RestRouter):
                 data = model.tojson(request, instance)
 
             elif request.method in POST_PUT_PATCH:
+                exclude_missing = False
                 if request.method == 'PATCH':
+                    exclude_missing = True
                     form_class = get_form_class(request, model.updateform)
                 elif request.method == 'POST':
                     form_class = get_form_class(request, model.postform)
@@ -235,7 +237,8 @@ class CRUD(MetadataMixin, RestRouter):
                 data, files = request.data_and_files()
                 form = form_class(request, data=data, files=files,
                                   previous_state=instance, model=model)
-                if form.is_valid(exclude_missing=True):
+
+                if form.is_valid(exclude_missing=exclude_missing):
                     try:
                         instance = model.update_model(request,
                                                       instance,
@@ -246,7 +249,11 @@ class CRUD(MetadataMixin, RestRouter):
                         form.add_error_message('Could not update model')
                         data = form.tojson()
                     else:
-                        data = model.tojson(request, instance)
+                        if instance:
+                            data = model.tojson(request, instance)
+                        else:
+                            request.response.status_code = 204
+                            return request.response
                 else:
                     data = form.tojson()
 
