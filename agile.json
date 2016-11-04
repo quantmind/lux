@@ -44,10 +44,6 @@
         }
     },
     "tasks": {
-        "release": {
-            "description": "make a new release to github",
-            "command": ["python", "github:lux"]
-        },
         "js": {
             "description": "Create the js files",
             "command": [
@@ -61,10 +57,6 @@
                 "shell:lux",
                 "shell:js"
             ]
-        },
-        "dev": {
-            "description": "Start development watch server",
-            "command": ["watch"]
         }
     }
 }

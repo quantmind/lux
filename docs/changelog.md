@@ -1,5 +1,7 @@
 # Changelog
 
+* [Versions 0.8](/docs/history/0.8.md)
+* [Versions 0.7](/docs/history/0.7.md)
 * [Versions 0.6](/docs/history/0.6.md)
 * [Versions 0.5](/docs/history/0.5.md)
 * [Versions 0.4](/docs/history/0.4.md)
