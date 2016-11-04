@@ -12,7 +12,7 @@ class AuthTest(web.WebsiteTest):
         return msg[:idx]
 
     async def test_html_signup(self):
-        request = await self.webclient.get('/auth/signup')
+        request = await self.webclient.get('/signup')
         html = self.html(request.response, 200)
         self.assertTrue(html)
 
@@ -22,12 +22,12 @@ class AuthTest(web.WebsiteTest):
 
     async def test_signup_error(self):
         data = {'username': 'djkhvbdf'}
-        request = await self.webclient.post('/auth/signup', json=data)
+        request = await self.webclient.post('/signup', json=data)
         self.json(request.response, 403)
 
     async def test_signup_error_form(self):
         data = {'username': 'djkhvbdf'}
-        request = await self.client.post('/authorizations/signup', json=data)
+        request = await self.client.post('/registrations', json=data)
         self.assertValidationError(request.response, 'password')
 
     async def test_signup_confirmation(self):
@@ -42,34 +42,35 @@ class AuthTest(web.WebsiteTest):
 
     # PASSWORD RESET
     async def test_reset_password_get(self):
-        request = await self.webclient.get('/auth/reset-password')
+        request = await self.webclient.get('/reset-password')
         bs = self.bs(request.response, 200)
         form = bs.find('lux-form')
         self.assertTrue(form)
 
     async def test_reset_password_fail(self):
-        cookie, data = await self._cookie_csrf('/auth/reset-password')
-        request = await self.webclient.post('/auth/reset-password',
-                                            json=data, cookie=cookie)
+        cookie, data = await self._cookie_csrf('/reset-password')
+        request = await self.webclient.post('/reset-password',
+                                            json=data,
+                                            cookie=cookie)
         self.assertValidationError(request.response, 'email')
         data['email'] = 'dvavf@sdvavadf.com'
-        request = await self.webclient.post('/auth/reset-password',
+        request = await self.webclient.post('/reset-password',
                                             json=data, cookie=cookie)
         self.assertValidationError(request.response,
                                    text="Can't find user, sorry")
 
     async def test_reset_password_bad_key(self):
-        cookie, data = await self._cookie_csrf('/auth/reset-password')
-        request = await self.webclient.get('/auth/reset-password/sdhcvshc',
+        cookie, data = await self._cookie_csrf('/reset-password')
+        request = await self.webclient.get('/reset-password/sdhcvshc',
                                            cookie=cookie)
         self.assertEqual(request.response.status_code, 404)
 
     async def test_reset_password_success(self):
-        cookie, data = await self._cookie_csrf('/auth/reset-password')
+        cookie, data = await self._cookie_csrf('/reset-password')
         #
         # Post Reset password request
         data['email'] = 'toni@test.com'
-        request = await self.webclient.post('/auth/reset-password',
+        request = await self.webclient.post('/reset-password',
                                             json=data, cookie=cookie)
         data = self.json(request.response, 200)
         self.assertTrue(data['email'], 'toni@test.com')
@@ -82,7 +83,7 @@ class AuthTest(web.WebsiteTest):
         self.assertEqual(mail.sender, 'admin@lux.com')
         code = self._get_code(mail.message)
         self.assertTrue(code)
-        request = await self.webclient.get('/auth/reset-password/%s' % code,
+        request = await self.webclient.get('/reset-password/%s' % code,
                                            cookie=cookie)
         bs = self.bs(request.response, 200)
         form = bs.find('lux-form')
@@ -94,14 +95,14 @@ class AuthTest(web.WebsiteTest):
             '/auth/reset-password/%s' % code, cookie=cookie)
         data.update({'password': password, 'password_repeat': password})
 
-        request = await self.webclient.post('/auth/reset-password/%s' % code,
+        request = await self.webclient.post('/reset-password/%s' % code,
                                             data=data,
                                             cookie=cookie)
         data = self.json(request.response, 200)
         self.assertEqual(data['message'], 'password changed')
         #
         # the change password link should now raise 404
-        request = await self.webclient.get('/auth/reset-password/%s' % code,
+        request = await self.webclient.get('/reset-password/%s' % code,
                                            cookie=cookie)
         self.assertEqual(request.response.status_code, 404)
 

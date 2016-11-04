@@ -8,7 +8,6 @@ AUTHENTICATION_BACKENDS = [
     'lux.extensions.sessions:SessionBackend',
     'lux.extensions.auth:TokenBackend'
 ]
-SESSION_STORE = 'redis://127.0.0.1:6379/13'
 SESSION_EXCLUDE_URLS = [
     'api',
     'api/<path:path>',

@@ -582,7 +582,9 @@ class WebApiTestCase(AppTestCase):
         await as_coroutine(super().setUpClass())
         cls.web = test_app(cls, config_file=cls.web_config_file,
                            config_params=False, api_app=cls.app)
-        assert cls.web.api.http.app is cls.app
+        for api in cls.web.apis:
+            if api.netloc:
+                cls.web.api.local_apps[api.netloc] = cls.app
         cls.webclient = TestClient(cls.web)
 
     def check_html_token(self, doc, token):

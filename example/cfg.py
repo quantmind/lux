@@ -18,6 +18,7 @@ SESSION_BACKEND = redis_cache_server
 EMAIL_DEFAULT_FROM = 'admin@lux.com'
 EMAIL_BACKEND = 'lux.core.mail.LocalMemory'
 SESSION_COOKIE_NAME = 'test-website'
+SESSION_STORE = 'redis://127.0.0.1:6379/13'
 
 DATASTORE = 'postgresql+green://lux:luxtest@127.0.0.1:5432/luxtests'
 
