@@ -196,6 +196,8 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
         Parameter('PUBSUB_PREFIX', None,
                   'Prefix for pubsub channels. If not defined, the APP_NAME'
                   'is used. To skip prefix set to empty string.'),
+        Parameter('CHANNEL_SERVER', 'server',
+                  'Channel name for the server'),
         #
         Parameter('HTTP_CLIENT_PARAMETERS', None,
                   'A dictionary of parameters to pass to the Http Client')
@@ -596,7 +598,10 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
             self.logger.warning('Reload WSGI application')
             self.callable.clear_local()
         else:
-            result = self.channels.publish('server', 'reload')
+            # publish reload to the server channel
+            result = self.channels.publish(
+                self.config['CHANNEL_SERVER'], 'reload'
+            )
             if result is None:
                 self.reload(True)
             else:

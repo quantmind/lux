@@ -22,9 +22,9 @@ class Command(LuxCommand):
             raise CommandError('Cannot create application')
 
         model = self.app.models['applications']
-        ID = request.config['ADMIN_APPLICATION_ID']
+        ID = request.config['MASTER_APPLICATION_ID']
         if not ID:
-            raise CommandError('ADMIN_APPLICATION_ID not available in config')
+            raise CommandError('MASTER_APPLICATION_ID not available in config')
         try:
             app_domain = model.get_instance(request, id=ID)
         except Http404:

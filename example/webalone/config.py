@@ -1,6 +1,6 @@
 from example.cfg import *   # noqa
 
-API_URL = 'api'
+API_URL = '/api'
 DEFAULT_CONTENT_TYPE = 'text/html'
 #
 # sessions

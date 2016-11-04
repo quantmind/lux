@@ -68,25 +68,23 @@ class TestPostgreSql(test.AppTestCase):
     async def test_login_fail(self):
         data = {'username': 'jdshvsjhvcsd',
                 'password': 'dksjhvckjsahdvsf'}
-        request = await self.client.post('/auth/login', json=data)
-        response = request.response
-        self.assertEqual(response.status_code, 403)
+        request = await self.client.post('/login', json=data)
+        self.json(request.response, 403)
         user = request.cache.user
         self.assertFalse(user.is_authenticated())
-        self.json(response)
         #
-        request = await self.client.get('/auth/login')
+        request = await self.client.get('/login')
         response = request.response
         token = self.authenticity_token(self.bs(response, 200))
         self.assertTrue(token)
         data.update(token)
         cookie = self.cookie(response)
         self.assertTrue(cookie)
-        request = await self.client.post('/auth/login',
+        request = await self.client.post('/login',
                                          json=data,
                                          cookie=cookie)
         self.assertValidationError(request.response,
-                                   text='Invalid username or password')
+                                   text='Invalid credentials')
         user = request.cache.user
         self.assertFalse(user.is_authenticated())
 
@@ -100,7 +98,7 @@ class TestPostgreSql(test.AppTestCase):
         self.assertEqual(user.username, username)
         self.assertNotEqual(user.password, password)
 
-        request = await self.client.get('/auth/login')
+        request = await self.client.get('/login')
         response = request.response
         token = self.authenticity_token(self.bs(response, 200))
         self.assertTrue(token)
@@ -109,14 +107,12 @@ class TestPostgreSql(test.AppTestCase):
         self.assertTrue(cookie)
         #
         # Login with csrf token and cookie, It should work
-        request = await self.client.post('/auth/login',
+        request = await self.client.post('/login',
                                          json=data,
                                          cookie=cookie)
-        response = request.response
-        self.assertEqual(response.status_code, 201)
-        data = self.json(response)
-        self.assertTrue(data.get('token'))
-        cookie2 = self.cookie(response)
+        data = self.json(request.response, 200)
+        self.assertTrue(data.get('success'))
+        cookie2 = self.cookie(request.response)
         # The cookie has changed
         self.assertNotEqual(cookie, cookie2)
         #
@@ -129,7 +125,7 @@ class TestPostgreSql(test.AppTestCase):
         # The cookie has changed
         self.assertEqual(cookie3, None)
         #
-        request = await self.client.get('/auth/login', cookie=cookie2)
+        request = await self.client.get('/login', cookie=cookie2)
         response = request.response
         self.assertEqual(response.status_code, 302)
         return cookie2
@@ -138,11 +134,10 @@ class TestPostgreSql(test.AppTestCase):
         cookie = await self.test_create_superuser_command_and_login()
         #
         # This wont work, not csrf token
-        request = await self.client.post('/auth/logout',
+        request = await self.client.post('/logout',
                                          json={},
                                          cookie=cookie)
-        response = request.response
-        self.assertEqual(response.status_code, 403)
+        self.json(request.response, 403)
         #
         request = await self.client.get('/', cookie=cookie)
         response = request.response
@@ -152,7 +147,7 @@ class TestPostgreSql(test.AppTestCase):
         token = self.authenticity_token(self.bs(response))
         self.assertTrue(token)
 
-        request = await self.client.post('/auth/logout',
+        request = await self.client.post('/logout',
                                          json=token,
                                          cookie=cookie)
         response = request.response

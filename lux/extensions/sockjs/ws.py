@@ -12,7 +12,7 @@ from pulsar.apps import ws
 from .rpc import WsRpc
 
 
-CONNECTION_ESTABLISHED = 'connection_established'
+CONNECTION_ESTABLISHED = 'established'
 CONNECTION = 'connection'
 
 

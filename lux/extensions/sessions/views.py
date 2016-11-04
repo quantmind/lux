@@ -33,7 +33,8 @@ class Login(WebFormRouter):
         if form.is_valid():
             auth_backend = request.cache.auth_backend
             try:
-                result = auth_backend.login(request, **form.cleaned_data)
+                auth_backend.login(request, **form.cleaned_data)
+                result = {'success': True}
             except (UnprocessableEntity, AuthenticationError) as exc:
                 result = form_http_exception(form, exc)
         else:

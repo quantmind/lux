@@ -38,7 +38,7 @@ class AuthBackend(auth.TokenBackend):
         super().request(request)
         user = request.cache.user
         if user.is_anonymous() and not isinstance(user, ServiceUser):
-            admin_id = request.config['ADMIN_APPLICATION_ID']
+            admin_id = request.config['MASTER_APPLICATION_ID']
             app_id = request.get('HTTP_X_APPLICATION_ID', admin_id)
             try:
                 app = get_application(request.app, id=app_id)
@@ -54,7 +54,7 @@ class AuthBackend(auth.TokenBackend):
             if user:
                 kw['application_id'] = user.application_id
             else:
-                kw['application_id'] = request.config['ADMIN_APPLICATION_ID']
+                kw['application_id'] = request.config['MASTER_APPLICATION_ID']
         return super().create_user(request, **kw)
 
     def secret_from_jwt_payload(self, request, payload):

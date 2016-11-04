@@ -9,7 +9,7 @@ from lux.core import Parameter, LuxExtension
 
 from .models import RestModel, DictModel, RestField, is_rel_field
 from .api import Apis
-from .api.client import ApiClient, HttpResponse
+from .api.client import ApiClient, HttpResponse, HttpRequestMixin
 from .views.rest import RestRouter, MetadataMixin, CRUD, Rest404
 from .views.spec import Specification
 from .pagination import Pagination, GithubPagination
@@ -32,6 +32,7 @@ __all__ = [
     ""
     "ApiClient",
     "HttpResponse",
+    "HttpRequestMixin",
     #
     'Query',
     'RestSession',
@@ -114,7 +115,7 @@ class Extension(LuxExtension):
 
     def on_config(self, app):
         app.providers['Api'] = ApiClient
-        app.apis = Apis.make(app.config['API_URL'])
+        app.apis = Apis.make(app)
         app.add_events(('on_query',
                         'on_before_flush',
                         'on_after_flush',

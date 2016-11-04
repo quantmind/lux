@@ -5,23 +5,29 @@ from pulsar.apps.wsgi import Route
 from pulsar.utils.structures import mapping_iterator
 from pulsar.utils.httpurl import remove_double_slash
 
+from lux.core import AppComponent
+from lux.utils.token import app_token
+
 from ..views.rest import RestRoot
+
 from ..views.spec import Specification
 
 
-class Apis:
+class Apis(AppComponent):
 
-    def __init__(self, urls):
+    def __init__(self, app, urls):
+        super().__init__(app)
         self._apis = []
         self.update(urls)
 
     @classmethod
-    def make(cls, urls):
+    def make(cls, app):
+        urls = app.config['API_URL']
         if urls is None:
             return
         if isinstance(urls, str):
             urls = (("*", urls),)
-        return cls(urls)
+        return cls(app, urls)
 
     def __repr__(self):
         return repr(self._apis)
@@ -37,7 +43,7 @@ class Apis:
         for name, cfg in mapping_iterator(iterable):
             if isinstance(cfg, str):
                 cfg = {'url': cfg}
-            apis.append(ApiSpec(name, **cfg))
+            apis.append(ApiSpec(self.app, name, **cfg))
         self._apis = list(reversed(sorted(apis, key=lambda api: api.path)))
 
     def get(self, path=None):
@@ -61,11 +67,13 @@ class Apis:
 class ApiSpec:
     """Information about an API
     """
-    def __init__(self, name, url=None, jwt=None, spec=None):
+    def __init__(self, app, name, url=None, jwt=None, spec=None):
         if name == '*':
             name = ''
         self.route = Route('%s/<path:path>' % name)
         self.urlp = urlparse(url)
+        if not self.netloc and not jwt:
+            jwt = app_token(app)
         self.jwt = jwt
         self.spec = spec
         self.router = RestRoot(self.urlp.path)

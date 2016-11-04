@@ -41,7 +41,9 @@ class Extension(LuxExtension):
                   'Dictionary for mapping alembic settings'),
         Parameter('DEFAULT_TEXT_SEARCH_CONFIG', 'english',
                   'Default config/language for :search full-text search '
-                  'operator')
+                  'operator'),
+        Parameter('CHANNEL_DATAMODEL', 'datamodel',
+                  'Channel name for data models updates'),
     ]
 
     def on_config(self, app):
@@ -66,8 +68,8 @@ class Extension(LuxExtension):
             model = models.get(instance.__class__.__name__.lower())
             if model:
                 data = model.tojson(request, instance, in_list=True, safe=True)
-                app.channels.publish('data-models',
-                                     '%s.%' % (model.identifier, event),
+                app.channels.publish(app.config['CHANNEL_DATAMODEL'],
+                                     '%s.%s' % (model.identifier, event),
                                      data)
 
     def on_close(self, app):

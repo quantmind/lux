@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 from pulsar import Http404, Http401, PermissionDenied
 from pulsar.utils.httpurl import parse_options_header
 from pulsar.apps.http import JSON_CONTENT_TYPES
+from pulsar.utils.websocket import SUPPORTED_VERSIONS, websocket_key
 
 from lux.core import raise_http_error
 
@@ -61,7 +62,46 @@ class ApiClient:
         return response
 
 
-class ApiClientRequest:
+class HttpRequestMixin:
+
+    def delete(self, path=None, **kw):
+        return self.request('DELETE', path=path, **kw)
+
+    def get(self, path=None, **kw):
+        return self.request('GET', path=path, **kw)
+
+    def head(self, path=None, **kw):
+        return self.request('HEAD', path=path, **kw)
+
+    def options(self, path=None, **extra):
+        return self.request('OPTIONS', path, **extra)
+
+    def patch(self, path=None, **kw):
+        return self.request('PATCH', path=path, **kw)
+
+    def post(self, path=None, **kw):
+        return self.request('POST', path=path, **kw)
+
+    def put(self, path=None, **kw):
+        return self.request('PUT', path=path, **kw)
+
+    def wsget(self, path=None, headers=None, **kw):
+        """make a websocket request"""
+        if headers is None:
+            headers = []
+        headers.extend((
+            ('Connection', 'Upgrade'),
+            ('Upgrade', 'websocket'),
+            ('Sec-WebSocket-Version', str(max(SUPPORTED_VERSIONS))),
+            ('Sec-WebSocket-Key', websocket_key())
+        ))
+        return self.request('GET', path=path, headers=headers, **kw)
+
+    def request(self, method, path=None, **kw):
+        raise NotImplementedError
+
+
+class ApiClientRequest(HttpRequestMixin):
     __slots__ = ('_request', '_api', '_path')
 
     def __init__(self, request, api, path=None):
@@ -82,24 +122,6 @@ class ApiClientRequest:
     def __repr__(self):
         return 'api(%s)' % self.url
     __str__ = __repr__
-
-    def delete(self, path=None, **kw):
-        return self.request('DELETE', path=path, **kw)
-
-    def get(self, path=None, **kw):
-        return self.request('GET', path=path, **kw)
-
-    def head(self, path=None, **kw):
-        return self.request('HEAD', path=path, **kw)
-
-    def patch(self, path=None, **kw):
-        return self.request('PATCH', path=path, **kw)
-
-    def post(self, path=None, **kw):
-        return self.request('POST', path=path, **kw)
-
-    def put(self, path=None, **kw):
-        return self.request('PUT', path=path, **kw)
 
     def request(self, method, path=None, **kw):
         if path:

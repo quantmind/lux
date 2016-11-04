@@ -5,6 +5,7 @@ from .extension import LuxExtension, Parameter, app_attribute
 from .models import LuxModel, Query, ModelInstance, ModelNotAvailable
 from .console import App, execute_from_config
 from .app import Application, extend_config
+from .component import AppComponent
 from .wrappers import (WsgiRequest, Router, HtmlRouter,
                        JsonRouter, json_message, cached_property,
                        RedirectRouter, LuxContext,
@@ -42,6 +43,7 @@ __all__ = [
     #
     'Application',
     'App',
+    'AppComponent',
     'execute_from_config',
     'extend_config',
     'register_template_engine',

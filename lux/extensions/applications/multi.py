@@ -40,7 +40,7 @@ class MultiBackend:
         channels.register('applications', '*', reload_app)
 
         # Get the root application
-        root = get_application(app, id=app.config['ADMIN_APPLICATION_ID'])
+        root = get_application(app, id=app.config['MASTER_APPLICATION_ID'])
         # The root domain is not specified - cannot use multiapp
         if not root.domain:
             return
@@ -76,7 +76,7 @@ class MultiBackend:
 
 
 def get_application(app, id=None, name=None, domain=None):
-    admin_id = app.config['ADMIN_APPLICATION_ID']
+    admin_id = app.config['MASTER_APPLICATION_ID']
     if not admin_id:
         raise Http404
 
@@ -153,7 +153,7 @@ def _get_app_domain(app, **filters):
 
 
 def _create_admin_app(app):
-    id = app.config['ADMIN_APPLICATION_ID']
+    id = app.config['MASTER_APPLICATION_ID']
     name = app.config['APP_NAME']
     token = create_token()
 

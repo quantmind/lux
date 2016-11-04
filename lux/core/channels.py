@@ -80,7 +80,7 @@ class LuxChannels(AppComponent):
         the server.reload event
         """
         app = self.app
-        self.register('server', 'reload', app.reload)
+        self.register(app.config['CHANNEL_SERVER'], 'reload', app.reload)
 
     async def _register_connect(self, channel_name, event, callback):
         await self.channels.register(channel_name, event, callback)

@@ -13,14 +13,13 @@ from pulsar import get_event_loop, as_coroutine
 from pulsar.utils.httpurl import (Headers, encode_multipart_formdata,
                                   ENCODE_BODY_METHODS, remove_double_slash)
 from pulsar.utils.string import random_string
-from pulsar.utils.websocket import (SUPPORTED_VERSIONS, websocket_key,
-                                    frame_parser)
+from pulsar.utils.websocket import frame_parser
 from pulsar.apps.wsgi import WsgiResponse
 from pulsar.apps.http import full_url
 from pulsar.apps.test import test_timeout, sequential
 
-from lux.core import App
-from lux.extensions.rest import ApiClient, HttpResponse
+from lux.core import App, AppComponent
+from lux.extensions.rest import HttpRequestMixin
 from lux.core.commands.generate_secret_key import generate_secret
 
 from .token import app_token
@@ -186,17 +185,19 @@ async def load_fixtures(app, path=None, api_url=None, testuser=None,
     logger.info('Created %s objects', total)
 
 
-class TestClient:
+class TestClient(AppComponent, HttpRequestMixin):
     """An utility for simulating lux clients
     """
-    def __init__(self, app, headers=None):
-        self.app = app
-        self.headers = headers or []
-
     def run_command(self, command, argv=None, **kwargs):
+        """Run a lux command"""
         argv = argv or []
         cmd = self.app.get_command(command)
         return cmd(argv, **kwargs)
+
+    async def request(self, method, path=None, **params):
+        request, sr = self.request_start_response(method, path, **params)
+        await self.app(request.environ, sr)
+        return request
 
     def request_start_response(self, method, path, HTTP_ACCEPT=None,
                                headers=None, data=None, json=None,
@@ -207,7 +208,7 @@ class TestClient:
         path = path or '/'
         extra['HTTP_ACCEPT'] = HTTP_ACCEPT or '*/*'
         extra['pulsar.connection'] = mock.MagicMock()
-        heads = self.headers[:]
+        heads = []
         if headers:
             heads.extend(headers)
         if json is not None:
@@ -244,54 +245,6 @@ class TestClient:
         start_response = mock.MagicMock()
         return request, start_response
 
-    async def request(self, method, path, **params):
-        request, sr = self.request_start_response(method, path, **params)
-        await self.app(request.environ, sr)
-        return request
-
-    def get(self, path=None, **extra):
-        return self.request('get', path, **extra)
-
-    def patch(self, path=None, **extra):
-        return self.request('patch', path, **extra)
-
-    def post(self, path=None, **extra):
-        return self.request('post', path, **extra)
-
-    def put(self, path=None, **extra):
-        return self.request('put', path, **extra)
-
-    def delete(self, path=None, **extra):
-        return self.request('delete', path, **extra)
-
-    def options(self, path=None, **extra):
-        return self.request('options', path, **extra)
-
-    def head(self, path=None, **extra):
-        return self.request('head', path, **extra)
-
-    def wsget(self, path):
-        """make a websocket request"""
-        headers = [('Connection', 'Upgrade'),
-                   ('Upgrade', 'websocket'),
-                   ('Sec-WebSocket-Version', str(max(SUPPORTED_VERSIONS))),
-                   ('Sec-WebSocket-Key', websocket_key())]
-        return self.get(path, headers=headers)
-
-
-class TestHttpApiClient(TestClient):
-    """Api client test handler
-    """
-    def request(self, method, path, **params):
-        """Override :meth:`TestClient.request` for testing Api clients
-        inside a lux application
-        """
-        request, sr = self.request_start_response(method, path, **params)
-        response = self.app(request.environ, sr)
-        green_pool = self.app.green_pool
-        response = green_pool.wait(response, True) if green_pool else response
-        return HttpResponse(response)
-
 
 class TestMixin:
     app = None
@@ -305,14 +258,7 @@ class TestMixin:
 
     @classmethod
     def app_test_providers(cls, app):
-        if 'Api' in app.providers:
-            app.providers['Api'] = cls.apiClient
-
-    @classmethod
-    def apiClient(cls, app):
-        api = ApiClient(app)
-        api.http = TestHttpApiClient(cls.app or app)
-        return api
+        pass
 
     def authenticity_token(self, doc):
         name = doc.find('meta', attrs={'name': 'csrf-param'})
