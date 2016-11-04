@@ -19,8 +19,8 @@ class WsChannelsRpc:
                                    'data': data})
         """
         channel = wsrequest.required_param('channel')
-        wsrequest.check_permission(channel, 'update')
         event = wsrequest.required_param('event')
+        wsrequest.check_permission('channels', 'update', channel, event)
         data = wsrequest.params.get('data')
         return self.channel_publish(wsrequest, channel, event, data)
 
@@ -33,8 +33,8 @@ class WsChannelsRpc:
                                      'event': 'myevent'})
         """
         channel = wsrequest.required_param('channel')
-        wsrequest.check_permission(channel, 'read')
         event = wsrequest.required_param('event')
+        wsrequest.check_permission('channels', 'read', channel, event)
         return self.channel_subscribe(wsrequest, channel, event)
 
     def ws_unsubscribe(self, wsrequest):
@@ -46,8 +46,8 @@ class WsChannelsRpc:
                                        'event': 'myevent'})
         """
         channel = wsrequest.required_param('channel')
-        wsrequest.check_permission(channel, 'read')
         event = wsrequest.required_param('event')
+        wsrequest.check_permission('channels', 'read', channel, event)
         return self.channel_unsubscribe(wsrequest, channel, event)
 
     def channel_subscribe(self, wsrequest, channel, event):

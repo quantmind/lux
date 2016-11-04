@@ -1,6 +1,9 @@
 from pulsar import PermissionDenied, Http404
 
+from sqlalchemy.orm.attributes import flag_modified
+
 from lux.core import route, GET_HEAD, POST_PUT, Resource
+from lux.forms import get_form_class
 from lux.extensions import auth
 
 from .forms import OrganisationModel, UserModel, MemberRole, OrgMemberForm
@@ -28,6 +31,42 @@ class UserRest(auth.UserRest, OrgMixin):
     @route('organisations', method=['get', 'head', 'options'])
     def get_organisations(self, request):
         return self.user_organisations(request)
+
+    @route('config', method=['get', 'patch', 'options'])
+    def config(self, request):
+        if request.method == 'OPTIONS':
+            request.app.fire('on_preflight', request, methods=('GET', 'PATCH'))
+            return request.response
+
+        user = self.model.get_instance(request)
+        resource = 'applications:%s:config' % user.application_id.hex
+        with self.model.session(request) as session:
+            session.add(user)
+            if request.method == 'GET':
+                Resource(resource, 'read')(request)
+                result = user.application.config or {}
+            else:
+                form_class = get_form_class(request, 'application-config')
+                Resource(resource, 'update')(request)
+                data, files = request.data_and_files()
+                form = form_class(request, data=data, files=files)
+
+                if form.is_valid(exclude_missing=True):
+                    application = user.application
+                    result = application.config
+                    if result is None:
+                        result = {}
+                        application.config = result
+                    session.add(application)
+                    for key, value in form.cleaned_data.items():
+                        if not value:
+                            result.pop(key, None)
+                        else:
+                            result[key] = value
+                    flag_modified(application, 'config')
+                else:
+                    result = form.tojson()
+        return self.json_response(request, result)
 
 
 class UserCRUD(auth.UserCRUD, OrgMixin):

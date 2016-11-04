@@ -7,7 +7,7 @@ class OrganisationTest(test.AppTestCase):
 
     @classmethod
     def create_admin_jwt(cls):
-        return cls.client.run_command('admin_app')
+        return cls.client.run_command('master_app')
 
     @classmethod
     async def beforeAll(cls):

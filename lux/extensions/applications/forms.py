@@ -24,3 +24,9 @@ formreg['create-application'] = Layout(
     Fieldset(all=True),
     Submit('Add new application')
 )
+
+formreg['application-config'] = Layout(
+    ApplicationConfigForm,
+    Fieldset(all=True),
+    Submit('Add new application')
+)
