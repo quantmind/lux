@@ -4,7 +4,7 @@ import shutil
 from tests.config import *  # noqa
 
 
-API_URL = 'api'
+API_URL = '/api'
 DEFAULT_CONTENT_TYPE = 'text/html'
 CONTENT_REPO = os.path.join(os.path.dirname(__file__), 'test_repo')
 
@@ -12,7 +12,7 @@ GITHUB_HOOK_KEY = 'test12345'
 
 EXTENSIONS = ['lux.extensions.rest',
               'lux.extensions.content']
-
+AUTHENTICATION_BACKENDS = ['lux.core:SimpleBackend']
 CONTENT_GROUPS = {
     "blog": {
         "path": "blog",
