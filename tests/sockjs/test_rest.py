@@ -2,10 +2,18 @@ import json
 import asyncio
 
 from lux.utils import test
+from lux.utils.crypt import create_uuid
 
 
 class TestSockJSRestApp(test.AppTestCase):
     config_file = 'tests.sockjs'
+
+    @classmethod
+    async def beforeAll(cls):
+        cls.super_token, cls.pippo_token = await asyncio.gather(
+            cls.user_token('testuser', jwt=cls.admin_jwt),
+            cls.user_token('pippo', jwt=cls.admin_jwt)
+        )
 
     async def ws(self):
         request = await self.client.wsget('/testws/websocket')
@@ -37,8 +45,16 @@ class TestSockJSRestApp(test.AppTestCase):
     async def test_websocket_handler(self):
         websocket = await self.ws()
         handler = websocket.handler
-        self.assertEqual(len(handler.rpc_methods), 8)
+        self.assertEqual(len(handler.rpc_methods), 9)
+        self.assertTrue(handler.rpc_methods.get('authenticate'))
+        self.assertTrue(handler.rpc_methods.get('publish'))
+        self.assertTrue(handler.rpc_methods.get('subscribe'))
+        self.assertTrue(handler.rpc_methods.get('unsubscribe'))
+        self.assertTrue(handler.rpc_methods.get('model_metadata'))
+        self.assertTrue(handler.rpc_methods.get('model_data'))
+        self.assertTrue(handler.rpc_methods.get('model_create'))
         self.assertTrue(handler.rpc_methods.get('add'))
+        self.assertTrue(handler.rpc_methods.get('echo'))
 
     async def test_ws_protocol_error(self):
         websocket = await self.ws()
@@ -93,12 +109,16 @@ class TestSockJSRestApp(test.AppTestCase):
         await websocket.handler.on_message(websocket, msg)
         msg = self.get_ws_message(websocket)
         self.assertEqual(msg['error']['message'], 'bad authToken')
+        msg = self.ws_message(method='authenticate', id="dfg",
+                              params=dict(authToken=create_uuid().hex))
+        await websocket.handler.on_message(websocket, msg)
+        msg = self.get_ws_message(websocket)
+        self.assertEqual(msg['error']['message'], 'bad authToken')
 
     async def test_ws_authenticate(self):
-        token = await self._token('testuser')
         websocket = await self.ws()
         msg = self.ws_message(method='authenticate', id="dfg",
-                              params=dict(authToken=token))
+                              params=dict(authToken=self.super_token))
         await websocket.handler.on_message(websocket, msg)
         msg = self.get_ws_message(websocket)
         self.assertTrue(msg['result'])
@@ -149,14 +169,13 @@ class TestSockJSRestApp(test.AppTestCase):
                               params=dict(channel='pizza', event='myevent'))
         await websocket.handler.on_message(websocket, msg)
         msg = self.get_ws_message(websocket)
-        self.assertTrue('lux-pizza' in msg['result'])
+        self.assertEqual(msg['id'], 456)
         #
         msg = self.ws_message(method='subscribe', id=4556,
                               params=dict(channel='lux-foo', event='myevent'))
         await websocket.handler.on_message(websocket, msg)
         msg = self.get_ws_message(websocket)
-        self.assertTrue('lux-pizza' in msg['result'])
-        self.assertTrue('lux-foo' in msg['result'])
+        self.assertEqual(msg['id'], 4556)
 
     async def test_ws_model_metadata_fails(self):
         websocket = await self.ws()
@@ -200,11 +219,10 @@ class TestSockJSRestApp(test.AppTestCase):
         # Subscribe to create event
         ws = await self.ws()
         msg = self.ws_message(method='subscribe', id=456,
-                              params=dict(channel='lux-tasks',
-                                          event='create'))
+                              params=dict(channel='datamodel',
+                                          event='tasks.create'))
         await ws.handler.on_message(ws, msg)
-        msg = self.get_ws_message(ws)
-        self.assertTrue('lux-tasks' in msg['result'])
+        self.get_ws_message(ws)
         future = asyncio.Future()
         ws.connection.write = future.set_result
         #
@@ -223,6 +241,6 @@ class TestSockJSRestApp(test.AppTestCase):
         self.assertTrue(frame)
         msg = self.parse_frame(ws, frame)
         self.assertTrue(msg)
-        self.assertEqual(msg['event'], 'create')
-        self.assertEqual(msg['channel'], 'lux-tasks')
+        self.assertEqual(msg['event'], 'tasks.create')
+        self.assertEqual(msg['channel'], 'datamodel')
         self.assertEqual(msg['data'], data)

@@ -1,5 +1,5 @@
 """Websocket RPC for Authentication"""
-from pulsar import Http401, PermissionDenied
+from pulsar import PermissionDenied, BadRequest
 from pulsar.apps import rpc
 
 from lux.core import Resource
@@ -30,8 +30,8 @@ class WsAuthRpc:
         auth = 'bearer %s' % token
         try:
             backend.authorize(wsgi, auth)
-        except Http401 as exc:
-            raise rpc.InvalidParams('bad authToken') from exc
+        except BadRequest:
+            raise rpc.InvalidParams('bad authToken') from None
         args = {model.id_field: getattr(wsgi.cache.user, model.id_field)}
         user = model.get_instance(wsgi, **args)
         user_info = model.tojson(wsgi, user)

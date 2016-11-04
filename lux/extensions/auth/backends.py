@@ -1,7 +1,8 @@
-from pulsar import Http404
+from pulsar import Http404, BadRequest
 from pulsar.utils.importer import module_attribute
 
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.exc import StatementError
 from sqlalchemy.orm import joinedload
 from datetime import datetime
 
@@ -139,5 +140,8 @@ class TokenBackend(PasswordMixin, rest.TokenBackend):
         token = odm.token
         with odm.begin() as session:
             query = session.query(token).options(joinedload(token.user))
-            token = query.get(key)
+            try:
+                token = query.get(key)
+            except StatementError:
+                raise BadRequest from None
         return token

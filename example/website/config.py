@@ -1,10 +1,11 @@
 from example.cfg import *   # noqa
 
-
+EXTENSIONS += ('lux.extensions.sessions',)      # noqa
 DEFAULT_CONTENT_TYPE = 'text/html'
 API_URL = 'http://webapi.com'
-AUTHENTICATION_BACKENDS = ['lux.extensions.rest.backends.ApiSessionBackend',
-                           'lux.extensions.rest.backends.CsrfBackend']
+AUTHENTICATION_BACKENDS = [
+    'lux.extensions.sessions:SessionBackend'
+]
 
 CLEAN_URL = True
 REDIRECTS = {'/tos': '/articles/terms-conditions'}

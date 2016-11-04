@@ -69,6 +69,8 @@ class TokenBackend(PemissionsMixin):
         try:
             if auth_type == 'bearer':
                 token = self.get_token(request, key)
+                if not token:
+                    raise BadRequest
                 request.cache.token = token
                 user = token.user
             elif auth_type == 'jwt':
