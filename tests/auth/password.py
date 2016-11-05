@@ -39,7 +39,7 @@ class PasswordMixin:
         data = {'password': 'newpassword',
                 'password_repeat': 'newpassword'}
         request = await self.client.post(url, json=data, jwt=self.admin_jwt)
-        self.assertEqual(request.response.status_code, 204)
+        self.assertTrue(self.json(request.response, 200)['success'])
         request = await self.client.post(url, json=data, jwt=self.admin_jwt)
         self.json(request.response, 404)
 
