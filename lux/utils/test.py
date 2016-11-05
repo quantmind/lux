@@ -577,13 +577,15 @@ class WebApiTestCase(AppTestCase):
     """Test case for an api-web application pair
     """
     web_config_file = None
+    web_config_params = None
 
     @classmethod
     async def setUpClass(cls):
         assert cls.web_config_file, "no web_config_file specified"
         await as_coroutine(super().setUpClass())
+        params = cls.web_config_params or {}
         cls.web = test_app(cls, config_file=cls.web_config_file,
-                           config_params=False)
+                           config_params=False, **params)
         for api in cls.web.apis:
             if api.netloc:
                 cls.web.api.local_apps[api.netloc] = cls.app
