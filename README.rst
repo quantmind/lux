@@ -28,3 +28,12 @@
   :target: http://travis-ci.org/quantmind/lux
 .. |coverage-master| image:: https://img.shields.io/coveralls/quantmind/lux/master.svg
   :target: https://coveralls.io/r/quantmind/lux?branch=master
+
+An asynchronous web framework for python. Lux is built with pulsar_ and uses
+asyncio_ as asynchronous engine. It can be configured to be explicitly asynchronous
+or implicitly asynchronous via the greenlet_ library.
+
+
+.. _asyncio: https://docs.python.org/3/library/asyncio.html
+.. _pulsar: https://github.com/quantmind/pulsar
+.. _greenlet: https://greenlet.readthedocs.org

@@ -14,17 +14,17 @@ class AdminTest(test.AppTestCase):
         app.api = mock.MagicMock()
         return app
 
-    def test_app(self):
-        request = self.app.wsgi_request(path='/admin')
-        admin = self.app.extensions['lux.extensions.admin'].admin
+    async def test_app(self):
+        request = await self.client.get('/admin')
+        admin = request.app.extensions['lux.extensions.admin'].admin
         self.assertIsInstance(admin, Admin)
         sitemap = admin.sitemap(request)
         self.assertTrue(sitemap)
-        self.assertEqual(len(sitemap), 2)
+        self.assertEqual(len(sitemap), 1)
         items = {}
         for site in sitemap:
             items.update(((item['title'], item) for item in site['items']))
-        self.assertEqual(len(items), 6)
+        self.assertEqual(len(items), 1)
         blog = items['Blog']
         self.assertEqual(blog['icon'], 'fa fa-book')
         self.assertEqual(blog['title'], 'Blog')

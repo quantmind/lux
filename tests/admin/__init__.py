@@ -9,15 +9,18 @@ from lux.extensions.odm import RestModel
 from tests.config import *  # noqa
 
 
-EXTENSIONS = ['lux.extensions.base',
-              'lux.extensions.rest',
-              'lux.extensions.auth',
-              'lux.extensions.odm',
-              'lux.extensions.admin']
+EXTENSIONS = [
+    'lux.extensions.base',
+    'lux.extensions.rest',
+    'lux.extensions.odm',
+    'lux.extensions.admin'
+]
 
 API_URL = 'http://api.com'
 DEFAULT_CONTENT_TYPE = 'text/html'
-AUTHENTICATION_BACKENDS = ['lux.extensions.auth.TokenBackend']
+AUTHENTICATION_BACKENDS = [
+    'lux.core:SimpleBackend'
+]
 DATASTORE = 'postgresql+green://lux:luxtest@127.0.0.1:5432/luxtests'
 DEFAULT_POLICY = [
     {
