@@ -116,7 +116,8 @@ class Extension(LuxExtension):
     def on_config(self, app):
         app.providers['Api'] = ApiClient
         app.apis = Apis.make(app)
-        app.add_events(('on_query',
+        app.add_events(('on_jwt',
+                        'on_query',
                         'on_before_flush',
                         'on_after_flush',
                         'on_before_commit',

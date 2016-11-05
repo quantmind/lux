@@ -14,8 +14,6 @@ from lux.forms import (
     form_http_exception
 )
 
-from . import actions
-
 
 class Login(WebFormRouter):
     """Web login view with post handler
@@ -72,8 +70,6 @@ class Token(JsonRouter):
 
 
 class SignUp(WebFormRouter):
-    """Display a signup form and handle signup
-    """
     form = 'signup'
 
     def get(self, request):
@@ -82,12 +78,25 @@ class SignUp(WebFormRouter):
         return super().get(request)
 
     def post(self, request):
-        return actions.signup(request)
+        form = _auth_form(request, 'signup')
+        if form.is_valid():
+            try:
+                result = request.api.registrations.post(
+                    json=form.cleaned_data,
+                    jwt=True
+                ).json()
+                result = {'email': result['user']['email']}
+                request.response.status_code = 201
+            except Exception as exc:
+                result = form_http_exception(form, exc)
+        else:
+            result = form.tojson()
+        return self.json_response(request, result)
 
     @route('<key>')
     def confirmation(self, request):
-        backend = request.cache.auth_backend
-        backend.signup_confirm(request, request.urlargs['key'])
+        key = request.urlargs['key']
+        request.api.registrations.post(key, jwt=True)
         return self.html_response(request, '')
 
     @route('confirmation/<username>')
@@ -103,29 +112,49 @@ class ForgotPassword(WebFormRouter):
     form = 'password-recovery'
 
     def post(self, request):
-        return actions.reset_password_request(request)
+        form = _auth_form(request, 'password-recovery')
+        if form.is_valid():
+            try:
+                result = request.api.passwords.post(
+                    json=form.cleaned_data,
+                    jwt=True
+                ).json()
+            except Exception as exc:
+                result = form_http_exception(form, exc)
+        else:
+            result = form.tojson()
+        return self.json_response(request, result)
 
     @route('<key>', method=('get', 'post'))
     def reset(self, request):
         """Get reset form and handle rest password
         """
         key = request.urlargs['key']
-        backend = request.cache.auth_backend
-
-        if not backend.confirm_auth_key(request, key):
-            raise Http404
 
         if request.method == 'GET':
             form = get_form_layout(request, 'reset-password')
             if not form:
                 raise Http404
+            request.api.passwords.head(key, jwt=True)
             html = form(request).as_form(action=request.full_path(),
                                          enctype='multipart/form-data',
                                          method='post')
             return self.html_response(request, html)
 
         else:
-            return actions.reset_password(request, key)
+            form = _auth_form(request, 'reset-password')
+            if form.is_valid():
+                try:
+                    result = request.api.passwords.post(
+                        key,
+                        json=form.cleaned_data,
+                        jwt=True
+                    ).json()
+                except Exception as exc:
+                    result = form_http_exception(form, exc)
+            else:
+                result = form.tojson()
+            return self.json_response(request, result)
 
 
 def _auth_form(request, form):

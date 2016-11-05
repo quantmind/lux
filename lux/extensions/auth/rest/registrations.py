@@ -1,10 +1,11 @@
 from datetime import datetime, timedelta
 
-from pulsar import PermissionDenied
+from pulsar import PermissionDenied, Http404
 
-from lux.core import route
+from lux.core import route, http_assert
 from lux.extensions.rest import RestField
 from lux.utils.crypt import digest
+from lux.forms import Form, ValidationError
 
 from . import RestModel, ServiceCRUD, ensure_service_user
 
@@ -44,6 +45,8 @@ class RegistrationModel(RestModel):
             user = auth_backend.create_user(request, **data)
         else:
             user = auth_backend.get_user(request, email=data['email'])
+            if not user:
+                raise ValidationError("Can't find user, sorry")
 
         days = request.config['ACCOUNT_ACTIVATION_DAYS']
         data = {
@@ -58,9 +61,28 @@ class RegistrationModel(RestModel):
             send_email_confirmation(request, reg.obj)
         return reg
 
+    def update_model(self, request, instance, data, session=None, **kw):
+        if not instance.id:
+            return super().update_model(request, instance, data,
+                                        session=session, **kw)
+        reg = self.instance(instance).obj
+        http_assert(reg.type == self.type, Http404)
+        self.update_registration(request, reg, data, session=session)
+        return {'success': True}
+
+    def update_registration(self, request, reg, data, session=None):
+        with self.session(request, session=session) as session:
+            user = reg.user
+            user.active = True
+            session.add(user)
+            session.delete(reg)
+
 
 class RegistrationCRUD(ServiceCRUD):
-    model = RegistrationModel.create(form='signup')
+    model = RegistrationModel.create(
+        form='signup',
+        postform=Form
+    )
 
     @route('<id>/activate', method=('post', 'options'),
            docs={

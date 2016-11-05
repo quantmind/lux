@@ -4,7 +4,7 @@ from tests import web
 class AuthTest(web.WebsiteTest):
 
     def _get_code(self, message):
-        url = '/auth/reset-password/'
+        url = '/reset-password/'
         idx = message.find(url)
         self.assertTrue(idx)
         msg = message[idx+len(url):]
@@ -27,14 +27,16 @@ class AuthTest(web.WebsiteTest):
 
     async def test_signup_error_form(self):
         data = {'username': 'djkhvbdf'}
-        request = await self.client.post('/registrations', json=data)
+        request = await self.client.post('/registrations',
+                                         json=data,
+                                         jwt=self.admin_jwt)
         self.assertValidationError(request.response, 'password')
 
     async def test_signup_confirmation(self):
         data = await self._signup()
         reg = await self._get_registration(data['email'])
         self.assertTrue(reg.id)
-        request = await self.webclient.get('/auth/signup/%s' % reg.id)
+        request = await self.webclient.get('/signup/%s' % reg.id)
         doc = self.bs(request.response, 200)
         body = doc.find('body')
         self.assertTrue(body)
@@ -73,7 +75,7 @@ class AuthTest(web.WebsiteTest):
         request = await self.webclient.post('/reset-password',
                                             json=data, cookie=cookie)
         data = self.json(request.response, 200)
-        self.assertTrue(data['email'], 'toni@test.com')
+        self.assertTrue(data['user']['email'], 'toni@test.com')
         mail = None
         for msg in self.app._outbox:
             if msg.to == 'toni@test.com':
@@ -83,6 +85,11 @@ class AuthTest(web.WebsiteTest):
         self.assertEqual(mail.sender, 'admin@lux.com')
         code = self._get_code(mail.message)
         self.assertTrue(code)
+        self.assertEqual(code, data['id'])
+        request = await self.webclient.get('/reset-password/sdcsd',
+                                           cookie=cookie)
+        self.html(request.response, 404)
+
         request = await self.webclient.get('/reset-password/%s' % code,
                                            cookie=cookie)
         bs = self.bs(request.response, 200)
@@ -92,14 +99,13 @@ class AuthTest(web.WebsiteTest):
         # now lets post
         password = 'new-pass-for-toni'
         cookie, data = await self._cookie_csrf(
-            '/auth/reset-password/%s' % code, cookie=cookie)
+            '/reset-password/%s' % code, cookie=cookie)
         data.update({'password': password, 'password_repeat': password})
 
         request = await self.webclient.post('/reset-password/%s' % code,
                                             data=data,
                                             cookie=cookie)
-        data = self.json(request.response, 200)
-        self.assertEqual(data['message'], 'password changed')
+        self.assertTrue(self.json(request.response, 200)['success'])
         #
         # the change password link should now raise 404
         request = await self.webclient.get('/reset-password/%s' % code,

@@ -6,7 +6,6 @@ from pulsar.utils.structures import mapping_iterator
 from pulsar.utils.httpurl import remove_double_slash
 
 from lux.core import AppComponent
-from lux.utils.token import app_token
 
 from ..views.rest import RestRoot
 
@@ -72,8 +71,6 @@ class ApiSpec:
             name = ''
         self.route = Route('%s/<path:path>' % name)
         self.urlp = urlparse(url)
-        if not self.netloc and not jwt:
-            jwt = app_token(app)
         self.jwt = jwt
         self.spec = spec
         self.router = RestRoot(self.urlp.path)

@@ -9,6 +9,21 @@ from pulsar.apps.http import JSON_CONTENT_TYPES
 from pulsar.utils.websocket import SUPPORTED_VERSIONS, websocket_key
 
 from lux.core import raise_http_error
+from lux.utils.token import encode_json
+
+
+def app_token(request):
+    app = request.app
+    payload = {
+        'app_name': app.config['APP_NAME'],
+        'url': request.absolute_uri('/')[:-1]
+    }
+    app.fire('on_jwt', request, payload)
+    return encode_json(
+        payload,
+        app.config['SECRET_KEY'],
+        algorithm=app.config['JWT_ALGORITHM']
+    )
 
 
 class ApiClient:
@@ -43,8 +58,8 @@ class ApiClient:
         req_headers.append(('user-agent', agent))
 
         if jwt:
-            if api.jwt:
-                req_headers.append(('Authorization', 'JWT %s' % api.jwt))
+            jwt = app_token(request)
+            req_headers.append(('Authorization', 'JWT %s' % jwt))
         else:
             if not token and request.cache.session:
                 token = request.cache.session.token

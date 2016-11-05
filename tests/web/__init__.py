@@ -1,7 +1,10 @@
+import os
+
 from lux.utils import test
 
 
 class WebsiteTest(test.WebApiTestCase):
+    fixtures_path = os.path.join(os.path.dirname(__file__), 'fixtures')
     config_file = 'example.webapi.config'
     web_config_file = 'example.website.config'
 

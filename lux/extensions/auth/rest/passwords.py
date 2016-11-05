@@ -1,8 +1,6 @@
-"""API urls for password recovery and reset
+"""API urls for password recovery
 """
-from pulsar import MethodNotAllowed, Http404
-
-from lux.core import http_assert
+from pulsar import MethodNotAllowed
 
 from . import ServiceCRUD, ensure_service_user
 from .registrations import RegistrationModel
@@ -14,13 +12,7 @@ class PasswordResetModel(RegistrationModel):
         ensure_service_user(request, MethodNotAllowed)
         return super().get_instance(request, **kw)
 
-    def update_model(self, request, instance, data, session=None, **kw):
-        if not instance.id:
-            return super().update_model(request, instance, data,
-                                        session=session, **kw)
-        reg = self.instance(instance).obj
-        http_assert(reg.type == 2, Http404)
-        #
+    def update_registration(self, request, reg, data, session=None):
         backend = request.cache.auth_backend
         password = data['password']
         with self.session(request, session=session) as session:
@@ -28,6 +20,7 @@ class PasswordResetModel(RegistrationModel):
             user.password = backend.password(request, password)
             session.add(user)
             session.delete(reg)
+        return {'success': True}
 
 
 class PasswordsCRUD(ServiceCRUD):

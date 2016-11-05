@@ -2,7 +2,7 @@ from pulsar import MethodNotAllowed, Http404
 from pulsar.apps.wsgi import route
 
 from lux.core import JsonRouter, GET_HEAD, Resource
-from lux.forms import get_form_class
+from lux.forms import get_form_class, ValidationError
 
 from ..models import RestModel
 
@@ -11,6 +11,7 @@ REST_CONTENT_TYPES = ['application/json']
 DIRECTIONS = ('asc', 'desc')
 POST_PUT_PATCH = frozenset(('POST', 'PUT', 'PATCH'))
 VERBS_CHECK = frozenset(('POST', 'PUT', 'PATCH', 'DELETE', 'TRACE'))
+CREATE_MODEL_ERROR_MSG = 'Could not create model'
 
 
 class RestRoot(JsonRouter):
@@ -184,9 +185,12 @@ class CRUD(MetadataMixin, RestRouter):
                                                   instance,
                                                   form.cleaned_data,
                                                   session=session)
+                except ValidationError as exc:
+                    form.add_error_message(str(exc) or CREATE_MODEL_ERROR_MSG)
+                    data = form.tojson()
                 except Exception as exc:
-                    request.logger.exception('Could not create model')
-                    form.add_error_message('Could not create model')
+                    request.logger.exception(CREATE_MODEL_ERROR_MSG)
+                    form.add_error_message(CREATE_MODEL_ERROR_MSG)
                     data = form.tojson()
                 else:
                     data = model.tojson(request, instance)
@@ -253,7 +257,9 @@ class CRUD(MetadataMixin, RestRouter):
                         form.add_error_message('Could not update model')
                         data = form.tojson()
                     else:
-                        if instance:
+                        if isinstance(instance, dict):
+                            data = instance
+                        elif instance:
                             data = model.tojson(request, instance)
                         else:
                             request.response.status_code = 204

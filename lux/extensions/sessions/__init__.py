@@ -85,6 +85,15 @@ class Extension(LuxExtension):
         if cfg['RESET_PASSWORD_URL']:
             yield ForgotPassword(cfg['RESET_PASSWORD_URL'])
 
+    def on_jwt(self, app, request, payload):
+        cfg = app.config
+        if cfg['REGISTER_URL']:
+            payload['registration_url'] = request.absolute_uri(
+                cfg['REGISTER_URL'])
+        if cfg['RESET_PASSWORD_URL']:
+            payload['password_reset_url'] = request.absolute_uri(
+                cfg['RESET_PASSWORD_URL'])
+
     def on_form(self, app, form):
         """Handle CSRF on form
         """

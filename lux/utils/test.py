@@ -73,15 +73,12 @@ def green(test_fun):
     return _
 
 
-def test_app(test, config_file=None, config_params=True, argv=None,
-             api_app=None, **params):
+def test_app(test, config_file=None, config_params=True, argv=None, **params):
     """Return an application for testing. Override if needed.
     """
     if config_params:
         kwargs = test.config_params.copy()
         kwargs.update(params)
-        if 'SECRET_KEY' not in kwargs:
-            kwargs['SECRET_KEY'] = generate_secret()
     else:
         kwargs = params
     config_file = config_file or test.config_file
@@ -93,6 +90,8 @@ def test_app(test, config_file=None, config_params=True, argv=None,
         argv.extend(levels)
     app = App(config_file, argv=argv, **kwargs).setup(
         on_config=test.app_test_providers)
+    if app.config['SECRET_KEY'] == 'secret-key':
+        app.config['SECRET_KEY'] = generate_secret()
     app.stdout = StringIO()
     app.stderr = StringIO()
     return app
@@ -436,6 +435,8 @@ class TestCase(unittest.TestCase, TestMixin):
 class AppTestCase(unittest.TestCase, TestMixin):
     """Test class for testing a single application
     """
+    fixtures_path = None
+    """path to fixtures"""
     odm = None
     """Original odm handler"""
     datastore = None
@@ -514,6 +515,7 @@ class AppTestCase(unittest.TestCase, TestMixin):
     @classmethod
     def populatedb(cls):
         return load_fixtures(cls.app,
+                             path=cls.fixtures_path,
                              api_url=cls.api_url(),
                              admin_jwt=cls.admin_jwt)
 
@@ -581,7 +583,7 @@ class WebApiTestCase(AppTestCase):
         assert cls.web_config_file, "no web_config_file specified"
         await as_coroutine(super().setUpClass())
         cls.web = test_app(cls, config_file=cls.web_config_file,
-                           config_params=False, api_app=cls.app)
+                           config_params=False)
         for api in cls.web.apis:
             if api.netloc:
                 cls.web.api.local_apps[api.netloc] = cls.app
@@ -607,7 +609,7 @@ class WebApiTestCase(AppTestCase):
     async def _signup(self, csrf=None):
         """Signup to the web site
         """
-        url = self.app.config['REGISTER_URL']
+        url = self.web.config['REGISTER_URL']
         cookie, csrf = await self._cookie_csrf(url, csrf)
         username = randomname(prefix='u-')
         password = randomname()
