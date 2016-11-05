@@ -598,7 +598,7 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
             self.logger.warning('Reload WSGI application')
             self.callable.clear_local()
         elif self.channels is not None:
-            self.channels.publish(
+            return self.channels.publish(
                 self.config['CHANNEL_SERVER'], 'reload'
             )
         else:

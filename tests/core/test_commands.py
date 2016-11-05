@@ -15,21 +15,6 @@ REDIS_OK = check_server('redis')
 class CommandTests(test.TestCase):
     config_file = 'tests.core'
 
-    async def test_media(self):
-        command = self.fetch_command('media')
-        base = path.dirname(__file__)
-        js = path.join(base, 'js-test')
-        scss = path.join(base, 'scss-test')
-        try:
-            await command(['--js-src', js, '--scss-src', scss])
-            self.assertTrue(path.isdir(js))
-            self.assertTrue(path.isdir(scss))
-        finally:
-            if path.isdir(js):
-                shutil.rmtree(js)
-            if path.isdir(scss):
-                shutil.rmtree(scss)
-
     async def test_start_project(self):
         command = self.fetch_command('start_project')
         self.assertTrue(command.help)

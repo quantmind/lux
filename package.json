@@ -1,0 +1,66 @@
+{
+    "version": "0.7.0",
+    "name": "lux",
+    "descriptiomn": "Asynchronous web framework for python",
+    "author": {
+        "name": "quantmind.com",
+        "email": "message@quantmind.com"
+    },
+    "dependencies": {
+        "angular": "1.5",
+        "lodash-es": "4.15",
+        "bootstrap-sass": "3.3"
+    },
+    "devDependencies": {
+        "angular-ui-bootstrap": "2.0",
+        "angular-ui-grid": "3.2",
+        "angular-mocks": "1.5",
+        "babel-eslint": "6.1",
+        "babel-preset-es2015": "6.13",
+        "babel-preset-es2015-loose-rollup": "7.0",
+        "babelify": "7.3",
+        "browserify": "13.1",
+        "browserify-istanbul": "2.0",
+        "d3-collection": "1.0",
+        "eslint": "3.2",
+        "eslint-config-angular": "0.5",
+        "eslint-plugin-angular": "1.3",
+        "eslint-plugin-disable": "0.3",
+        "jasmine-core": "2.4",
+        "karma": "1.2",
+        "karma-browserify": "5.1",
+        "karma-coverage": "1.1",
+        "karma-chrome-launcher": "1.0",
+        "karma-es5-shim": "0.0.4",
+        "karma-firefox-launcher": "1.0",
+        "karma-jasmine": "1.0",
+        "karma-junit-reporter": "1.1",
+        "karma-phantomjs-launcher": "1.0",
+        "ng-annotate": "1.2",
+        "phantomjs-prebuilt": "2.1",
+        "requirejs": "2.2",
+        "rollup": "0.34",
+        "rollup-plugin-babel": "2.6",
+        "rollup-plugin-commonjs": "3.3",
+        "rollup-plugin-json": "2.0",
+        "rollup-plugin-node-resolve": "2.0",
+        "rollup-plugin-replace": "1.1",
+        "ui-select": "0.19",
+        "uglify-js": "2.7",
+        "watchify": "3.7"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/quantmind/lux"
+    },
+    "scripts": {
+        "test": "npm run-script build-bundle && npm run-script unit",
+        "build-bundle": "rollup -c && ng-annotate -a build/rollup.js -o build/lux.js",
+        "build": "npm run-script build-bundle && r.js -o bundle.js optimize=none && uglifyjs example/website/media/website/website.js -c -m -o example/website/media/website/website.min.js",
+        "debug": "karma start --browsers Chrome",
+        "lint": "eslint lux/js",
+        "unit": "karma start lux/js/build/karma.conf.js --single-run"
+    },
+    "keywords": [],
+    "license": "BSD-3-Clause"
+}

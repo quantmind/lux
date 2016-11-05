@@ -15,4 +15,4 @@ EXTENSIONS = [
 ## Token Backend
 
 This extensions implements an abstract authentication backend based on **authorization tokens**,
-the ``lux.extensions.rest.TokenBackend`` .
+the ``lux.extensions.rest.TokenBackend``.
