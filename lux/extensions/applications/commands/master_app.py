@@ -12,7 +12,7 @@ from lux.forms import get_form_class
 class Command(LuxCommand):
     help = 'Show the admin application'
 
-    def run(self, options, interactive=False):
+    def run(self, options):
         auth_backend = self.app.auth_backend
         request = self.app.wsgi_request(urlargs={}, app_handler=True)
         request.cache.auth_backend = auth_backend
@@ -42,6 +42,5 @@ class Command(LuxCommand):
             self.write('Successfully created admin application')
         data = model.tojson(request, app_domain)
         jwt = model.jwt(request, app_domain)
-        data['jwt'] = jwt
         self.write(json.dumps(data, indent=4))
         return jwt

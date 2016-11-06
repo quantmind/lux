@@ -1,20 +1,19 @@
 from os import urandom
 import uuid
 import string
-import random
+from random import randint
 from hashlib import sha1
 
-default_choices = string.digits + string.ascii_letters
+from pulsar.utils.string import random_string
+
+digits_letters = string.digits + string.ascii_letters
+secret_choices = digits_letters + string.punctuation
 
 
-def get_random_string(length, allowed_chars=None):
-    allowed_chars = allowed_chars or default_choices
-    return ''.join([random.choice(allowed_chars) for i in range(length)])
-
-
-def generate_secret_key(length=64, allowed_chars=None):
-    allowed_chars = allowed_chars or default_choices + string.punctuation
-    return get_random_string(length, allowed_chars)
+def generate_secret(length=64, allowed_chars=None, hexadecimal=False):
+    if hexadecimal:
+        return ''.join((hex(randint(1, 10000)) for _ in range(length)))
+    return random_string(length, length, allowed_chars or secret_choices)
 
 
 def digest(value, salt_size=8):

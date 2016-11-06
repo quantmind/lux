@@ -48,6 +48,11 @@ class Apis(AppComponent):
     def get(self, path=None):
         """Get the API spec object for a given path
         """
+        # allow to pass a route too
+        if path and not isinstance(path, str):
+            values = dict(((v, v) for v in path.ordered_variables))
+            path = path.url(**values)
+        #
         if path and path.startswith('/'):
             path = path[1:]
         path = path or ''
@@ -57,8 +62,7 @@ class Apis(AppComponent):
         raise Http404
 
     def add_child(self, router):
-        values = dict(((v, v) for v in router.route.ordered_variables))
-        parent = self.get(router.route.url(**values))
+        parent = self.get(router.route)
         if parent:
             parent.router.add_child(router)
 
@@ -92,9 +96,12 @@ class ApiSpec:
     def match(self, path):
         return self.route.match(path)
 
-    def url(self, path):
-        urlp = self.urlp
+    def url(self, request, path=None):
+        urlp = list(self.urlp)
         if path:
-            urlp = list(urlp)
             urlp[2] = remove_double_slash('%s/%s' % (urlp[2], str(path)))
+        if not urlp[1]:
+            r_url = urlparse(request.absolute_uri('/'))
+            urlp[0] = r_url.scheme
+            urlp[1] = r_url.netloc
         return urlunparse(urlp)

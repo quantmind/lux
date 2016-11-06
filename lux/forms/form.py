@@ -5,6 +5,7 @@ from pulsar.utils.html import NOTHING
 from .errors import ValidationError, FormError
 from .fields import Field
 from .formsets import FormSet
+from ..utils.messages import error_message
 
 
 def get_form_meta_data(bases, attrs):
@@ -214,19 +215,7 @@ class Form(metaclass=FormType):
                 status = self.request.response.status_code
                 if not status or status < 300:
                     self.request.response.status_code = 422
-            messages = []
-            data = {'errors': messages}
-            for name, msg in self.errors.items():
-                formset = self.form_sets.get(name)
-                if formset:
-                    msg = msg or formset.tojson()
-                else:
-                    msg = {'message': '\n'.join(msg)}
-                    field = self.dfields.get(name)
-                    if field:
-                        msg['field'] = field.name
-                messages.append(msg)
-            return data
+            return error_message(errors=self._error_messages())
 
     def message(self):
         messages = self.tojson()
@@ -243,6 +232,18 @@ class Form(metaclass=FormType):
         return msg
 
     # INTERNALS
+    def _error_messages(self):
+        for name, msg in self.errors.items():
+            formset = self.form_sets.get(name)
+            if formset:
+                msg = msg or formset.tojson()
+            else:
+                msg = {'message': '\n'.join(msg)}
+                field = self.dfields.get(name)
+                if field:
+                    msg['field'] = field.name
+            yield msg
+
     def _check_unwind(self, raise_error=True):
         if not hasattr(self, '_data'):
             if raise_error:

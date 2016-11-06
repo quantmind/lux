@@ -51,7 +51,7 @@ class ApiClient:
     def request(self, request, method, api, path,
                 token=None, jwt=False, headers=None, auth_error=None, **kw):
         http = self.http(request, api.netloc)
-        url = api.url(path)
+        url = api.url(request, path)
         req_headers = []
         req_headers.extend(headers or ())
         agent = request.get('HTTP_USER_AGENT', request.config['APP_NAME'])

@@ -16,14 +16,22 @@ __all__ = ['AuthBackend', 'MultiBackend', 'has_plugin', 'is_html']
 class Extension(LuxExtension):
     _config = (
         Parameter('MASTER_APPLICATION_ID', None,
-                  "Unique ID of the MASTER application. The master application"
+                  "Unique ID of the Master application. The master application"
                   " is assumed by default when no header or JWT is available"),
+        Parameter('APPLICATION_ID', None,
+                  "Unique ID of application. Required for client applications"
+                  " but not by the API. Added to the JWT payload"),
         Parameter('API_INFO_URL', 'info',
                   "Url for information routes")
     )
 
     def on_config(self, app):
         self.require(app, 'lux.extensions.auth')
+
+    def on_jwt(self, app, request, payload):
+        app_id = app.config['APPLICATION_ID']
+        if app_id:
+            payload['id'] = app_id
 
     def api_sections(self, app):
         yield ApplicationCRUD()

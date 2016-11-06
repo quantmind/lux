@@ -9,7 +9,8 @@ from pulsar.apps.wsgi.utils import error_messages
 from pulsar.utils.httpurl import JSON_CONTENT_TYPES, CacheControl
 from pulsar.utils.structures import mapping_iterator
 
-from lux.utils.data import unique_tuple
+from ..utils.data import unique_tuple
+from ..utils.messages import error_message
 
 from .auth import Resource
 
@@ -300,12 +301,11 @@ class HeadMeta:
 def json_message(request, message, error=False, **obj):
     """Create a JSON message to return to clients
     """
-    obj['message'] = message
     if error:
-        status = 422 if error is True else int(error)
-        request.response.status_code = status
-        obj['error'] = True
-    return obj
+        return error_message(message)
+    else:
+        obj['message'] = message
+        return obj
 
 
 def error_handler(request, exc):

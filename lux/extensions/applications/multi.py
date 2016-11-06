@@ -1,7 +1,7 @@
 import string
 from asyncio import get_event_loop
 from collections import namedtuple
-from lux.utils.crypt import get_random_string
+from lux.utils.crypt import generate_secret
 
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -28,7 +28,7 @@ class MultiBackend:
             loop = get_event_loop()
             request.cache.x_count = 0
             request.cache.x_runtime = loop.time()
-            request.response['X-Request-ID'] = get_random_string(32, xchars)
+            request.response['X-Request-ID'] = generate_secret(32, xchars)
         else:
             request.cache.x_count += 1
             return

@@ -111,12 +111,11 @@ class RestClient:
         return params
 
     def api_url(self, request, instance=None, **kwargs):
-        if self.api_route:
-            base = request.config.get('API_URL')
-            if not is_absolute_uri(base):
-                base = request.absolute_uri(base)
-            if base.endswith('/'):
-                base = base[:-1]
+        apis = request.app.apis
+        if apis and self.api_route:
+            api = apis.get(self.api_route)
+            if api is None:
+                return
             params = {}
             for name in self.api_route.variables:
                 if name not in kwargs:
@@ -131,8 +130,10 @@ class RestClient:
                 else:
                     value = kwargs[name]
                 params[name] = value
-            base = '%s%s' % (base, self.api_route.url(**params))
-            return '%s/%s' % (base, instance.id) if instance else base
+            path = self.api_route.url(**params)
+            if instance:
+                path = '%s/%s' % (path, instance.id)
+            return api.url(request, path)
 
     def get_target(self, request, **params):
         """Get a target object for this model

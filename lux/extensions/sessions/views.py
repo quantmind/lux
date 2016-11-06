@@ -3,12 +3,12 @@
 These views are used by the browser authentication backends
 """
 from pulsar import (
-    Http404, HttpRedirect, UnprocessableEntity,
+    Http404, HttpRedirect,
     PermissionDenied, MethodNotAllowed
 )
 from pulsar.apps.wsgi import route
 
-from lux.core import JsonRouter, AuthenticationError
+from lux.core import JsonRouter
 from lux.forms import (
     Form, WebFormRouter, get_form_layout, get_form_class,
     form_http_exception
@@ -33,7 +33,7 @@ class Login(WebFormRouter):
             try:
                 auth_backend.login(request, **form.cleaned_data)
                 result = {'success': True}
-            except (UnprocessableEntity, AuthenticationError) as exc:
+            except Exception as exc:
                 result = form_http_exception(form, exc)
         else:
             result = form.tojson()

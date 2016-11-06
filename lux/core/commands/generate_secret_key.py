@@ -1,12 +1,12 @@
 from lux.core import LuxCommand, Setting
-from lux.utils.auth import generate_secret
+from lux.utils.crypt import generate_secret
 
 
 class Command(LuxCommand):
     help = "Generate a secret key."
     option_list = (
         Setting('length', ('--length',),
-                default=50, type=int,
+                default=64, type=int,
                 desc=('Secret key length')),
         Setting('hex', ('--hex',),
                 default=False,
@@ -15,7 +15,7 @@ class Command(LuxCommand):
     )
 
     def run(self, options, **params):
-        key = generate_secret(options.length, options.hex)
+        key = generate_secret(options.length, hexadecimal=options.hex)
         self.write('Secret key:')
         self.write(key)
         self.write('-----------------------------------------------------')

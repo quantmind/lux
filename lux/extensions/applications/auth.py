@@ -60,7 +60,7 @@ class AuthBackend(auth.TokenBackend):
     def secret_from_jwt_payload(self, request, payload):
         app_id = payload.get("id")
         if not app_id:
-            raise BadRequest('Missing id in JWT payload')
+            raise BadRequest('Missing application id in JWT payload')
         app_domain = get_application(request.app, app_id)
         request.cache.application = app_domain
-        return app_domain.token
+        return app_domain.secret
