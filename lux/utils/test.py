@@ -253,7 +253,7 @@ class TestMixin:
     config_params = {}
     """Dictionary of parameters to override the parameters from
     :attr:`config_file`"""
-    prefixdb = 'luxtest_'
+    prefixdb = 'testlux_'
 
     @classmethod
     def app_test_providers(cls, app):

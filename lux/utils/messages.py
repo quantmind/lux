@@ -6,9 +6,17 @@ def error_message(*args, errors=None):
     if errors:
         msgs = chain(args, errors)
     messages = []
-    data = {'errors': messages}
+    data = {'error': True}
+    message = []
     for msg in msgs:
         if isinstance(msg, str):
-            msg = {'message': msg}
-        messages.append(msg)
+            message.append(msg)
+        elif isinstance(msg, dict):
+            if len(msg) == 1 and 'message' in msg:
+                message.append(msg['message'])
+            elif msg:
+                messages.append(msg)
+    data['message'] = ' '.join(message)
+    if messages:
+        data['errors'] = messages
     return data

@@ -5,13 +5,11 @@ from sqlalchemy.orm import relationship
 
 from lux.extensions import odm
 from lux.utils.text import engine
-from lux.utils.crypt import generate_secret
 
 from odm.types import JSONType, UUIDType
 
 
 Model = odm.model_base('applications')
-default_token = generate_secret(64)
 
 
 class AppDomain(Model):
@@ -21,9 +19,7 @@ class AppDomain(Model):
     """Unique name of application"""
     domain = Column(String(120), nullable=True, unique=True)
     """Unique domain name of this application"""
-    secret = Column(String(64),
-                    nullable=False,
-                    server_default=default_token)
+    secret = Column(String(64), nullable=False)
     """Secret token for root control of application"""
     config = Column(JSONType)
 

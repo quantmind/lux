@@ -110,7 +110,7 @@ class LuxModel(ABC):
 
     # QUERY API
     def query(self, request, session, *filters, check_permission=None,
-              load_only=None, **params):
+              load_only=None, query=None, **params):
         """Get a :class:`.Query` object
 
         :param request: WsgiRequest object
@@ -121,7 +121,8 @@ class LuxModel(ABC):
         :param load_only: optional list of fields to load
         :param params: key-valued filters
         """
-        query = self.get_query(session)
+        if query is None:
+            query = self.get_query(session)
         if load_only and isinstance(load_only, str):
             load_only = (load_only,)
         if check_permission:
