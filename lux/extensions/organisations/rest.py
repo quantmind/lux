@@ -7,6 +7,7 @@ from lux.forms import get_form_class
 from lux.extensions import auth
 
 from .forms import OrganisationModel, UserModel, MemberRole, OrgMemberForm
+from .ownership import create_own_model
 
 
 class OrgMixin:
@@ -67,6 +68,13 @@ class UserRest(auth.UserRest, OrgMixin):
                 else:
                     result = form.tojson()
         return self.json_response(request, result)
+
+    @route('<model>', method=('post', 'options'))
+    def create_model(self, request):
+        """Create a new object for a target model and make the organisation
+        the owner of the newly created object
+        """
+        return create_own_model(self, request)
 
 
 class UserCRUD(auth.UserCRUD, OrgMixin):
@@ -174,6 +182,13 @@ class OrganisationCRUD(auth.UserCRUD):
                 return request.response
 
         return self.json_response(request, data)
+
+    @route('<id>/<model>', method=('post', 'options'))
+    def create_model(self, request):
+        """Create a new object for a target model and make the organisation
+        the owner of the newly created object
+        """
+        return create_own_model(self, request)
 
     def _get_org(self, request, session, pop=0):
         model = self.get_model(request)

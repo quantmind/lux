@@ -69,7 +69,7 @@ class EntityOwnership(Model):
 
     @odm.declared_attr
     def entity_id(cls):
-        return Column(ForeignKey('entity.id'))
+        return Column(ForeignKey('entity.id'), nullable=False)
 
     @odm.declared_attr
     def entity(cls):
