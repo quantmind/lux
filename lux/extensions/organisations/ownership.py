@@ -32,7 +32,7 @@ def owned_model(app, target, cast_id=None):
     return target
 
 
-def owner_model_form(request, identifier):
+def get_owned_model(request, identifier):
     app = request.app
     owned = owner_model_forms(app).get(identifier)
     if not owned:
@@ -50,7 +50,7 @@ def owner_model_form(request, identifier):
 
 def get_create_own_model(self, request):
     app = request.app
-    target = owner_model_form(request, request.urlargs['model'])
+    target = get_owned_model(request, request.urlargs['model'])
 
     if request.method == 'OPTIONS':
         request.app.fire('on_preflight', request,
@@ -120,15 +120,19 @@ class OwnedTarget:
         self.form = form
         self.cast = cast
 
+    @property
+    def dbmodel(self):
+        return self.model.app.odm()[self.model.name]
+
     def query(self, session, owner):
         entityownership = session.mapper.entityownership
-        model = session.mapper[self.model.name]
+        dbmodel = self.dbmodel
         query = self.model.get_query(session)
 
         # Jojn the tables
         query.sql_query = query.sql_query.join(
             entityownership,
-            model.id == self.cast(entityownership.object_id)
+            dbmodel.id == self.cast(entityownership.object_id)
         )
 
         return query.filter(
