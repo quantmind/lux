@@ -369,10 +369,11 @@ class TestMixin:
         else:
             data = response
 
-        errors = data['errors']
-        self.assertTrue(errors)
-        data = dict(((d.get('field', ''), d['message']) for d in errors))
-        msg = data.get(field or '')
+        self.assertTrue(data['error'])
+        errors = dict(((d['field'], d['message'])
+                       for d in data.get('errors', ())))
+        errors[''] = data.get('message')
+        msg = errors.get(field or '')
         if field is not None:
             self.assertTrue(msg)
         if text:

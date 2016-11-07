@@ -61,7 +61,7 @@ def get_create_own_model(self, request):
     model = self.get_model(request)
 
     with model.session(request) as session:
-        owner = self.get_instance(request, session=session)
+        owner = self.get_instance(request, session=session).obj
 
         if request.method in GET_HEAD:
             cfg = app.config

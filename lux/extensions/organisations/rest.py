@@ -39,7 +39,7 @@ class UserRest(auth.UserRest, OrgMixin):
             request.app.fire('on_preflight', request, methods=('GET', 'PATCH'))
             return request.response
 
-        user = self.model.get_instance(request)
+        user = self.model.get_instance(request).obj
         resource = 'applications:%s:config' % user.application_id.hex
         with self.model.session(request) as session:
             session.add(user)

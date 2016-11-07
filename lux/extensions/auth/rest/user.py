@@ -54,7 +54,7 @@ class UserModel(RestModel):
             user = request.cache.user
             if not user.is_authenticated():
                 raise Http401('Token')
-            return user
+            return self.instance(user)
         return super().get_instance(request, *args, **kwargs)
 
 
