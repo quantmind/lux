@@ -11,13 +11,14 @@ class Command(LuxCommand):
 
     option_list = (
         Setting('command',
-                nargs='*', default=None, desc='Alembic command',
-                choices=commands
-                ),
+                nargs='*', default=None, desc='Alembic command'),
         Setting('branch',
                 ('-b', '--branch'), default=None, nargs='?',
                 desc='Branch label for auto, revision and merge command',
                 meta='LABEL'),
+        Setting('list',
+                ('--commands',), default=None, action='store_true',
+                desc='List available Alembic commands'),
         Setting('msg',
                 ('-m', '--message'), nargs='?', default=None,
                 desc='Message for auto, revision and merge command'),
@@ -29,16 +30,22 @@ class Command(LuxCommand):
         '''
         from alembic import util
         try:
-            cmd = opt.command[0]
-            if cmd not in self.commands:
-                raise CommandError('Unrecognized command %s' %
-                                   opt.command[0])
-            if cmd in ('auto', 'revision', 'merge') and not opt.msg:
-                raise CommandError('Missing [-m] parameter for %s' % cmd)
-            self.run_alembic_cmd(opt)
-            return True
+            if opt.list:
+                available = 'Alembic commands:\n%s' % ', '.join(self.commands)
+                self.write(available)
+                return available
+            if opt.command:
+                cmd = opt.command[0]
+                if cmd not in self.commands:
+                    raise CommandError('Unrecognized command %s' %
+                                       opt.command[0])
+                if cmd in ('auto', 'revision', 'merge') and not opt.msg:
+                    raise CommandError('Missing [-m] parameter for %s' % cmd)
+                self.run_alembic_cmd(opt)
+                return True
+            raise CommandError('Pass [--commands] for available commands')
         except util.CommandError as exc:
-            raise CommandError(str(exc)) from None
+            raise CommandError(str(exc))
 
     def get_lux_template_directory(self):
         return os.path.join(os.path.dirname(os.path.realpath(__file__)),
