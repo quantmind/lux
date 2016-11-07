@@ -251,8 +251,9 @@ class TestMixin:
     config_file = 'tests.config'
     """The config file to use when building an :meth:`application`"""
     config_params = {}
-    """Dictionary of parameters to override the parameters from
-    :attr:`config_file`"""
+    """Dictionary of parameters to override parameters from
+    :attr:`config_file`
+    """
     prefixdb = 'testlux_'
 
     @classmethod

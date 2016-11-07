@@ -14,7 +14,7 @@ methods = ('get', 'head', 'post', 'patch', 'put', 'delete')
 
 
 class Command(LuxCommand):
-    help = 'Create Open API documents'
+    help = 'Create Open API JSON document'
 
     def run(self, options):
         docs = obj()
@@ -36,11 +36,14 @@ class Command(LuxCommand):
                 spec = docs[spec]
                 self.get_routes(router, model, spec["paths"])
 
+        files = []
         for name, doc in docs.items():
             filename = '%s_spec.json' % name
             with open(filename, 'w') as fp:
                 json.dump(doc, fp, indent=2)
                 self.write('Created %s' % filename)
+                files.append(filename)
+        return files
 
     def get_routes(self, router, model, paths):
         verbs = obj()
