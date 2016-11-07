@@ -50,11 +50,11 @@ class CommandTests(test.TestCase):
         command = self.fetch_command('generate_secret_key')
         self.assertTrue(command.help)
         key = await command([])
-        self.assertEqual(len(key), 50)
+        self.assertEqual(len(key), 64)
         key = await command(['--length', '35'])
         self.assertEqual(len(key), 35)
         key = await command(['--hex'])
-        self.assertTrue(len(key) > 50)
+        self.assertTrue(len(key) > 64)
 
     async def test_show_parameters(self):
         command = self.fetch_command('show_parameters')
