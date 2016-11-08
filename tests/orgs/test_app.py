@@ -1,29 +1,8 @@
 """Organisation and user permissions"""
-from lux.utils import test
+from tests import orgs
 
 
-class OrganisationTest(test.AppTestCase):
-    config_file = 'tests.orgs.config'
-
-    @classmethod
-    def create_admin_jwt(cls):
-        return cls.client.run_command('master_app')
-
-    @classmethod
-    async def beforeAll(cls):
-        request = await cls.client.post(
-            cls.api_url('authorizations'),
-            json=dict(username='testuser', password='testuser'),
-            jwt=cls.admin_jwt
-        )
-        cls.super_token = cls._test.json(request.response, 201)['id']
-
-    @test.green
-    def _test_entity(self, username, type):
-        odm = self.app.odm()
-        with odm.begin() as session:
-            entity = session.query(odm.entity).filter_by(username=username)
-            self.assertEqual(entity.one().type, type)
+class OrganisationTest(orgs.AppTestCase):
 
     async def test_create_organisation(self):
         username = 'testorg'

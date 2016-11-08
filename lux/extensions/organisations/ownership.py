@@ -74,6 +74,7 @@ def get_create_own_model(self, request):
 
     with model.session(request) as session:
         owner = self.get_instance(request, session=session).obj
+        request.cache.owner = owner
 
         if request.method in GET_HEAD:
             cfg = app.config
@@ -148,7 +149,7 @@ class OwnedTarget:
     def dbmodel(self):
         return self.model.app.odm()[self.model.name]
 
-    def query(self, session, owner, *values):
+    def query(self, session, owner, *values, **kwargs):
         if isinstance(owner, str):
             owner = entity_model(session.app).get_instance(
                 session.request, session=session, username=owner
@@ -170,6 +171,9 @@ class OwnedTarget:
         )
 
         for name, value in zip(self.filters, values):
+            query.filter(getattr(dbmodel, name) == value)
+
+        for name, value in kwargs.items():
             query.filter(getattr(dbmodel, name) == value)
 
         return query
@@ -201,3 +205,23 @@ class RelationshipField(rest.RelationshipField):
                     raise ValidationError(
                         self.validation_error.format(model)
                     )
+
+
+class UniqueField(rest.UniqueField):
+
+    def __call__(self, value, bfield):
+        if not value and self.nullable:
+            return value
+        request = bfield.request
+        owner = request.cache.owner
+        if not owner:
+            raise ValidationError('no owner')
+        target = get_owned_model(request, self.model or bfield.form.model)
+        if not target:
+            raise ValidationError('not found')
+        field = self.field or bfield.name
+
+        with target.model.session(request) as session:
+            query = target.query(session, owner, **{field: value})
+            return self.test(value, bfield, target.model,
+                             query=query, session=session)
