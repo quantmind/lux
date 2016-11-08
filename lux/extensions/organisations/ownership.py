@@ -8,29 +8,37 @@ from sqlalchemy.orm.exc import NoResultFound
 from lux.core import app_attribute, GET_HEAD
 from lux.utils.auth import ensure_authenticated
 from lux.extensions import rest
-from lux.forms import get_form_class
+from lux.extensions.odm import RestModel
+from lux.forms import get_form_class, ValidationError
 
 from .forms import MemberRole
 
 
-OwnedModel = namedtuple('OwnedModel', 'form cast')
+OwnedModel = namedtuple('OwnedModel', 'form filters cast')
 
 
 @app_attribute
-def owner_model_forms(app):
+def owner_model_targets(app):
     return {}
+
+
+@app_attribute
+def entity_model(app):
+    model = RestModel('entity', url='')
+    model.register(app)
+    return model
 
 
 def identity(value):
     return value
 
 
-def owned_model(app, target, cast_id=None):
+def owned_model(app, target, *filters, cast_id=None):
     if target.model.form:
         model = target.model.copy()
         target.model = model
-        owner_model_forms(app)[model.identifier] = OwnedModel(
-            form=model.form, cast=cast_id or identity
+        owner_model_targets(app)[model.identifier] = OwnedModel(
+            form=model.form, filters=filters, cast=cast_id or identity
         )
         model.form = None
     return target
@@ -38,7 +46,7 @@ def owned_model(app, target, cast_id=None):
 
 def get_owned_model(request, identifier):
     app = request.app
-    owned = owner_model_forms(app).get(identifier)
+    owned = owner_model_targets(app).get(identifier)
     if not owned:
         raise Http404
 
@@ -47,7 +55,7 @@ def get_owned_model(request, identifier):
     if form_class:
         target = app.models.get(identifier)
         if target:
-            return OwnedTarget(target, form_class, owned.cast)
+            return OwnedTarget(target, form_class, owned.filters, owned.cast)
 
     raise Http404
 
@@ -130,16 +138,22 @@ def get_membership(session, user, organisation):
 class OwnedTarget:
     """Query tables enabled with ownership
     """
-    def __init__(self, model, form, cast):
+    def __init__(self, model, form, filters, cast):
         self.model = model
         self.form = form
+        self.filters = filters
         self.cast = cast
 
     @property
     def dbmodel(self):
         return self.model.app.odm()[self.model.name]
 
-    def query(self, session, owner):
+    def query(self, session, owner, *values):
+        if isinstance(owner, str):
+            owner = entity_model(session.app).get_instance(
+                session.request, session=session, username=owner
+            )
+
         entityownership = session.mapper.entityownership
         dbmodel = self.dbmodel
         query = self.model.get_query(session)
@@ -150,13 +164,40 @@ class OwnedTarget:
             dbmodel.id == self.cast(entityownership.object_id)
         )
 
-        return query.filter(
+        query.filter(
             entityownership.type == self.model.name,
             entityownership.entity_id == owner.id
         )
 
+        for name, value in zip(self.filters, values):
+            query.filter(getattr(dbmodel, name) == value)
+
+        return query
+
 
 class RelationshipField(rest.RelationshipField):
 
-    def get_parameters(self):
-        pass
+    def _clean(self, value, bfield):
+        bits = value.split('/') if isinstance(value, str) else None
+        if not bits or (len(bits) == 1 and not self.multiple):
+            return super()._clean(value, bfield)
+
+        request = bfield.request
+        target = get_owned_model(request, self.model)
+        if not target:
+            raise ValidationError('not found')
+        model = target.model
+
+        with model.session(request) as session:
+            query = target.query(session, *bits)
+            if self.multiple:
+                return model.get_list(request, query=query,
+                                      session=session)
+            else:
+                try:
+                    return model.get_instance(request, query=query,
+                                              session=session)
+                except Http404:
+                    raise ValidationError(
+                        self.validation_error.format(model)
+                    )
