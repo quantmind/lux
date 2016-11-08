@@ -2,8 +2,12 @@ from collections import namedtuple
 
 from pulsar import Http404, PermissionDenied
 
+from sqlalchemy.exc import DataError
+from sqlalchemy.orm.exc import NoResultFound
+
 from lux.core import app_attribute, GET_HEAD
 from lux.utils.auth import ensure_authenticated
+from lux.extensions import rest
 from lux.forms import get_form_class
 
 from .forms import MemberRole
@@ -78,7 +82,7 @@ def get_create_own_model(self, request):
         if owner.type == 'organisation':
             user = ensure_authenticated(request)
             auth = request.cache.auth_backend
-            membership = session.query(odm.orgmember).get((user.id, owner.id))
+            membership = get_membership(session, user, owner)
             if not membership or membership.role == MemberRole.collaborator:
                 raise PermissionDenied
             if membership.role == MemberRole.member:
@@ -112,6 +116,17 @@ def get_create_own_model(self, request):
     return self.json_response(request, data)
 
 
+def get_membership(session, user, organisation):
+    orgmember = session.mapper.orgmember
+    try:
+        return session.query(orgmember).filter_by(
+            user_id=user.id,
+            organisation_id=organisation.id
+        ).one()
+    except (DataError, NoResultFound):
+        return None
+
+
 class OwnedTarget:
     """Query tables enabled with ownership
     """
@@ -139,3 +154,9 @@ class OwnedTarget:
             entityownership.type == self.model.name,
             entityownership.entity_id == owner.id
         )
+
+
+class RelationshipField(rest.RelationshipField):
+
+    def get_parameters(self):
+        pass
