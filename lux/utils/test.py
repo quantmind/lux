@@ -506,7 +506,11 @@ class AppTestCase(unittest.TestCase, TestMixin):
                             cls.datastore[key] = new_url
         cls.app.config['DATASTORE'] = cls.datastore
         cls.app.params['DATASTORE'] = cls.datastore
-        odm.table_create()
+        cls.table_create()
+
+    @classmethod
+    def table_create(cls):
+        cls.app.odm().table_create()
 
     @classmethod
     @green
