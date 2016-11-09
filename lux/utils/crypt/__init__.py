@@ -27,3 +27,9 @@ def create_uuid():
 
 def create_token():
     return create_uuid().hex
+
+
+def as_hex(value):
+    if isinstance(value, uuid.UUID):
+        return value.hex
+    return value

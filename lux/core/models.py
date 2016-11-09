@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
 from copy import copy
-from uuid import UUID
 
 from pulsar import ImproperlyConfigured
+
+from lux.utils.crypt import as_hex
 
 
 class ModelNotAvailable(Exception):
@@ -178,10 +179,7 @@ class LuxModel(ABC):
         setattr(instance.obj, name, value)
 
     def get_instance_value(self, instance, name):
-        val = getattr(instance.obj, name, None)
-        if isinstance(val, UUID):
-            return val.hex
-        return val
+        return as_hex(getattr(instance.obj, name, None))
 
     def value_from_data(self, name, data, instance=None):
         if name in data:

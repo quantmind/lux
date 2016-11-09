@@ -4,11 +4,11 @@ from lux.forms import Layout, Fieldset, Submit, formreg
 
 
 class ApplicationConfigForm(forms.Form):
-    docker_user = forms.EmailField(required=False)
-    docker_email = forms.CharField(required=False)
-    docker_password = forms.PasswordField(required=False)
-    aws_key = forms.CharField(required=False)
-    aws_secret = forms.CharField(required=False)
+    DOCKER_USER = forms.EmailField(required=False)
+    DOCKER_EMAIL = forms.CharField(required=False)
+    DOCKER_PASSWORD = forms.PasswordField(required=False)
+    AWS_KEY = forms.CharField(required=False)
+    AWS_SECRET = forms.CharField(required=False)
 
 
 class ApplicationForm(forms.Form):
