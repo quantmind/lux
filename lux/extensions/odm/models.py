@@ -9,7 +9,7 @@ from sqlalchemy import Column, desc, String
 from sqlalchemy.orm import class_mapper, load_only
 from sqlalchemy.orm.base import instance_state
 from sqlalchemy.sql.expression import func, cast
-from sqlalchemy.exc import DataError
+from sqlalchemy.exc import DataError, StatementError
 from sqlalchemy.orm.exc import (NoResultFound, MultipleResultsFound,
                                 ObjectDeletedError)
 
@@ -46,7 +46,7 @@ class Query(BaseQuery):
         query = self._query()
         try:
             one = query.one()
-        except (DataError, NoResultFound):
+        except (DataError, NoResultFound, StatementError):
             raise Http404
         except MultipleResultsFound:
             self.logger.error('%s - Multiple result found for model %s. '

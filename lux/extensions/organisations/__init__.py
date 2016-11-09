@@ -1,9 +1,12 @@
+from pulsar import Http404
+
 from lux.core import Parameter
 from lux.extensions import auth
 
 from .events import AuthEventsMixin
 from .rest import UserCRUD, UserRest, OrganisationCRUD
 from .views import UserSettings, UserView
+from .ownership import get_owned_model
 
 from ..applications import has_plugin, is_html
 
@@ -32,6 +35,13 @@ class Extension(auth.Extension, AuthEventsMixin):
         return (UserRest(),
                 UserCRUD(),
                 OrganisationCRUD())
+
+    def on_query(self, app, query):
+        try:
+            target = get_owned_model(app, query.model.identifier)
+            query.filters['owner'] = target.filter
+        except Http404:
+            pass
 
     def on_html_document(self, app, request, doc):
         '''Add adminuser entry to the javascript context

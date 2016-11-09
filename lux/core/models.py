@@ -62,7 +62,7 @@ class LuxModel(ABC):
     def session(self, request, session=None):
         """Return a session for aggregating a query.
 
-        THis method must return a context manager with the following methods:
+        This method must return a context manager with the following methods:
 
         * ``add(model)``: add a model to the session
         * ``delete(model)`: delete a model
@@ -70,8 +70,8 @@ class LuxModel(ABC):
 
     @abstractmethod
     def get_query(self, session):
-        '''Create a new :class:`.Query` from a session
-        '''
+        """Create a new :class:`.Query` from a session
+        """
 
     @abstractmethod
     def tojson(self, request, instance, **kw):
@@ -276,12 +276,14 @@ class ModelInstance:
 
 
 class Query(ABC):
-    "Interface for a Query"
+    """Interface for a Query
+    """
 
     def __init__(self, model, session=None):
         self.model = model
         self.session = session
         self.fields = None
+        self.filters = {}
 
     @property
     def name(self):
@@ -345,8 +347,10 @@ class Query(ABC):
         for key, value in params.items():
             bits = key.split(':')
             field = bits[0]
+            op = bits[1] if len(bits) == 2 else 'eq'
+            if field in self.filters:
+                self.filters[field](self, op, value)
             if field in fields:
-                op = bits[1] if len(bits) == 2 else 'eq'
                 self.filter_field(fields[field], op, value)
 
         if search:

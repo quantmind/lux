@@ -149,7 +149,9 @@ class OwnedTarget:
     def dbmodel(self):
         return self.model.app.odm()[self.model.name]
 
-    def query(self, session, owner, *values, **kwargs):
+    def filter(self, query, op, owner):
+        """Filtering callback for an owner"""
+        session = query.session
         if isinstance(owner, str):
             owner = entity_model(session.app).get_instance(
                 session.request, session=session, username=owner
@@ -157,7 +159,6 @@ class OwnedTarget:
 
         entityownership = session.mapper.entityownership
         dbmodel = self.dbmodel
-        query = self.model.get_query(session)
 
         # Jojn the tables
         query.sql_query = query.sql_query.join(
@@ -170,6 +171,11 @@ class OwnedTarget:
             entityownership.entity_id == owner.id
         )
 
+    def query(self, session, owner, *values, **kwargs):
+        query = self.model.get_query(session)
+        self.filter(query, 'eq', owner)
+
+        dbmodel = self.dbmodel
         for name, value in zip(self.filters, values):
             query.filter(getattr(dbmodel, name) == value)
 
