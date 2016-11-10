@@ -3,7 +3,7 @@
 import time
 from functools import wraps
 
-from pulsar import Http401, PermissionDenied, Http404, HttpRedirect
+from pulsar import Http401, PermissionDenied, Http404, HttpRedirect, BadRequest
 from pulsar.apps.wsgi import Route, wsgi_request
 
 from lux.utils.date import to_timestamp, date_from_now, iso8601
@@ -12,7 +12,7 @@ from lux.core import app_attribute, backend_action, User
 from .store import session_store
 
 
-NotAuthorised = (Http401, PermissionDenied)
+NotAuthorised = (Http401, PermissionDenied, BadRequest)
 
 
 @app_attribute
@@ -63,7 +63,7 @@ class SessionBackend:
         session = request.cache.session
         try:
             request.api.authorizations.delete(token=session.token)
-        except Http401:
+        except NotAuthorised:
             pass
         session_store(request).delete(session.id)
         request.cache.user = request.cache.auth_backend.anonymous(request)
@@ -109,7 +109,10 @@ class SessionBackend:
                 user = request.api.user.get(token=session.token).json()
             except NotAuthorised:
                 request.cache.auth_backend.logout(request)
-                raise HttpRedirect(request.config['LOGIN_URL'])
+                raise HttpRedirect(request.config['LOGIN_URL']) from None
+            except Exception:
+                request.cache.auth_backend.logout(request)
+                raise
             request.cache.user = User(user)
 
     @session_backend_action
