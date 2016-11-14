@@ -61,6 +61,7 @@ class NewTokenForm(forms.Form):
     """
     description = forms.TextField(minlength=2, maxlength=256)
 
+
 #
 # HTML FORM REGISTRATION
 formreg['user'] = Layout(

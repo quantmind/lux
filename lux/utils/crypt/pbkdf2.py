@@ -268,6 +268,7 @@ def crypt(word, salt=None, iterations=24000, digestmodule=sha256,
                      secret_key=secret_key).read(digest.digest_size)
     return salt + "$" + b64encode(rawhash, "./")
 
+
 # Add crypt as a static method of the PBKDF2 class
 # This makes it easier to do "from PBKDF2 import PBKDF2" and still use
 # crypt.
