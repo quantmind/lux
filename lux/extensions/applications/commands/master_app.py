@@ -34,7 +34,7 @@ class Command(LuxCommand):
             form = form_class(request, data=dict(
                 id=ID,
                 name=slugify(request.config['APP_NAME']),
-            ))
+            ), model='applications')
             if form.is_valid():
                 app_domain = model.create_model(
                     request,

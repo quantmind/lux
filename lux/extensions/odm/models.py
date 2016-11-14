@@ -18,6 +18,7 @@ from pulsar import Http404
 from odm.utils import get_columns
 
 from lux.core import app_attribute, ModelNotAvailable, Query as BaseQuery
+from lux.utils.crypt import as_hex
 from lux.extensions import rest
 
 
@@ -310,7 +311,7 @@ class RestModel(rest.RestModel):
     def id_repr(self, request, obj, in_list=True):
         if obj:
             if in_list:
-                data = {'id': getattr(obj, self.id_field)}
+                data = {'id': as_hex(getattr(obj, self.id_field))}
             else:
                 data = self.tojson(request, obj, exclude_related=True)
                 data['id'] = data.pop(self.id_field)

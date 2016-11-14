@@ -12,7 +12,7 @@ class ServiceUser(rest.ServiceUser):
     def __init__(self, request):
         super().__init__(request)
         self.application = request.cache.application
-        request.cache.application_id = request.cache.application.id.hex
+        request.cache.application_id = request.cache.application.id
 
     def __repr__(self):
         if self.is_authenticated():
@@ -22,7 +22,7 @@ class ServiceUser(rest.ServiceUser):
 
     @property
     def application_id(self):
-        return self.application.id.hex
+        return self.application.id
 
 
 class AuthBackend(auth.TokenBackend):

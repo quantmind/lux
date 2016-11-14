@@ -25,6 +25,7 @@ class AppDomain:
         self.id = app_domain.id.hex
         self.name = app_domain.name
         self.domain = app_domain.domain
+        self.secret = app_domain.secret
         self.config = dict(app_domain.config or ())
         self.app = None
 
@@ -34,6 +35,7 @@ class AppDomain:
     def request(self, request, api_url):
         if not self.app:
             self.app = self._build(request.app, api_url)
+        request.cache.multi_app = self
         return self.app(request.environ, request.cache.start_response)
 
     def _build(self, main, api_url):
@@ -191,7 +193,7 @@ def reload_app(app):
             app_domain = app_domains.names.pop(name, None)
             if app_domain:
                 app_domains.domains.pop(app_domain.domain, None)
-                app_domains.ids.pop(app_domain.id.hex, None)
+                app_domains.ids.pop(app_domain.id, None)
                 app.logger.warning('reload application %s', name)
             # if domain:
             #     check_certificate(app, domain)
