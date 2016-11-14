@@ -1,0 +1,1 @@
+DEFAULT_CONTENT_TYPE = "text/html"

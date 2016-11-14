@@ -7,7 +7,9 @@ from hashlib import sha1
 from pulsar.utils.string import random_string
 
 digits_letters = string.digits + string.ascii_letters
-secret_choices = digits_letters + string.punctuation
+secret_choices = digits_letters + ''.join(
+    (p for p in string.punctuation if p != '"')
+)
 
 
 def generate_secret(length=64, allowed_chars=None, hexadecimal=False):

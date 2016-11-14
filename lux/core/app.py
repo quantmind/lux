@@ -221,7 +221,7 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
     def __call__(self, environ, start_response):
         """The WSGI thing."""
         wsgi_handler = self.wsgi_handler()
-        self.wsgi_request(environ)
+        self.wsgi_request(environ, start_response=start_response)
         return wsgi_handler(environ, start_response)
 
     def wsgi_handler(self):
@@ -285,7 +285,8 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
         return self.meta.version
 
     def wsgi_request(self, environ=None, loop=None, path=None,
-                     app_handler=None, urlargs=None, **kw):
+                     app_handler=None, urlargs=None, start_response=None,
+                     **kw):
         """Create a :class:`.WsgiRequest` from a wsgi ``environ`` and set the
         ``app`` attribute in the cache.
         Additional keyed-valued parameters can be inserted.
@@ -304,6 +305,8 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
                 self.cfg = pulsar.Config(debug=self.debug)
             environ['pulsar.cfg'] = self.cfg
         request.cache.app = self
+        if start_response:
+            request.cache.start_response = start_response
         return request
 
     def html_document(self, request):
@@ -382,7 +385,7 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
             if not self.logger:
                 # this is the application extension, raise
                 raise
-            self.logger.exception('%s cannot load extension %s.',
+            self.logger.exception('%s cannot load extension "%s".',
                                   self, dotted_path)
             return
         Ext = getattr(module, 'Extension', None)

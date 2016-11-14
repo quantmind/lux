@@ -24,7 +24,10 @@ class Command(LuxCommand):
         model = self.app.models['applications']
         ID = request.config['MASTER_APPLICATION_ID']
         if not ID:
-            raise CommandError('MASTER_APPLICATION_ID not available in config')
+            raise CommandError(
+                'MASTER_APPLICATION_ID not available in config.\n'
+                'Create a UUID with the create_uuid command'
+            )
         try:
             app_domain = model.get_instance(request, id=ID)
         except Http404:

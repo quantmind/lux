@@ -1,7 +1,7 @@
 from itertools import chain
 
 
-def error_message(*args, errors=None):
+def error_message(*args, errors=None, trace=None):
     msgs = args
     if errors:
         msgs = chain(args, errors)
@@ -19,4 +19,6 @@ def error_message(*args, errors=None):
     data['message'] = ' '.join(message)
     if messages:
         data['errors'] = messages
+    if trace:
+        data['trace'] = trace
     return data

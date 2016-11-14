@@ -1,6 +1,7 @@
 import json
 from lux import forms
 from lux.forms import Layout, Fieldset, Submit, formreg
+from lux.extensions.rest import UniqueField
 
 
 class ApplicationConfigForm(forms.Form):
@@ -13,9 +14,21 @@ class ApplicationConfigForm(forms.Form):
 
 class ApplicationForm(forms.Form):
     id = forms.CharField(readonly=True, required=False)
-    name = forms.SlugField(minlength=2, maxlength=32)
-    config = forms.JsonField(required=False,
-                             ace=json.dumps({'mode': 'json'}))
+    name = forms.SlugField(
+        minlength=2,
+        maxlength=32,
+        validator=UniqueField
+    )
+    domain = forms.CharField(
+        minlength=2,
+        maxlength=120,
+        required=False,
+        validator=UniqueField
+    )
+    config = forms.JsonField(
+        required=False,
+        ace=json.dumps({'mode': 'json'})
+    )
 
 
 # FORM REGISTRATION

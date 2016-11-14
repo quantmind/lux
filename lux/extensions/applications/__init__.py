@@ -22,7 +22,10 @@ class Extension(LuxExtension):
                   "Unique ID of application. Required for client applications"
                   " but not by the API. Added to the JWT payload"),
         Parameter('API_INFO_URL', 'info',
-                  "Url for information routes")
+                  "Url for information routes"),
+        Parameter('SETTINGS_DEFAULT_FILE', None,
+                  'Path to the json files containing default settings '
+                  'for multi applications')
     )
 
     def on_config(self, app):

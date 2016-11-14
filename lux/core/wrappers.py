@@ -302,7 +302,7 @@ def json_message(request, message, error=False, **obj):
     """Create a JSON message to return to clients
     """
     if error:
-        return error_message(message)
+        return error_message(message, **obj)
     else:
         obj['message'] = message
         return obj
@@ -324,18 +324,18 @@ def error_handler(request, exc):
         content_type = response.content_type.split(';')[0]
     is_html = content_type == 'text/html'
 
+    msg = (str(exc) or error_messages.get(response.status_code) or
+           response.response)
+    trace = None
     if response.status_code >= 500:
         if app.debug:
-            msg = render_error_debug(request, exc, is_html)
+            trace = render_error_debug(request, exc, is_html)
         else:
-            msg = error_messages.get(response.status_code)
-    else:
-        msg = (str(exc) or error_messages.get(response.status_code) or
-               response.response)
+            msg = error_messages.get(response.status_code, 'Internal error')
 
     if is_html:
         context = {'status_code': response.status_code,
-                   'status_message': msg}
+                   'status_message': trace or msg}
         return app.html_response(request,
                                  ['%s.html' % response.status_code,
                                   'error.html'],
@@ -344,6 +344,9 @@ def error_handler(request, exc):
     #
     if content_type in JSON_CONTENT_TYPES:
         return json.dumps(json_message(request, msg,
-                                       error=response.status_code))
+                                       error=response.status_code,
+                                       trace=trace))
+    elif trace:
+        return '\n'.join(trace)
     else:
-        return '\n'.join(msg) if isinstance(msg, (list, tuple)) else msg
+        return msg
