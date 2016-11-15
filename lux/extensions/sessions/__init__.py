@@ -4,7 +4,7 @@ from pulsar import PermissionDenied
 
 import jwt
 
-from lux.core import Parameter, LuxExtension
+from lux.core import Parameter, LuxExtension, is_html
 
 from .browser import SessionBackend
 from .views import Login, Logout, SignUp, ForgotPassword, Token
@@ -70,20 +70,21 @@ class Extension(LuxExtension):
     ]
 
     def middleware(self, app):
-        cfg = app.config
+        if is_html(app):
+            cfg = app.config
 
-        if cfg['LOGIN_URL']:
-            yield Login(cfg['LOGIN_URL'])
-            if cfg['LOGOUT_URL']:
-                yield Logout(cfg['LOGOUT_URL'])
-            if cfg['HTML_AUTH_TOKEN_URL']:
-                yield Token(cfg['HTML_AUTH_TOKEN_URL'])
+            if cfg['LOGIN_URL']:
+                yield Login(cfg['LOGIN_URL'])
+                if cfg['LOGOUT_URL']:
+                    yield Logout(cfg['LOGOUT_URL'])
+                if cfg['HTML_AUTH_TOKEN_URL']:
+                    yield Token(cfg['HTML_AUTH_TOKEN_URL'])
 
-        if cfg['REGISTER_URL']:
-            yield SignUp(cfg['REGISTER_URL'])
+            if cfg['REGISTER_URL']:
+                yield SignUp(cfg['REGISTER_URL'])
 
-        if cfg['RESET_PASSWORD_URL']:
-            yield ForgotPassword(cfg['RESET_PASSWORD_URL'])
+            if cfg['RESET_PASSWORD_URL']:
+                yield ForgotPassword(cfg['RESET_PASSWORD_URL'])
 
     def on_jwt(self, app, request, payload):
         cfg = app.config

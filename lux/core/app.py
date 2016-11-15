@@ -64,6 +64,10 @@ def Http(app):
     return GreenHttp(http) if green else http
 
 
+def is_html(app):
+    return app.config['DEFAULT_CONTENT_TYPE'] == 'text/html'
+
+
 class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
     """A WSGI callable for serving lux applications.
     """

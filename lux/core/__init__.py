@@ -4,7 +4,7 @@ from .commands import ConsoleParser, CommandError, LuxCommand, Setting
 from .extension import LuxExtension, Parameter, app_attribute
 from .models import LuxModel, Query, ModelInstance, ModelNotAvailable
 from .console import App, execute_from_config
-from .app import Application, extend_config
+from .app import Application, extend_config, is_html
 from .component import AppComponent
 from .wrappers import (WsgiRequest, Router, HtmlRouter,
                        JsonRouter, json_message, cached_property,
@@ -35,6 +35,7 @@ __all__ = [
     'LuxExtension',
     'Parameter',
     'app_attribute',
+    'is_html',
     #
     'LuxModel',
     'Query',

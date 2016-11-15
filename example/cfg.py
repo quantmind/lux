@@ -14,7 +14,7 @@ EXTENSIONS = (
 
 APP_NAME = COPYRIGHT = HTML_TITLE = 'website.com'
 SECRET_KEY = '01W0o2gOG6S1Ldz0ig8qtmdkEick04QlN84fS6OrAqsMMs64Wh'
-SESSION_BACKEND = redis_cache_server
+SESSION_STORE = redis_cache_server
 EMAIL_DEFAULT_FROM = 'admin@lux.com'
 EMAIL_BACKEND = 'lux.core.mail.LocalMemory'
 SESSION_COOKIE_NAME = 'test-website'

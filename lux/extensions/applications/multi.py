@@ -2,6 +2,7 @@ import string
 import json
 from asyncio import get_event_loop
 from collections import namedtuple
+from urllib.parse import urlparse
 
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -10,11 +11,10 @@ from pulsar.apps.wsgi import wsgi_request
 
 from lux.core import app_attribute, extend_config, execute_from_config
 from lux.utils.crypt import generate_secret
-from lux.extensions import rest
+from lux.extensions.rest import ApiClient
 from lux.utils.crypt import create_token
 
 
-KEY = '__multi_app__'
 xchars = string.digits + string.ascii_lowercase
 multi_apps = namedtuple('multi_apps', 'ids names domains')
 
@@ -28,6 +28,8 @@ class AppDomain:
         self.secret = app_domain.secret
         self.config = dict(app_domain.config or ())
         self.app = None
+        self.root = None
+        self.api_url = None
 
     def __repr__(self):
         return self.domain or self.name
@@ -38,19 +40,33 @@ class AppDomain:
         request.cache.multi_app = self
         return self.app(request.environ, request.cache.start_response)
 
+    def api_client(self, app):
+        client = ApiClient(app)
+        url = urlparse(self.api_url)
+        client.local_apps[url.netloc] = self.root
+        return client
+
     def _build(self, main, api_url):
+        self.root = main
+        self.api_url = api_url
         config = dict(default_config(main))
         config.update(
             SESSION_COOKIE_NAME='%s-app' % self.name,
-            HTML_TITLE=self.name
+            HTML_TITLE=self.name,
+            DEFAULT_CONTENT_TYPE="text/html"
         )
         config.update(self.config)
         config.update(
+            APPLICATION_ID=self.id,
+            SECRET_KEY=self.secret,
             APP_NAME=self.name,
-            API_URL=api_url
+            API_URL=api_url,
+            APP_MULTI=self
         )
+        # Fire the multi app event
+        main.fire('on_multi_app', config)
         application = execute_from_config(
-            'lux.extensions.applications.app',
+            main.config_module,
             argv=['serve'],
             config=config,
             cmdparams=dict(
@@ -59,16 +75,6 @@ class AppDomain:
             )
         )
         return application
-
-
-class ApiClient(rest.ApiClient):
-
-    def __init__(self, app):
-        super().__init__(app)
-        # netloc = urlparse(app.config['API_URL']).netloc
-        # for api in app.apis:
-        #     if api.netloc == netloc:
-        #         self.local_apps[netloc] = app
 
 
 class MultiBackend:
@@ -116,8 +122,7 @@ class MultiBackend:
         except Http404:
             return
 
-        api_url = '%s://api.%s' % (request.scheme, '.'.join(multi[-2:]))
-        return app_domain.request(request, api_url)
+        return app_domain.request(request, self.api_url(request, multi))
 
     def response(self, response):
         request = wsgi_request(response.environ)
@@ -128,18 +133,31 @@ class MultiBackend:
             runtime = loop.time() - request.cache.x_runtime
             request.response['X-Runtime'] = '%.6f' % runtime
 
+    def api_url(self, request, multi):
+        host = request.get_host().split(':')
+        url = 'api.%s' % '.'.join(multi[-2:])
+        if len(host) == 2:
+            url = '%s:%s' % (url, host[1])
+        return '%s://%s' % (request.scheme, url)
+
 
 @app_attribute
 def default_config(app):
-    """Build the default config for applications
+    """Build the default config for all applications
     """
-    config = {}
+    config = dict(
+        AUTHENTICATION_BACKENDS=[
+            "lux.extensions.applications:MultiBackend"
+        ],
+        EXTENSIONS=[
+            'lux.extensions.base',
+            'lux.extensions.rest',
+            'lux.extensions.applications'
+        ]
+    )
     if app.config['SETTINGS_DEFAULT_FILE']:
         with open(app.config['SETTINGS_DEFAULT_FILE']) as fp:
             extend_config(config, json.load(fp))
-    config['EXTENSIONS'] = [
-        'lux.extensions.base'
-    ]
     return config
 
 
