@@ -1,4 +1,9 @@
-"""Management utility to create superusers."""
+"""Management utility to swagger docs for API
+
+check also
+
+http://hirelofty.com/blog/auto-generate-swagger-docs-your-django-api/
+"""
 import json
 from copy import copy
 from collections import OrderedDict as obj

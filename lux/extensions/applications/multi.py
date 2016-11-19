@@ -41,6 +41,8 @@ class AppDomain:
         return self.app(request.environ, request.cache.start_response)
 
     def api_client(self, app):
+        """Build the api client for an application
+        """
         client = ApiClient(app)
         url = urlparse(self.api_url)
         client.local_apps[url.netloc] = self.root
@@ -61,7 +63,8 @@ class AppDomain:
             SECRET_KEY=self.secret,
             APP_NAME=self.name,
             API_URL=api_url,
-            APP_MULTI=self
+            APP_MULTI=self,
+            MINIFIED_MEDIA=main.config['MINIFIED_MEDIA']
         )
         # Fire the multi app event
         main.fire('on_multi_app', config)
