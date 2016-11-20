@@ -22,8 +22,10 @@ class LuxChannels(AppComponent):
         if not addr or not app.green_pool:
             return
         store = create_store(addr)
-        pubsub = store.pubsub(protocol=protocol)
-        channels = Channels(pubsub, namespace=app.config['PUBSUB_PREFIX'])
+        channels = store.channels(
+            protocol=protocol,
+            namespace=app.config['PUBSUB_PREFIX']
+        )
         return cls(app, channels)
 
     def __init__(self, app, channels):
