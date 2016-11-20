@@ -61,5 +61,5 @@ class ChannelsTests(test.TestCase):
         result = await future
 
         self.assertEqual(result, 'boom')
-        self.assertEqual(len(app.channels), 1)
+        self.assertEqual(len(app.channels), 2)
         self.assertTrue(repr(app.channels))
