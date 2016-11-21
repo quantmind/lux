@@ -1,4 +1,4 @@
-from pulsar.apps.data.channels import Channel, CallbackError
+from pulsar.apps.data.channels import CallbackError
 
 
 class WsChannelsRpc:
@@ -6,7 +6,7 @@ class WsChannelsRpc:
     """
     def channel_writer(self, ws):
         if not hasattr(ws, 'channel_writer'):
-            ws.channel_writer = Writer(ws)
+            ws.channel_writer = Writer(ws, self)
         return ws.channel_writer
 
     def ws_publish(self, wsrequest):
@@ -65,19 +65,20 @@ class WsChannelsRpc:
 
     def channel_publish(self, wsrequest, channel, event, data):
         channels = wsrequest.ws.channels
-        user = wsrequest.cache.user_info
-        channels.publish(channel, event, data, user=user)
+        channels.publish(channel, event, data)
+
+    def write_channel_event(self, ws, channel, event, data):
+        ws.write_message(channel.name, event, data)
 
 
 class Writer:
 
-    def __init__(self, ws):
+    def __init__(self, ws, rpc):
         self.ws = ws
+        self.rpc = rpc
 
     def __call__(self, channel, event, data):
-        if isinstance(channel, Channel):
-            channel = channel.name
         try:
-            self.ws.write_message(channel, event, data)
+            self.rpc.write_channel_event(self.ws, channel, event, data)
         except RuntimeError:
             raise CallbackError from None

@@ -57,7 +57,7 @@ class LuxChannels(AppComponent):
 
     def register(self, channel_name, event, callback):
         return self.app.green_pool.wait(
-            self._register_connect(channel_name, event, callback)
+            self.channels.register(channel_name, event, callback)
         )
 
     def unregister(self, channel_name, event, callback):
@@ -65,11 +65,7 @@ class LuxChannels(AppComponent):
             self.channels.unregister(channel_name, event, callback)
         )
 
-    def publish(self, channel_name, event, data=None, user=None):
-        if user:
-            if not data:
-                data = {}
-            data['user'] = user
+    def publish(self, channel_name, event, data=None):
         return self.app.green_pool.wait(
             self.channels.publish(channel_name, event, data)
         )
