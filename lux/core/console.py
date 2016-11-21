@@ -59,7 +59,8 @@ def execute_from_config(config_file, description=None, argv=None,
 
 class App(LazyWsgi):
 
-    def __init__(self, config_file, argv, script=None, config=None, **kw):
+    def __init__(self, config_file, argv, script=None, config=None,
+                 cfg=None, **kw):
         params = config or {}
         params.update(kw)
         self.params = params
@@ -67,6 +68,7 @@ class App(LazyWsgi):
         self.script = script
         self.argv = argv
         self.command = None
+        self.cfg = cfg
 
     def setup(self, environ=None, on_config=None, handler=True):
         from lux.core.app import Application

@@ -88,7 +88,7 @@ def test_app(test, config_file=None, config_params=True, argv=None, **params):
         argv.append('--log-level')
         levels = test.cfg.log_level if hasattr(test, 'cfg') else ['none']
         argv.extend(levels)
-    app = App(config_file, argv=argv, **kwargs).setup(
+    app = App(config_file, argv=argv, cfg=test.cfg, **kwargs).setup(
         on_config=test.app_test_providers)
     if app.config['SECRET_KEY'] == 'secret-key':
         app.config['SECRET_KEY'] = generate_secret()
