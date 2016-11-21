@@ -1,8 +1,8 @@
-from unittest import mock, skipUnless
+from unittest import mock
 import shutil
 from os import path
 
-from pulsar.apps.test import TestFailure
+from pulsar.apps.test import TestFailure, skipUnless
 from pulsar.apps.test import check_server
 
 from lux.utils import test
@@ -83,3 +83,9 @@ class CommandTests(test.TestCase):
         self.assertTrue(command.help)
         result = await command([])
         self.assertEqual(result, 0)
+
+    async def test_create_uuid(self):
+        command = self.fetch_command('create_uuid')
+        self.assertTrue(command.help)
+        uuid = await command([])
+        self.assertTrue(len(uuid), 32)
