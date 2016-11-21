@@ -21,8 +21,11 @@ def api_info_routes(app):
 class Info(JsonRouter):
 
     async def get(self, request):
-        default = api_info_routes(request.app).get('', self.get_version)
-        return self.json_response(request, default(request))
+        routes = {}
+        base = request.absolute_uri('/%s' % self.route.rule)
+        for name in sorted(api_info_routes(request.app)):
+            routes[name] = '%s/%s' % (base, name)
+        return self.json_response(request, routes)
 
     def options(self, request):
         request.app.fire('on_preflight', request, methods=GET_HEAD)

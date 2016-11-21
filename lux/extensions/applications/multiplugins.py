@@ -1,16 +1,22 @@
+"""Multi application plugin infrastructure.
+
+A plugin add functionalities and endpoints to an application.
+"""
 from collections import OrderedDict
 
 from lux.core import app_attribute
 from lux.utils.data import as_tuple
 
 
-def has_plugin(app, plugin_name, config=None):
+def has_plugin(app, plugin, config=None):
     cfg = app.config
     config = config or cfg
     if config['APPLICATION_ID'] == cfg['MASTER_APPLICATION_ID']:
         # The master application has all plugins
         return True
-    return True
+    if plugin.permission:
+        return True
+    return False
 
 
 @app_attribute
@@ -41,10 +47,12 @@ class Plugin:
     """
     name = None
 
-    def __init__(self, backend=None, require=None, extensions=None):
+    def __init__(self, backend=None, require=None, extensions=None,
+                 permission=None):
         self.backends = as_tuple(backend)
         self.require = require
         self.extensions = as_tuple(extensions)
+        self.permission = permission
 
     def on_config(self, config):
         for extension in self.extensions:

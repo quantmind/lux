@@ -54,17 +54,17 @@ class AppDomain:
         config = dict(default_config(main))
         config.update(
             SESSION_COOKIE_NAME='%s-app' % self.name,
-            HTML_TITLE=self.name,
-            DEFAULT_CONTENT_TYPE="text/html"
+            HTML_TITLE=self.name
         )
-        config.update(self.config)
+        extend_config(config, self.config)
         config.update(
             APPLICATION_ID=self.id,
             SECRET_KEY=self.secret,
             APP_NAME=self.name,
             API_URL=api_url,
             APP_MULTI=self,
-            MINIFIED_MEDIA=main.config['MINIFIED_MEDIA']
+            MINIFIED_MEDIA=main.config['MINIFIED_MEDIA'],
+            DEFAULT_CONTENT_TYPE="text/html"
         )
         # Fire the multi app event
         main.fire('on_multi_app', config)

@@ -168,7 +168,9 @@ class LuxCommand(ConsoleParser):
             cfg = application.cfg.copy()
         for setting in self.option_list:
             cfg.settings[setting.name] = setting.copy()
-        return application(callable=callable or app.callable,
+        callable = callable or app.callable
+        callable.cfg = cfg
+        return application(callable=callable,
                            description=self.help,
                            epilog=app.config.get('EPILOG'),
                            cfg=cfg,

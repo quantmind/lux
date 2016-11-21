@@ -27,6 +27,18 @@ class AppDomain(Model):
         return self.name
 
 
+class AppPlugin:
+    """Application plugins are always owned by the master application
+    """
+    id = Column(UUIDType(binary=False), primary_key=True)
+    name = Column(String(120), nullable=False, unique=True)
+    """Unique name of plugin"""
+    config = Column(JSONType)
+
+    def __str__(self):
+        return self.name
+
+
 class AppModelMixin:
 
     @classmethod

@@ -6,7 +6,7 @@ from lux.utils.countries import common_timezones, country_names
 from .rest import ApplicationCRUD
 from .auth import AuthBackend
 from .multi import MultiBackend
-from .plugins import has_plugin, plugins, Plugin
+from .multiplugins import has_plugin, plugins, Plugin
 from .info import Info, api_info_routes
 
 
@@ -15,7 +15,8 @@ __all__ = [
     'MultiBackend',
     'has_plugin',
     'plugins',
-    'Plugin'
+    'Plugin',
+    'api_info_routes'
 ]
 
 
@@ -37,14 +38,19 @@ class Extension(LuxExtension):
     def on_config(self, app):
         multi = app.config.get('APP_MULTI')
         if not multi:
+            # API domain
             self.require(app, 'lux.extensions.auth')
             app.add_events(('on_multi_app',))
+            plugins(app).register(
+                'admin',
+                Plugin(extensions='lux.extensions.admin')
+            )
         else:
             app.providers['Api'] = multi.api_client
 
     def on_multi_app(self, app, config):
         for plugin in plugins(app):
-            if has_plugin(app, plugin.name, config):
+            if has_plugin(app, plugin, config):
                 plugin.on_config(config)
 
     def on_jwt(self, app, request, payload):

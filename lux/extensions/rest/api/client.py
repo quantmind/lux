@@ -1,14 +1,11 @@
 import threading
-import json as _json
-from io import BytesIO
-from urllib.parse import urlparse
 
-from pulsar import Http404, Http401, PermissionDenied
-from pulsar.utils.httpurl import parse_options_header
-from pulsar.apps.http import JSON_CONTENT_TYPES
+from pulsar import Http401, PermissionDenied
 from pulsar.utils.websocket import SUPPORTED_VERSIONS, websocket_key
+from pulsar.apps.test import HttpTestClient
+from pulsar.apps.greenio import GreenHttp
 
-from lux.core import raise_http_error
+from lux.core import raise_http_error, app_attribute
 from lux.utils.token import encode_json
 
 
@@ -38,7 +35,7 @@ class ApiClient:
     def http(self, request, netloc=None):
         app = self.local_apps.get(netloc) if netloc else self.app
         if app:
-            return HttpLocalClient(request, app)
+            return http_local(app)
         else:
             http = getattr(self._threads, 'http', None)
             if http is None:
@@ -149,83 +146,7 @@ class ApiClientRequest(HttpRequestMixin):
         return self.__class__(self._request, self._api, path)
 
 
-class HttpLocalClient:
-    """An internal Http client
-
-    This client create a dummy HTTP request to the REST API application
-    """
-    def __init__(self, request, app=None):
-        self.wsgi_request = request
-        self.app = app or request.app
-
-    def request(self, method, url, headers=None, json=None, body=None, **kw):
-        environ = self.wsgi_request.environ.copy()
-        if environ.get('http.local'):
-            raise Http404
-        environ.pop('pulsar.cache', None)
-        parsed = urlparse(url)
-        if headers:
-            for header, value in headers:
-                if header == "content-type":
-                    environ['CONTENT_TYPE'] = value
-                elif header == "content-length":
-                    environ['CONTENT_LENGTH'] = value
-                else:
-                    key = 'HTTP_' + header.upper().replace('-', '_')
-                    environ[key] = value
-        if json:
-            body = _json.dumps(json).encode('utf-8')
-            environ['CONTENT_TYPE'] = 'application/json; charset=utf-8'
-
-        environ['http.local'] = True
-        environ['wsgi.input'] = BytesIO(body or b'')
-        environ['REQUEST_METHOD'] = method.upper()
-        environ['PATH_INFO'] = parsed.path
-        environ['QUERY_STRING'] = parsed.query
-        if parsed.netloc:
-            environ['HTTP_HOST'] = parsed.netloc
-        environ['RAW_URI'] = url
-        response = self.app(environ, self.start_response)
-        return HttpResponse(response)
-
-    def start_response(self, status, response_headers, exc_info=None):
-        pass
-
-
-class HttpResponse:
-    """Wrap A WSGI Response object with an API compatible with an HTTP
-    response object"""
-    __slots__ = ('response',)
-
-    def __init__(self, response):
-        self.response = response
-
-    def __repr__(self):
-        return repr(self.response)
-
-    def __getattr__(self, name):
-        return getattr(self.response, name)
-
-    @property
-    def content(self):
-        '''Retrieve the body without flushing'''
-        return b''.join(self.response.content)
-
-    def text(self, charset=None, errors=None):
-        charset = charset or self.response.encoding or 'utf-8'
-        return self.content.decode(charset, errors or 'strict')
-
-    def json(self, charset=None, errors=None):
-        return _json.loads(self.text(charset, errors))
-
-    def decode_content(self):
-        '''Return the best possible representation of the response body.
-        '''
-        ct = self.response.content_type
-        if ct:
-            ct, _ = parse_options_header(ct)
-            if ct in JSON_CONTENT_TYPES:
-                return self.json()
-            elif ct.startswith('text/'):
-                return self.text()
-        return self.content
+@app_attribute
+def http_local(app):
+    http = HttpTestClient(app.callable, app, headers={'X-Http-Local': 'local'})
+    return GreenHttp(http)

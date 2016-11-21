@@ -9,7 +9,7 @@ from lux.core import Parameter, LuxExtension
 
 from .models import RestModel, DictModel, RestField, is_rel_field
 from .api import Apis
-from .api.client import ApiClient, HttpResponse, HttpRequestMixin
+from .api.client import ApiClient, HttpRequestMixin
 from .views.rest import RestRouter, MetadataMixin, CRUD, Rest404
 from .views.spec import Specification
 from .pagination import Pagination, GithubPagination
@@ -31,7 +31,6 @@ __all__ = [
     'Specification',
     ""
     "ApiClient",
-    "HttpResponse",
     "HttpRequestMixin",
     #
     'Query',
