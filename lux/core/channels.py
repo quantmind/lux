@@ -57,7 +57,7 @@ class LuxChannels(AppComponent):
 
     def register(self, channel_name, event, callback):
         return self.app.green_pool.wait(
-            self.channels.register(channel_name, event, callback)
+            self._register_connect(channel_name, event, callback)
         )
 
     def unregister(self, channel_name, event, callback):
