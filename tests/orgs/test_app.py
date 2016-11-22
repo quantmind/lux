@@ -1,8 +1,10 @@
 """Organisation and user permissions"""
 from tests import orgs
 
+from tests.orgs.info import InfoMixin
 
-class OrganisationTest(orgs.AppTestCase):
+
+class OrganisationTest(orgs.AppTestCase, InfoMixin):
 
     async def test_create_organisation(self):
         username = 'testorg'

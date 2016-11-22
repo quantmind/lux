@@ -42,9 +42,6 @@ class Info(JsonRouter):
                 return self.json_response(request, meta(request))
         raise Http404
 
-    def get_version(self, request):
-        return {'version': request.app.__version__}
-
 
 def python_packages(request):
     return dict(_packages())
