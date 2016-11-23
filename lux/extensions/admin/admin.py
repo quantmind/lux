@@ -129,9 +129,9 @@ class Admin(AdminRouter):
 
 
 class AdminModel(AdminRouter):
-    '''Router for rendering an admin section relative to
+    """Router for rendering an admin section relative to
     a given rest model
-    '''
+    """
     model = None
     section = None
     icon = None
@@ -166,10 +166,12 @@ class AdminModel(AdminRouter):
         return self.get_grid(request)
 
     def get_grid(self, request, basePath=None, **kw):
-        options = self.grid_options.copy()
-        options['target'] = self.get_target(request, **kw)
-        options['basePath'] = basePath
-        return grid(options)
+        options_url = request.full_path(json='grid')
+        tag = request.config['HTML_GRID_TAG']
+        return Html(tag, url=options_url).render()
+        # options = self.grid_options.copy()
+        # options['target'] = self.get_target(request, **kw)
+        # options['basePath'] = basePath
 
 
 class CRUDAdmin(AdminModel):

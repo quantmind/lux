@@ -134,6 +134,8 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
                   'element'),
         Parameter('HTML_FORM_TAG', 'lux-form',
                   'Html tag for lux forms'),
+        Parameter('HTML_GRID_TAG', 'lux-grid',
+                  'Html tag for lux grids'),
         #
         # CONTENT base parameters
         Parameter('CONTENT_GROUPS', {

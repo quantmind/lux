@@ -8,11 +8,6 @@ from pulsar.apps.wsgi import route
 from lux.core import JsonRouter, GET_HEAD, app_attribute
 
 
-def meta_route(f):
-    f.meta = True
-    return f
-
-
 @app_attribute
 def api_info_routes(app):
     return {}
@@ -52,5 +47,5 @@ def _packages():
     for p in pip.get_installed_distributions():
         try:
             yield p.key, p.version
-        except Exception:
+        except Exception:   # pragma    nocover
             pass
