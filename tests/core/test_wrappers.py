@@ -25,4 +25,4 @@ class TestWrappers(test.TestCase):
         app = self.application()
         client = test.TestClient(app)
         request, _ = client.request_start_response('get', '/')
-        self.assertEqual(app.logger, request.logger)
+        self.assertNotEqual(app.logger, request.logger)
