@@ -159,7 +159,7 @@ class LuxCommand(ConsoleParser):
         self.app.write_err(stream)
 
     def pulsar_app(self, argv, application=None, callable=None,
-                   log_name='lux', **kw):
+                   log_name='lux', config=None, **kw):
         app = self.app
         if application is None:
             application = LuxApp
@@ -178,5 +178,5 @@ class LuxCommand(ConsoleParser):
                            log_name=log_name,
                            version=app.meta.version,
                            debug=app.debug,
-                           config=app.config_module,
+                           config=config or app.config_module,
                            **kw)

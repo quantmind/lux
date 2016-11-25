@@ -1,5 +1,5 @@
 """Websocket RPC for Authentication"""
-from pulsar import PermissionDenied, BadRequest
+from pulsar import PermissionDenied, BadRequest, Http401
 from pulsar.apps import rpc
 
 from lux.core import Resource
@@ -11,7 +11,9 @@ class WsResource(Resource):
         try:
             return super().__call__(request, **kw)
         except PermissionDenied:
-            raise rpc.InvalidRequest('permission denied')
+            raise rpc.InvalidRequest('permission denied') from None
+        except Http401:
+            raise rpc.InvalidRequest('authentication required') from None
 
 
 class WsAuthRpc:

@@ -1,3 +1,5 @@
+import logging
+
 from urllib.parse import urlparse, urlunparse
 
 from pulsar import Http404
@@ -10,6 +12,9 @@ from lux.core import AppComponent
 from ..views.rest import RestRoot
 
 from ..views.spec import Specification
+
+
+LOCAL_API_LOGGER = logging.getLogger('lux.local.api')
 
 
 class Apis(AppComponent):

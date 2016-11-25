@@ -99,3 +99,10 @@ formreg['permission'] = Layout(
     Fieldset(all=True),
     Submit('Update permissions')
 )
+
+
+formreg['create-token'] = Layout(
+    NewTokenForm,
+    Fieldset(all=True),
+    Submit('Create new token')
+)

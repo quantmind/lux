@@ -50,14 +50,6 @@ class WsgiRequest(wsgi.WsgiRequest):
         return self.cache.app.config
 
     @property
-    def logger(self):
-        """Shortcut to app logger
-
-        Allow for injection in the cache dictionary (testing)
-        """
-        return self.cache.logger or self.cache.app.logger
-
-    @property
     def api(self):
         """handler to a Lux API server for this request
         """
