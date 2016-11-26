@@ -3,6 +3,7 @@
 import os
 import json
 import asyncio
+import logging
 import threading
 from asyncio import create_subprocess_shell, subprocess
 
@@ -40,6 +41,7 @@ from .auth import BackendMixin
 
 
 LUX_CORE = os.path.dirname(__file__)
+LOCAL_LOGGER = logging.getLogger('lux.api.local')
 
 
 def extend_config(config, parameters):
@@ -311,6 +313,8 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
                 self.cfg = pulsar.Config(debug=self.debug)
             environ['pulsar.cfg'] = self.cfg
         request.cache.app = self
+        if request.get('HTTP_X_HTTP_LOCAL') == 'local':
+            request.cache.logger = LOCAL_LOGGER
         if start_response:
             request.cache.start_response = start_response
         return request

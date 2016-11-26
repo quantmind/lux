@@ -1,4 +1,4 @@
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin
 from collections import OrderedDict
 
 from pulsar import ImproperlyConfigured, Http404
@@ -73,9 +73,9 @@ def api_path(request, model, *args, **params):
     model = request.app.models.get(model)
     if model:
         path = model.api_url(request, **params)
-        if path:
-            path = urlparse(path).path
-            return '%s/%s' % (path, '/'.join(args)) if args else path
+        if path and args:
+            path = '%s/%s' % (path, '/'.join((str(s) for s in args)))
+        return path
 
 
 class Extension(LuxExtension):

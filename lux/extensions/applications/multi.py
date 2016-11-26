@@ -1,6 +1,5 @@
 import string
 import json
-import logging
 from asyncio import get_event_loop
 from collections import namedtuple
 from urllib.parse import urlparse
@@ -16,7 +15,6 @@ from lux.extensions.rest import ApiClient
 from lux.utils.crypt import create_token
 
 
-LOCAL_LOGGER = logging.getLogger('lux.api.local')
 xchars = string.digits + string.ascii_lowercase
 multi_apps = namedtuple('multi_apps', 'ids names domains')
 
@@ -89,9 +87,6 @@ class MultiBackend:
     def request(self, request):
         #
         # First time here
-        if request.get('HTTP_X_HTTP_LOCAL') == 'local':
-            request.cache.logger = LOCAL_LOGGER
-
         if not request.cache.x_runtime:
             loop = get_event_loop()
             request.cache.x_count = 0

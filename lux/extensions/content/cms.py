@@ -2,7 +2,6 @@ from pulsar.utils.structures import AttributeDictionary
 from pulsar import Http404
 
 from lux.extensions.sitemap import Sitemap, SitemapIndex
-from lux.extensions.rest import api_path
 from lux.core import cached, Template
 from lux import core
 
@@ -138,12 +137,10 @@ class CMS(core.CMS):
                 setattr(page, attr, tpl)
 
     def all(self, request, group):
-        path = api_path(request, 'contents', group=group)
-        if path:
-            return request.api.get(path, params={'priority:gt': 0}
-                                   ).json()['result']
-        else:
-            return []
+        return request.api.get(
+            'contents/%s' % group,
+            params={'priority:gt': 0}
+        ).json()['result']
 
 
 class LazyContext:
