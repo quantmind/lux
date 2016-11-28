@@ -71,8 +71,12 @@ class ContentQuery(Query):
         """
         model = self.model
         content = self.app.config['CONTENT_GROUPS'].get(group)
-        base_html_path = content.get('path')
-        default_meta = content.get('meta', {}) if content else {}
+        if content:
+            base_html_path = content.get('path')
+            default_meta = content.get('meta', {})
+        else:
+            base_html_path = None
+            default_meta = {}
         directory = os.path.join(model.directory, group)
         if not os.path.isdir(directory):
             if content:
@@ -100,13 +104,16 @@ class ContentQuery(Query):
                     meta = default_meta.copy()
                     #
                     html_path = self._html_path(base_html_path, slug)
-                    meta.update({'path': html_path,
-                                 'group': group,
+                    meta.update({'group': group,
                                  'slug': slug})
+                    if html_path is not None:
+                        meta['path'] = html_path
                     data.append(reader.read(src, meta).tojson())
         return data
 
     def _html_path(self, base_html_path, slug):
+        if not base_html_path:
+            return
         html_path = slug if slug != 'index' else ''
         if base_html_path != '*':
             if html_path:

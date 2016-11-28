@@ -350,7 +350,7 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
             head.add_meta(**entry)
 
         for script in cfg['HTML_BODY_SCRIPTS']:
-            doc.body.scripts.append(script, async=True)
+            doc.body.scripts.append(script)
 
         self.fire('on_html_document', request, doc, safe=True)
         #

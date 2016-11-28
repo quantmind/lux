@@ -31,6 +31,8 @@ class Command(LuxCommand):
         path = options.static_path
         if not path:
             path = os.getcwd()
+        if not options.base_url:
+            raise CommandError('specify base url with --base-url flag')
         base = options.base_url[0]
         self.bs = bs
         self.http = HttpTestClient(self.app.callable, wsgi=self.app)

@@ -147,22 +147,25 @@ class LazyContext:
 
     def __init__(self, app, entry, context):
         self.app = app
-        self.key = 'html_%s' % entry['slug']
+        self.key = 'html_%s' % entry['slug'].replace('/', '_')
         self.entry = entry
         self.context = context
+
+    def __repr__(self):
+        return self.key
 
     def __str__(self):
         if not isinstance(self.context, str):
             context = self.context
             entry = self.entry
-            engine = self.app.template_engine(entry.get('template_engine'))
             body = entry.get('body', '')
             if body:
-                body = engine(body, self.context)
+                engine = self.app.template_engine(entry.get('template_engine'))
+                body = engine(body, context)
                 template = entry.get('template')
                 if template:
                     context['html_main'] = body
-                    body = self.app.cms.render(template, context)
+                    body = self.app.render_template(template, context)
             self.context = body
             context[self.key] = body
         return self.context
