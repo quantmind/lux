@@ -138,6 +138,10 @@ class CMS:
             'og:modified_time': page.meta.pop('modified', None)
         })
         #
+        # requirejs
+        for require in page.meta.pop('requirejs', '').split(','):
+            doc.body.scripts.append(require.strip())
+        #
         # Add head keys
         head = set(HEAD_META)
         meta = {}

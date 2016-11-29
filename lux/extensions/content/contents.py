@@ -44,7 +44,8 @@ METADATA_PROCESSORS = dict(((p.name, p) for p in (
     MultiValue('category', Category),
     MultiValue('author', Author),
     Processor('template'),
-    Processor('template-engine')
+    Processor('template-engine'),
+    MultiValue('requirejs')
 )))
 
 
