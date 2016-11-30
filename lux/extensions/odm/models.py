@@ -1,7 +1,7 @@
 import json
 from datetime import date, datetime
 from enum import Enum
-from uuid import UUID
+from functools import partial
 
 import pytz
 
@@ -227,17 +227,13 @@ class RestModel(rest.RestModel):
             if name in exclude or (load_only and name not in load_only):
                 continue
             try:
-                data = obj.__getattribute__(name)
-                if hasattr(data, '__call__'):
-                    data = data()
+                data = self.get_instance_value(instance, name)
                 if isinstance(data, date):
                     if isinstance(data, datetime) and not data.tzinfo:
                         data = pytz.utc.localize(data)
                     data = data.isoformat()
                 elif isinstance(data, Enum):
                     data = data.name
-                elif isinstance(data, UUID):
-                    data = data.hex
                 elif is_rel_field(field):
                     if exclude_related:
                         continue
@@ -269,6 +265,18 @@ class RestModel(rest.RestModel):
                     name = '%s[]' % name
                 fields[name] = data
         return self.instance_urls(request, instance, fields)
+
+    def get_instance_value(self, instance, name):
+        try:
+            value = instance.obj.__getattribute__(name)
+        except Exception:
+            value = getattr(self, 'instance_%s' % name, None)
+            if not hasattr(value, '__call__'):
+                raise
+            value = partial(value, instance)
+        if hasattr(value, '__call__'):
+            value = value()
+        return as_hex(value)
 
     def set_instance_value(self, instance, name, value):
         '''Set the the attribute ``name`` to ``value`` in a model ``instance``

@@ -191,9 +191,6 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
                   'Run the WSGI handle in a pool of greenlet'),
         Parameter('THREAD_POOL', False,
                   'Run the WSGI handle in the event loop executor'),
-        Parameter('SECURE_PROXY_SSL_HEADER', None,
-                  'A tuple representing a HTTP header/value combination that '
-                  'signifies a request is secure.'),
         #
         # PubSub Channels base parameters
         Parameter('PUBSUB_STORE', None,
@@ -344,13 +341,13 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
         head = doc.head
 
         for script in cfg['HTML_SCRIPTS']:
-            head.scripts.append(script, async=True)
+            head.scripts.append(script)
         #
         for entry in cfg['HTML_META'] or ():
             head.add_meta(**entry)
 
         for script in cfg['HTML_BODY_SCRIPTS']:
-            doc.body.scripts.append(script)
+            doc.body.scripts.append(script, async=True)
 
         self.fire('on_html_document', request, doc, safe=True)
         #

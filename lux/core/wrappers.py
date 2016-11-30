@@ -1,7 +1,7 @@
 import json
 from collections import Mapping
 
-from pulsar import ImproperlyConfigured, Http404
+from pulsar import Http404
 from pulsar.apps import wsgi
 from pulsar.apps.wsgi import (Json, RouterParam, Router, Route, Html,
                               cached_property, render_error_debug)
@@ -75,23 +75,7 @@ class WsgiRequest(wsgi.WsgiRequest):
     def scheme(self):
         """Protocol scheme, one of ``http`` and ``https``
         """
-        secure = self.environ.get('HTTPS') == 'on'
-        HEADER = self.config['SECURE_PROXY_SSL_HEADER']
-        if not secure and HEADER:
-            try:
-                header, value = HEADER
-            except ValueError:
-                raise ImproperlyConfigured(
-                    'The SECURE_PROXY_SSL_HEADER setting must be a tuple '
-                    'containing two values.')
-            secure = self.environ.get(header) == value
-        return 'https' if secure else 'http'
-
-    @property
-    def is_secure(self):
-        """``True`` if this request is via a TLS connection
-        """
-        return self.scheme == 'https'
+        return 'https' if self.is_secure else 'http'
 
 
 wsgi.set_wsgi_request_class(WsgiRequest)
