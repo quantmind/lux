@@ -21,6 +21,7 @@ from lux.core import app_attribute, ModelNotAvailable, Query as BaseQuery
 from lux.utils.crypt import as_hex
 from lux.extensions import rest
 
+MissingObjectError = (DataError, NoResultFound, StatementError)
 
 RestField = rest.RestField
 is_rel_field = rest.is_rel_field
@@ -47,7 +48,7 @@ class Query(BaseQuery):
         query = self._query()
         try:
             one = query.one()
-        except (DataError, NoResultFound, StatementError):
+        except MissingObjectError:
             raise Http404
         except MultipleResultsFound:
             self.logger.error('%s - Multiple result found for model %s. '
