@@ -18,6 +18,8 @@ class Command(LuxCommand):
     wsgiApp = wsgi.WSGIServer
 
     def __call__(self, argv, start=True, get_app=False):
+        if not self.app.callable.command:
+            self.app.callable.command = self.name
         app = self.app
         server = self.pulsar_app(argv, self.wsgiApp)
         if server.cfg.nominify:

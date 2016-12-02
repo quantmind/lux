@@ -44,7 +44,6 @@ def execute_from_config(config_file, description=None, argv=None,
             print('\n'.join(('%s.' % e, 'Pass -h for list of commands')))
             exit(1)
         app.argv.remove(command.name)
-        app.command = command.name
         cmdparams = cmdparams or {}
         try:
             return command(app.argv, **cmdparams)

@@ -118,6 +118,8 @@ class LuxCommand(ConsoleParser):
         self.app = app
 
     def __call__(self, argv, **params):
+        if not self.app.callable.command:
+            self.app.callable.command = self.name
         app = self.pulsar_app(argv)
         app.cfg.daemon = False
         app()

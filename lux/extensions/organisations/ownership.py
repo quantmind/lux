@@ -102,8 +102,9 @@ def get_create_own_model(self, request):
         form = target.form(request, data=data, files=files, model=target.model)
         if form.is_valid():
             try:
-                object = target.model.create_model(request, data=data,
-                                                   session=session)
+                object = target.model.create_model(
+                    request, data=form.cleaned_data, session=session
+                )
             except Exception:
                 msg = 'Could not create %s' % target.name
                 request.logger.exception(msg)
