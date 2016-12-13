@@ -13,4 +13,3 @@ lxml
 recommonmark
 premailer
 http-parser
--e git+https://github.com/quantmind/pulsar.git@master#egg=pulsar
