@@ -28,6 +28,8 @@
   :target: http://travis-ci.org/quantmind/lux
 .. |coverage-master| image:: https://img.shields.io/coveralls/quantmind/lux/master.svg
   :target: https://coveralls.io/r/quantmind/lux?branch=master
+.. |appveyor| image:: https://ci.appveyor.com/api/projects/status/u0x9r57svde3595d/branch/master?svg=true
+    :target: https://ci.appveyor.com/project/lsbardel/lux
 
 An asynchronous web framework for python. Lux is built with pulsar_ and uses
 asyncio_ as asynchronous engine. It can be configured to be explicitly asynchronous
