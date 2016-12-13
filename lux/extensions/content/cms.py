@@ -40,9 +40,11 @@ class RouterMap(Sitemap):
             html_url = request.absolute_uri(item['path'])
             if html_url.endswith('/index'):
                 html_url = html_url[:-6]
-            yield AttributeDictionary(loc=html_url,
-                                      lastmod=item.get('modified'),
-                                      priority=item.get('priority', 1))
+            page = AttributeDictionary(loc=html_url,
+                                       lastmod=item.get('modified'))
+            if cms.set_priority:
+                page.priority = item.get('priority', 1)
+            yield page
 
 
 class CMS(core.CMS):
@@ -50,6 +52,8 @@ class CMS(core.CMS):
 
     This CMS handler reads page information from the database and
     """
+    set_priority = True
+
     def __init__(self, app):
         super().__init__(app)
         middleware = app._handler.middleware
@@ -137,10 +141,11 @@ class CMS(core.CMS):
                 setattr(page, attr, tpl)
 
     def all(self, request, group):
-        return request.api.get(
-            'contents/%s' % group,
-            params={'priority:gt': 0}
-        ).json()['result']
+        params = None
+        if self.set_priority:
+            params = {'priority:gt': 0}
+        data = request.api.get('contents/%s' % group, params=params).json()
+        return data['result']
 
 
 class LazyContext:

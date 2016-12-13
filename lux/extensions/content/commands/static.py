@@ -5,7 +5,32 @@ from asyncio import gather
 
 from pulsar.apps.test.wsgi import HttpTestClient
 
-from lux.core import LuxCommand, Setting, CommandError
+from lux.core import LuxCommand, Setting, CommandError, Cache, register_cache
+
+
+register_cache('static', 'lux.extensions.content.commands.static:StaticCache')
+
+
+class StaticCache(Cache):
+    _store = None
+
+    @property
+    def store(self):
+        if self._store is None:
+            self._store = {}
+        return self._store
+
+    def get(self, key):
+        return self.store.get(key)
+
+    def set(self, key, value, **params):
+        self.store[key] = value
+
+    def delete(self, key):
+        return self.store.pop(key, None)
+
+    def clear(self, prefix=None):
+        return self.store.clear()
 
 
 class Command(LuxCommand):
@@ -34,10 +59,17 @@ class Command(LuxCommand):
         if not options.base_url:
             raise CommandError('specify base url with --base-url flag')
         base = options.base_url[0]
+        self.app.config['CACHE_SERVER'] = 'static://'
         self.bs = bs
         self.http = HttpTestClient(self.app.callable, wsgi=self.app)
         self.files = {}
-        await self.build_from_rurls(path, base, ['%s/sitemap.xml' % base])
+        urls = ['%s/sitemap.xml' % base]
+        self.app.cms.set_priority = False
+        await self.build_from_rurls(path, base, urls)
+        self.app.cms.set_priority = True
+        self.app.cache_server.clear()
+        self.files = {}
+        await self.build_from_rurls(path, base, urls)
 
     async def build_from_rurls(self, path, base, urls):
         await gather(*[self.build(path, base, url) for url in urls])
@@ -66,7 +98,8 @@ class Command(LuxCommand):
                     continue
                 url = loc.string
                 if url.startswith(base):
-                    urls.append(url)
+                    if not self.app.cms.set_priority or url.endswith('.xml'):
+                        urls.append(url)
             if urls:
                 await self.build_from_rurls(path, base, urls)
         else:

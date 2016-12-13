@@ -5,6 +5,7 @@ sitemap_ XML files easy.
 .. _sitemap: http://www.sitemaps.org/
 '''
 from urllib.parse import urlencode
+from datetime import datetime
 
 from dateutil.parser import parse as parse_date
 
@@ -84,7 +85,10 @@ class BaseSitemap(Router):
                     lastmodv = parse_date(lastmod)
                 else:
                     lastmodv = lastmod
-                    lastmod = iso8601(lastmod)
+
+                if isinstance(lastmodv, datetime):
+                    lastmodv = lastmodv.date()
+                lastmod = lastmodv.isoformat()
 
                 if (all_items_lastmod and
                         (latest_lastmod is None or lastmodv > latest_lastmod)):
@@ -100,7 +104,7 @@ class BaseSitemap(Router):
             yield self._xml(self.item_tag, ''.join(values))
 
         if all_items_lastmod and latest_lastmod:
-            latest_lastmod = iso8601(latest_lastmod)
+            latest_lastmod = latest_lastmod.isoformat()
         else:
             latest_lastmod = None
         request.cache.latest_lastmod = latest_lastmod

@@ -3,7 +3,7 @@ import sys
 import pip
 
 from pulsar import Http404
-from pulsar.apps.wsgi import route
+from pulsar.apps.wsgi import route, WsgiResponse
 
 from lux.core import JsonRouter, GET_HEAD, app_attribute
 
@@ -34,7 +34,10 @@ class Info(JsonRouter):
             if request.method == 'OPTIONS':
                 return self.options(request)
             else:
-                return self.json_response(request, meta(request))
+                response = meta(request)
+                if not isinstance(response, WsgiResponse):
+                    response = self.json_response(request, response)
+                return response
         raise Http404
 
 
