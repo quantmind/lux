@@ -3,6 +3,8 @@ import shutil
 
 from tests.config import *  # noqa
 
+from lux.utils import test
+
 
 API_URL = '/api'
 DEFAULT_CONTENT_TYPE = 'text/html'
@@ -42,3 +44,18 @@ def create_content(name):
         fp.write('\n'.join(('title: Index', '', 'Just an index')))
     with open(os.path.join(path, 'foo.md'), 'w') as fp:
         fp.write('\n'.join(('title: This is Foo', '', 'Just foo')))
+
+
+class Test(test.AppTestCase):
+    config_file = 'tests.content'
+
+    @classmethod
+    def setUpClass(cls):
+        create_content('blog')
+        create_content('site')
+        return super().setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        remove_repo()
+        return super().tearDownClass()

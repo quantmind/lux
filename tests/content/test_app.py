@@ -1,28 +1,15 @@
 from urllib.parse import urlsplit
 
-from lux.utils import test
 from lux.extensions.content.github import github_signature
 
-from tests.content import remove_repo, create_content, CONTENT_REPO
+from tests import content
 
 
-class TestContentViews(test.AppTestCase):
-    config_file = 'tests.content'
-
-    @classmethod
-    def setUpClass(cls):
-        create_content('blog')
-        create_content('site')
-        return super().setUpClass()
-
-    @classmethod
-    def tearDownClass(cls):
-        remove_repo()
-        return super().tearDownClass()
+class TestContentViews(content.Test):
 
     def test_initialization(self):
         model = self.app.models.get('contents')
-        self.assertEqual(model.directory, CONTENT_REPO)
+        self.assertEqual(model.directory, content.CONTENT_REPO)
         self.assertEqual(model.name, 'content')
         self.assertEqual(model.identifier, 'contents')
 

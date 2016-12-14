@@ -1,0 +1,417 @@
+swagger: '2.0'
+
+# This is your document metadata
+info:
+  version: "0.1.0"
+  title: Authentication
+  description: Authentication and permissions endpoints
+
+produces:
+  - application/json
+
+# Describe your paths here
+paths:
+  /user:
+    get:
+      # Describe this verb here. Note: you can use markdown
+      tags:
+        - User
+      description: |
+        Gets the authenticated `User` object. A valid `bearer` token must be avialable in the `Authorization` header
+      responses:
+        # Response code
+        200:
+          description: Successful response
+          # A schema describing your response object.
+          # Use JSON Schema format
+          schema:
+            $ref: '#/definitions/User'
+        400:
+          description: Bad User Token
+        401:
+          description: User Token is expired or not available
+    post:
+      tags:
+        - User
+      description: Update the authenticated `User`. A valid `bearer` token must be avialable in the `Authorization` header
+      responses:
+        200:
+          description: Successful response
+          # A schema describing your response object.
+          # Use JSON Schema format
+          schema:
+            $ref: '#/definitions/User'
+        400:
+          description: Bad User Token
+        401:
+          description: User Token is expired or not available
+  /user/permissions:
+    get:
+      tags:
+        - User
+        - Permissions
+      description: Gets permissions for `User`, authenticated or not
+      responses:
+        200:
+          description: Successful response
+        401:
+          description: Unsuccesful response, when the bearer token in the `Authorization` header is expired
+  /user/reset-password:
+    post:
+      tags:
+        - User
+        - Password
+      description: Send a request for a password reset by the authenticated `User`
+      responses:
+        201:
+          description: Successful response
+          schema:
+            $ref: '#/definitions/User'
+        422:
+          description: Unsuccesful response - could not login
+
+  /passwords:
+    post:
+      tags:
+        - User
+        - Password
+      description: Send a request for a password recovery. The headers must contain a valid `AUTHORIZATION` token, signed by the application sending the request.
+      parameters:
+        - name: email
+          description: Email address or username
+          type: string
+          in: formData
+          required: true
+      responses:
+        201:
+          description: Successful response
+          schema:
+            $ref: '#/definitions/Registration'
+        400:
+          description: Bad Application Token
+        401:
+          description: Application Token is expired or not available
+        404:
+          description: The email adress or username was not found or the Application has no permission recover passwords
+        422:
+          description: Unsuccesful response - email not given or not recognised
+  /passwords/{id}:
+    head:
+      tags:
+        - User
+        - Password
+      description: Check if a password recovery ID is valid
+      parameters:
+        - name: id
+          description: Password recovery `ID`
+          type: string
+          in: path
+          required: true
+      responses:
+        200:
+          description: Successful response
+        400:
+          description: Bad Application Token
+        401:
+          description: Application Token is expired or not available
+        404:
+          description: The password recovery ID was not found or the Application has no permission recover passwords
+
+    post:
+      tags:
+        - User
+        - Password
+      description: Set a new password, this operation can be done once only.
+      parameters:
+        - name: id
+          description: Password recovery `ID`
+          type: string
+          in: path
+          required: true
+        - name: password
+          description: The new password
+          type: string
+          in: formData
+          required: true
+      responses:
+        200:
+          description: Successful response
+          schema:
+            $ref: '#/definitions/User'
+        400:
+          description: Bad Application Token
+        401:
+          description: Application Token is expired or not available
+        404:
+          description: The password recovery ID was not found or the Application has no permission recover passwords
+
+
+  /users:
+    # This is a HTTP operation
+    get:
+      tags:
+        - Users
+      description: |
+        Gets list of `User` object.
+        Optional query param of **size** determines
+        size of returned array
+      # Expected responses for this operation:
+      responses:
+        # Response code
+        200:
+          description: Successful response
+          # A schema describing your response object.
+          # Use JSON Schema format
+          schema:
+            title: paginationObject
+            type: object
+            properties:
+              total:
+                title: total number of Users matching the query
+                type: integer
+              result:
+                title: ArrayOfUsers
+                type: array
+                items:
+                  $ref: '#/definitions/User'
+
+  /authorization:
+    post:
+      tags:
+        - Auth
+      description: Perform a login operation. The headers must contain a valid `AUTHORIZATION` token, signed by the application sending the request
+      parameters:
+        - name: username
+          description: User screen name
+          type: string
+          in: formData
+          required: true
+        - name: password
+          description: User password
+          type: string
+          in: formData
+          required: true
+      responses:
+        201:
+          description: Successful response
+          schema:
+            $ref: '#/definitions/Token'
+        400:
+          description: Bad Application Token
+        401:
+          description: Application Token is expired or not available
+        403:
+          description: The Application has no permission to login users
+        422:
+          description: The login payload did not validate
+    head:
+      tags:
+        - Auth
+      description: Check validity of the `Token` in the `Authorization` header, works for both user and application tokens
+      responses:
+        200:
+          description: Token is valid
+        400:
+          description: Bad token
+        401:
+          description: Token is expired or not available
+    delete:
+      tags:
+        - Auth
+        - User
+      description: Delete the token used by the authenticated `User`. This mehod **does not remove** the `User`. A valid `bearer` token must be avialable in the `Authorization` header
+      responses:
+        204:
+          description: token was deleted
+        400:
+          description: Bad User Token
+        401:
+          description: User Token is expired or not available
+
+  /registrations:
+    get:
+      tags:
+        - Registration
+      description: Retrieve unconfirmed registrations. The headers must contain a valid `AUTHORIZATION` token, signed by the application sending the request.
+      responses:
+        200:
+          description: Successful response
+          schema:
+            title: registration List
+            type: object
+            properties:
+              total:
+                title: total number of Registrations matching the query
+                type: integer
+              result:
+                title: Registrations
+                type: array
+                items:
+                  $ref: '#/definitions/Registration'
+        400:
+          description: Bad Application Token
+        401:
+          description: Application Token is expired or not available
+        403:
+          description: The Application has no permission to register users
+        422:
+          description: The signup payload did not validate
+    post:
+      tags:
+        - Registration
+      description: Send a request for a new `User` registration. The headers must contain a valid `AUTHORIZATION` token, signed by the application sending the request.
+      parameters:
+        - name: username
+          description: User screen name
+          type: string
+          in: formData
+          required: true
+        - name: email
+          description: User email address, used in signup validation email
+          type: string
+          in: formData
+          required: true
+        - name: password
+          description: User password
+          type: string
+          in: formData
+          required: true
+      responses:
+        201:
+          description: Successful response, an email was sent to the user signing up
+          schema:
+            $ref: '#/definitions/Registration'
+        400:
+          description: Bad Application Token
+        401:
+          description: Application Token is expired or not available
+        403:
+          description: The Application has no permission to register users
+        422:
+          description: The signup payload did not validate
+
+  /registrations/{id}:
+    parameters:
+      - name: id
+        type: string
+        description: registration ID
+        in: path
+        required: true
+    get:
+      tags:
+        - Registration
+      description: Get a registration by `ID`. The headers must contain a valid `AUTHORIZATION` token, signed by the application sending the request.
+      responses:
+        200:
+          description: Successful response
+          schema:
+            $ref: '#/definitions/Registration'
+        400:
+          description: Bad Application Token
+        401:
+          description: Application Token is expired or not available
+        404:
+          description: The registration ID was not found or the Application has no permission register users
+    head:
+      tags:
+        - Registration
+      description: Check if a registration needs to be confirmed. The headers must contain a valid `AUTHORIZATION` token, signed by the application sending the request.
+      responses:
+        200:
+          description: Successful response, confirmation needs to be confirmed
+        400:
+          description: Bad Application Token
+        401:
+          description: Application Token is expired or not available
+        404:
+          description: The registration ID was not found or the Application has no permission register users
+    post:
+      tags:
+        - Registration
+      description: Confirm a registration, this operation can be done once only for a given registration `ID`. The headers must contain a valid `AUTHORIZATION` token, signed by the application sending the request.
+      responses:
+        204:
+          description: Successful response, confirmation was succesful
+        400:
+          description: Bad Application Token
+        401:
+          description: Application Token is expired or not available
+        404:
+          description: The registration ID was not found or the Application has no permission register users
+
+  /mailinglist:
+    post:
+      tags:
+        - Email
+      parameters:
+      - name: topic
+        type: string
+        description: mailing list topic
+        in: formData
+      - name: email
+        type: string
+        description: email address, required for non-authenticated users
+        in: formData
+      responses:
+        201:
+          description: Successful response, email list joined
+          schema:
+            $ref: '#/definitions/MailList'
+        400:
+          description: Bad Token
+        401:
+          description: Token is expired or not available
+        422:
+          description: The payload did not validate
+
+definitions:
+  User:
+    type: object
+    required: ['id', 'username']
+    properties:
+      id:
+        type: string
+        description: Unique user id
+      username:
+        type: string
+        description: username/screen name
+      email:
+        type: string
+        description: user's email address
+      application_id:
+        type: string
+        description: the id of the application the user belong to
+  Registration:
+    type: object
+    required: ['expiry', 'email']
+    properties:
+      expiry:
+        type: string
+        description: Registration token expiry date in ISO 8601 format
+      email:
+        type: string
+        description: user email where the confirmation was sent to
+      application_id:
+        type: string
+        description: registration application ID
+  Token:
+    type: object
+    required: ['id']
+    properties:
+      id:
+        type: string
+        description: Unique token id - used as key in a bearer Authorization header
+      expiry:
+        type: string
+        description: token expiry date in ISO 8601 format
+
+  MailList:
+    type: object
+    required: ['id']
+    properties:
+      id:
+        type: string
+        description: Unique id
+      topic:
+        type: string
+        description: Mailing list topic
