@@ -63,10 +63,13 @@ class TokenBackend(PemissionsMixin):
 
         :param auth: a string containing the authorization information
         """
-        auth_type, key = auth.split(None, 1)
-        auth_type = auth_type.lower()
         user = None
         try:
+            try:
+                auth_type, key = auth.split(None, 1)
+            except ValueError:
+                raise BadRequest('Invalid Authorization header') from None
+            auth_type = auth_type.lower()
             if auth_type == 'bearer':
                 token = self.get_token(request, key)
                 if not token:

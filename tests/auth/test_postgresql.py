@@ -10,6 +10,7 @@ from tests.auth.utils import AuthUtils
 from tests.auth.registration import RegistrationMixin
 from tests.auth.mail_list import MailListMixin
 from tests.auth.groups import GroupsMixin
+from tests.auth.errors import ErrorsMixin
 
 
 class TestPostgreSql(test.AppTestCase,
@@ -19,6 +20,7 @@ class TestPostgreSql(test.AppTestCase,
                      PasswordMixin,
                      PermissionsMixin,
                      RegistrationMixin,
+                     ErrorsMixin,
                      GroupsMixin,
                      MailListMixin):
     config_file = 'tests.auth'
