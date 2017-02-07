@@ -1,7 +1,7 @@
 import json
 from collections import namedtuple
 
-from pulsar import ProtocolError
+from pulsar.api import ProtocolError
 from pulsar.utils.string import to_string
 from pulsar.apps.data import create_store
 from pulsar.utils.importer import module_attribute

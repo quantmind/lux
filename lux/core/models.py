@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from copy import copy
 
-from pulsar import ImproperlyConfigured
+from pulsar.api import ImproperlyConfigured
 
 from lux.utils.crypt import as_hex
 

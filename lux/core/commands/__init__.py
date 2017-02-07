@@ -6,8 +6,9 @@
 '''
 import argparse
 import logging
+from inspect import isawaitable
 
-from pulsar import Setting, Application, ImproperlyConfigured, isawaitable
+from pulsar.api import Setting, Application, ImproperlyConfigured
 from pulsar.utils.config import Config, LogLevel, Debug, LogHandlers
 
 from lux import __version__

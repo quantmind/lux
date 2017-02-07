@@ -1,8 +1,8 @@
 import threading
 
-from pulsar import Http401, PermissionDenied
+from pulsar.api import Http401, PermissionDenied
 from pulsar.utils.websocket import SUPPORTED_VERSIONS, websocket_key
-from pulsar.apps.test import HttpTestClient
+from pulsar.apps.http.wsgi import HttpWsgiClient
 from pulsar.apps.greenio import GreenHttp
 
 from lux.core import raise_http_error, app_attribute
@@ -58,7 +58,7 @@ class ApiClient:
             jwt = app_token(request)
             req_headers.append(('Authorization', 'JWT %s' % jwt))
         else:
-            if not token and request.cache.session:
+            if not token and request.cache.get('session'):
                 token = request.cache.session.token
             if token:
                 req_headers.append(('Authorization', 'Bearer %s' % token))
@@ -148,5 +148,4 @@ class ApiClientRequest(HttpRequestMixin):
 
 @app_attribute
 def http_local(app):
-    http = HttpTestClient(app.callable, app, headers={'X-Http-Local': 'local'})
-    return GreenHttp(http)
+    return GreenHttp(HttpWsgiClient(app))

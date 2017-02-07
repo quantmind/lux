@@ -1,7 +1,8 @@
 import time
 from datetime import datetime, timedelta
-from pulsar import Http401, BadRequest, PermissionDenied
-from pulsar.utils.pep import to_string
+
+from pulsar.api import Http401, BadRequest, PermissionDenied
+from pulsar.utils.string import to_string
 
 import lux.utils.token as jwt
 from lux.core import backend_action, UserMixin

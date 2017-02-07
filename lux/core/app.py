@@ -5,14 +5,13 @@ import json
 import asyncio
 import logging
 import threading
-from asyncio import create_subprocess_shell, subprocess
+from asyncio import create_subprocess_shell, subprocess, new_event_loop
 
 from inspect import isclass
 from collections import OrderedDict
 from importlib import import_module
 
-import pulsar
-from pulsar import ImproperlyConfigured
+from pulsar.api import ImproperlyConfigured, Config
 from pulsar.apps.wsgi import (
     WsgiHandler, HtmlDocument, test_wsgi_environ, wait_for_body_middleware,
     middleware_in_executor, wsgi_request
@@ -61,7 +60,7 @@ def Http(app):
     params = app.config['HTTP_CLIENT_PARAMETERS'] or {}
     green = app.green_pool
     if not green:
-        params['loop'] = pulsar.new_event_loop()
+        params['loop'] = new_event_loop()
     http = HttpClient(**params)
     return GreenHttp(http) if green else http
 
@@ -307,7 +306,7 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
         # Check if pulsar is serving the application
         if 'pulsar.cfg' not in environ:
             if not self.cfg:
-                self.cfg = pulsar.Config(debug=self.debug)
+                self.cfg = Config(debug=self.debug)
             environ['pulsar.cfg'] = self.cfg
         request.cache.app = self
         if request.get('HTTP_X_HTTP_LOCAL') == 'local':
@@ -445,10 +444,10 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
         all :setting:`EXTENSIONS` which expose the ``context`` method.
         """
         if (isinstance(context, LuxContext) or
-                request.cache._in_application_context):
+                request.cache.get('in_application_context')):
             return context
         else:
-            request.cache._in_application_context = True
+            request.cache.set('in_application_context', True)
             try:
                 ctx = LuxContext()
                 ctx.update(self.config)
@@ -459,7 +458,7 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
                         ext.context(request, ctx)
                 return ctx
             finally:
-                request.cache._in_application_context = False
+                request.cache.set('in_application_context', False)
             return context
 
     def render_template(self, name, context=None,
@@ -617,7 +616,7 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
     # INTERNALS
     def _setup_logger(self, config, opts):
         debug = opts.debug or self.params.get('debug', False)
-        cfg = pulsar.Config()
+        cfg = Config()
         cfg.set('debug', debug)
         cfg.set('log_level', opts.log_level)
         cfg.set('log_handlers', opts.log_handlers)

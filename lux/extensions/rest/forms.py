@@ -1,7 +1,7 @@
 import logging
 import json
 
-from pulsar import Http404
+from pulsar.api import Http404
 
 from lux import forms
 from lux.forms.fields import MultipleMixin

@@ -2,7 +2,7 @@
 '''
 from datetime import datetime, timedelta
 
-from pulsar import HttpRedirect, Http404
+from pulsar.api import HttpRedirect, Http404
 from pulsar.apps import http
 from pulsar.apps.http import HttpClient
 
@@ -274,8 +274,8 @@ def get_oauths(app):
 
 
 def request_oauths(request):
-    o = request.cache.oauths
+    o = request.cache.get('oauths')
     if o is None:
         o = get_oauths(request.app)
-        request.cache.oauths = o
+        request.cache.set('oauths', o)
     return o

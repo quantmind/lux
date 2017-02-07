@@ -5,7 +5,7 @@ from functools import wraps
 from copy import copy
 from inspect import getfile, getmodule
 
-from pulsar import ImproperlyConfigured
+from pulsar.api import ImproperlyConfigured
 
 from lux import __version__
 

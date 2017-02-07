@@ -6,10 +6,10 @@ from .models import LuxModel, Query, ModelInstance, ModelNotAvailable
 from .console import App, execute_from_config
 from .app import Application, extend_config, is_html
 from .component import AppComponent
-from .wrappers import (WsgiRequest, Router, HtmlRouter,
-                       JsonRouter, json_message, cached_property,
-                       RedirectRouter, LuxContext,
-                       JSON_CONTENT_TYPES, DEFAULT_CONTENT_TYPES)
+from .wrappers import (
+    WsgiRequest, Router, HtmlRouter, JsonRouter, json_message,
+    RedirectRouter, LuxContext, JSON_CONTENT_TYPES, DEFAULT_CONTENT_TYPES
+)
 from .templates import register_template_engine, template_engine, Template
 from .cms import CMS
 from .mail import EmailBackend
@@ -73,7 +73,6 @@ __all__ = [
     'JsonRouter',
     'route',
     'json_message',
-    'cached_property',
     'RedirectRouter',
     'LuxContext',
     'JSON_CONTENT_TYPES',

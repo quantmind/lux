@@ -1,4 +1,4 @@
-from pulsar import MethodNotAllowed, Http404
+from pulsar.api import MethodNotAllowed, Http404
 from pulsar.apps.wsgi import route
 
 from lux.core import JsonRouter, GET_HEAD, Resource

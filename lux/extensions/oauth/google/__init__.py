@@ -1,4 +1,4 @@
-'''\
+"""\
 This module integrates Google OAuth2_ services and APIs with lux.
 
 When the ``google`` dictionary is included into the :setting:`OAUTH_PROVIDERS`
@@ -48,9 +48,7 @@ you do not need to access user data::
 
 .. _OAuth2: https://developers.google.com/accounts/docs/OAuth2
 .. _`ui.router`: http://angular-ui.github.io/ui-router/site
-'''
-from string import Template
-
+"""
 from ..oauth import OAuth2, OAuth2Api
 
 
@@ -83,12 +81,10 @@ class Google(OAuth2):
         id = self.config.get('analytics_id')
         if id:
             rnd = request.app.template_engine()
-            txt = rnd(GOOGLE_ANALYTICS, id=id, ga='ga')
-            doc.body.before_render(lambda r, b: b.append(txt))
+            doc.body.embedded_js.append(rnd(GOOGLE_ANALYTICS, id=id, ga='ga'))
 
 
 GOOGLE_ANALYTICS = '''\
-<script>
   (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
   (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
   m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
@@ -96,8 +92,7 @@ GOOGLE_ANALYTICS = '''\
 
   {{ ga }}('create', '{{ id }}', 'auto');
   {{ ga }}('send', 'pageview');
-
-</script>'''
+'''
 
 
 google_map_url = ('async!https://maps.googleapis.com/maps/api/js?'

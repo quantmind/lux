@@ -1,6 +1,6 @@
 import os
 
-from pulsar import Http404
+from pulsar.api import Http404
 
 from lux.core import cached
 from lux.extensions.rest import DictModel, RestField, Query

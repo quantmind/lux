@@ -82,7 +82,7 @@ class Extension(LuxExtension):
             if oauths:
                 for provider in oauths.values():
                     provider.on_html_document(request, doc)
-                doc.before_render(self.meta_add_tags)
+                # doc.before_render(self.meta_add_tags)
 
     def context(self, request, ctx):
         """Add the ``oauth`` callable to the context dictionary

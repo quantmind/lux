@@ -6,7 +6,7 @@ from itertools import chain
 
 from dateutil.parser import parse as parse_date
 
-from pulsar import Unsupported
+from pulsar.api import Unsupported
 from pulsar.utils.slugify import slugify
 from pulsar.utils.structures import mapping_iterator
 

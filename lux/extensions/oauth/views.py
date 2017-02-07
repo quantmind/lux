@@ -1,5 +1,5 @@
-from pulsar.apps.wsgi import Router, Json, route
-from pulsar import HttpRedirect
+from pulsar.apps.wsgi import Router, route
+from pulsar.api import HttpRedirect
 
 from .oauth import request_oauths
 
@@ -74,4 +74,4 @@ class OAuthRouter(Router):
         if user.is_authenticated():
             name = request.urlargs['name']
             removed = user.remove_oauth(name)
-            return Json({'success': removed}).http_response(request)
+            return request.json_response({'success': removed})

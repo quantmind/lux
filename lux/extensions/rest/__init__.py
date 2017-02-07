@@ -1,7 +1,7 @@
 from urllib.parse import urljoin
 from collections import OrderedDict
 
-from pulsar import ImproperlyConfigured, Http404
+from pulsar.api import ImproperlyConfigured, Http404
 from pulsar.utils.importer import module_attribute
 from pulsar.utils.httpurl import remove_double_slash
 

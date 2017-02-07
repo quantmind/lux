@@ -7,7 +7,7 @@ import json
 from dateutil.parser import parse as dateparser
 
 from pulsar.utils.html import NOTHING, escape, nicename
-from pulsar.utils.pep import to_string
+from pulsar.utils.string import to_string
 from pulsar.utils.slugify import slugify
 
 from lux.utils.date import tzinfo

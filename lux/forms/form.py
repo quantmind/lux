@@ -1,5 +1,6 @@
+from collections import OrderedDict
+
 from pulsar.utils.string import to_string
-from pulsar.utils.structures import OrderedDict
 from pulsar.utils.html import NOTHING
 
 from .errors import ValidationError, FormError

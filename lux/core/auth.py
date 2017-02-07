@@ -1,11 +1,11 @@
 from functools import partial
 from importlib import import_module
 
-from pulsar import PermissionDenied, Http401
+from pulsar.api import PermissionDenied, Http401
 from pulsar.utils.structures import inverse_mapping
 from pulsar.utils.importer import module_attribute
 from pulsar.apps.wsgi import wsgi_request
-from pulsar.utils.pep import to_bytes
+from pulsar.utils.string import to_bytes
 
 from lux.utils.data import as_tuple
 

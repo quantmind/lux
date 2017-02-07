@@ -3,10 +3,8 @@ import hmac
 import json
 import hashlib
 
-from pulsar.apps.wsgi import Json
 from pulsar.utils.string import to_bytes
-from pulsar import (HttpException, PermissionDenied, BadRequest,
-                    as_coroutine)
+from pulsar.api import HttpException, PermissionDenied, BadRequest
 
 from lux.core import Router
 
@@ -19,7 +17,11 @@ class GithubHook(Router):
     secret = None
 
     async def post(self, request):
-        data = await as_coroutine(request.body_data())
+        data = await request.body_data()
+        try:
+            data = await data
+        except TypeError:
+            pass
 
         if self.secret:
             try:
@@ -43,7 +45,7 @@ class GithubHook(Router):
                 raise BadRequest(exc)
         else:
             data = dict(success=True, event=event)
-        return Json(data).http_response(request)
+        return request.json_response(data)
 
     def validate(self, request):
         hub_signature = request.get('HTTP_X_HUB_SIGNATURE')
@@ -87,7 +89,10 @@ class PullRepo(EventHandler):
                 response['command'] = self.command(branch)
                 result = await app.shell(request, response['command'])
                 response['result'] = result
-                await as_coroutine(app.reload())
+                try:
+                    await app.reload()
+                except TypeError:
+                    pass
             else:
                 raise HttpException('Repo directory not valid', status=412)
         return response

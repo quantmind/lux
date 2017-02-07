@@ -1,10 +1,10 @@
 import json
 from collections import Mapping
 
-from pulsar import Http404
+from pulsar.api import Http404
 from pulsar.apps import wsgi
-from pulsar.apps.wsgi import (Json, RouterParam, Router, Route, Html,
-                              cached_property, render_error_debug)
+from pulsar.apps.wsgi import (RouterParam, Router, Route, Html,
+                              wsgi_cached, render_error_debug)
 from pulsar.apps.wsgi.utils import error_messages
 from pulsar.utils.httpurl import JSON_CONTENT_TYPES, CacheControl
 from pulsar.utils.structures import mapping_iterator
@@ -65,7 +65,7 @@ class WsgiRequest(wsgi.WsgiRequest):
     def cache_server(self):
         return self.cache.app.cache_server
 
-    @cached_property
+    @wsgi_cached
     def html_document(self):
         """The HTML document for this request
         """
@@ -103,9 +103,7 @@ class JsonRouter(Router):
     def json_response(self, request, data):
         """Return a response as application/json
         """
-        response = Json(data).http_response(request)
-        self.cache_control(response)
-        return response
+        return self.cache_control(request.json_response(data))
 
     def get_model(self, request, model=None):
         model = request.app.models.get(model or self.model)

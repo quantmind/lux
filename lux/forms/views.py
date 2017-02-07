@@ -1,5 +1,5 @@
-from pulsar import Http404, HttpRedirect
-from pulsar.apps.wsgi import route, Json
+from pulsar.api import Http404, HttpRedirect
+from pulsar.apps.wsgi import route
 from pulsar.utils.slugify import slugify
 
 from .form import Form
@@ -92,7 +92,7 @@ class WebFormRouter(HtmlRouter):
         data = form(request).as_dict(action=action,
                                      enctype=self.form_enctype,
                                      method=method)
-        return Json(data).http_response(request)
+        return request.json_response(data)
 
 
 class ActionsRouter(HtmlRouter):

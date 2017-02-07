@@ -2,7 +2,7 @@ import logging
 
 from urllib.parse import urlparse, urlunparse
 
-from pulsar import Http404
+from pulsar.api import Http404
 from pulsar.apps.wsgi import Route
 from pulsar.utils.structures import mapping_iterator
 from pulsar.utils.httpurl import remove_double_slash

@@ -1,10 +1,8 @@
 import os
 
-from lux.core import JsonRouter
+from pulsar.api import Http404
 
-from pulsar import Http404
-
-from lux.core import cached, GET_HEAD
+from lux.core import JsonRouter, cached, GET_HEAD
 
 # from swagger_spec_validator.validator20 import validate_spec
 

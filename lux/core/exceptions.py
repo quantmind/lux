@@ -5,7 +5,7 @@ from pulsar.utils.httpurl import is_succesful
 def raise_http_error(response, method=None, url=None):
     if not is_succesful(response.status_code):
         if response.status_code:
-            content = response.text()
+            content = response.text
             # if isinstance(content, dict):
             #     content = content.get('message', '')
             # if method and url:
