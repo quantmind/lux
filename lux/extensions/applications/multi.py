@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 
 from sqlalchemy.orm.exc import NoResultFound
 
-from pulsar import Http404
+from pulsar.api import Http404
 from pulsar.apps.wsgi import wsgi_request
 
 from lux.core import app_attribute, extend_config, execute_from_config

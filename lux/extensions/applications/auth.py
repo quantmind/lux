@@ -1,5 +1,5 @@
 """Authentication backend"""
-from pulsar import Http404, BadRequest
+from pulsar.api import Http404, BadRequest
 
 from lux.extensions import auth
 from lux.extensions import rest

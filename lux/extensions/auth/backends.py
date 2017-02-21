@@ -1,4 +1,4 @@
-from pulsar import Http404, BadRequest
+from pulsar.api import Http404, BadRequest
 from pulsar.utils.importer import module_attribute
 
 from sqlalchemy.orm.exc import NoResultFound

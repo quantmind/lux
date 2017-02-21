@@ -1,6 +1,6 @@
 from collections import namedtuple
 
-from pulsar import Http404, PermissionDenied
+from pulsar.api import Http404, PermissionDenied
 
 from sqlalchemy.exc import DataError
 from sqlalchemy.orm.exc import NoResultFound

@@ -4,7 +4,7 @@ from sqlalchemy.event import listens_for
 
 import odm
 
-from pulsar import ImproperlyConfigured
+from pulsar.api import ImproperlyConfigured
 
 __all__ = ['Mapper', 'model_base']
 

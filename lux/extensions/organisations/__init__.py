@@ -1,4 +1,4 @@
-from pulsar import Http404
+from pulsar.api import Http404
 
 from lux.core import Parameter, is_html
 from lux.extensions import auth

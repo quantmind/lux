@@ -1,4 +1,4 @@
-from pulsar import Http404, BadRequest, Http401, MethodNotAllowed
+from pulsar.api import Http404, BadRequest, Http401, MethodNotAllowed
 
 from lux.forms import get_form_class
 from lux.extensions import odm

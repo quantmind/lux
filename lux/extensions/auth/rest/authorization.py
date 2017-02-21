@@ -1,4 +1,4 @@
-from pulsar import Http401, BadRequest
+from pulsar.api import Http401, BadRequest
 
 from lux import forms
 from lux.core import AuthenticationError

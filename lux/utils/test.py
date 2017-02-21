@@ -3,19 +3,21 @@ import os
 import unittest
 import string
 import logging
-import json as _json
 import pickle
+from asyncio import get_event_loop
 from collections import OrderedDict
 from unittest import mock
 from io import StringIO
 
-from pulsar import get_event_loop, as_coroutine
-from pulsar.utils.httpurl import (Headers, encode_multipart_formdata,
-                                  ENCODE_BODY_METHODS, remove_double_slash)
+from pulsar.api import as_coroutine
+from pulsar.utils.httpurl import (
+    encode_multipart_formdata, ENCODE_BODY_METHODS, remove_double_slash
+)
 from pulsar.utils.string import random_string
 from pulsar.utils.websocket import frame_parser
 from pulsar.apps.wsgi import WsgiResponse
 from pulsar.apps.http import full_url
+from pulsar.utils.system import json as _json
 from pulsar.apps.test import test_timeout, sequential
 
 from lux.core import App, AppComponent

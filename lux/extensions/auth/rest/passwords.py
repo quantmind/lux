@@ -1,6 +1,6 @@
 """API urls for password recovery
 """
-from pulsar import MethodNotAllowed
+from pulsar.api import MethodNotAllowed
 
 from . import ServiceCRUD, ensure_service_user
 from .registrations import RegistrationModel

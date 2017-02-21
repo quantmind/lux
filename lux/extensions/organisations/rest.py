@@ -1,4 +1,4 @@
-from pulsar import PermissionDenied, Http404
+from pulsar.api import PermissionDenied, Http404
 
 from sqlalchemy.orm.attributes import flag_modified
 

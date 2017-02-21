@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from pulsar import PermissionDenied, Http404
+from pulsar.api import PermissionDenied, Http404
 
 from lux.core import route, http_assert
 from lux.extensions.rest import RestField

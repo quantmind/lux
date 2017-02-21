@@ -1,4 +1,4 @@
-from pulsar import Http401, MethodNotAllowed
+from pulsar.api import Http401, MethodNotAllowed
 
 from lux.core import route, GET_HEAD
 from lux.extensions.rest import RestRouter, RestField, user_permissions

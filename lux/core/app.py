@@ -13,7 +13,7 @@ from importlib import import_module
 
 from pulsar.api import ImproperlyConfigured, Config
 from pulsar.apps.wsgi import (
-    WsgiHandler, HtmlDocument, test_wsgi_environ, wait_for_body_middleware,
+    WsgiHandler, HtmlDocument, wait_for_body_middleware,
     middleware_in_executor, wsgi_request
 )
 from pulsar.utils.log import lazyproperty

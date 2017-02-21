@@ -1,7 +1,7 @@
 import json
 from inspect import isclass
 
-from pulsar import Http404, PermissionDenied
+from pulsar.api import Http404, PermissionDenied
 from pulsar.apps.wsgi import Html
 from pulsar.utils.html import nicename
 

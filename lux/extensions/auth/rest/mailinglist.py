@@ -1,4 +1,4 @@
-from pulsar import Http401, Http404
+from pulsar.api import Http401, Http404
 
 from lux import forms
 from lux.forms import formreg, Layout, Fieldset, Submit

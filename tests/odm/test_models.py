@@ -1,6 +1,6 @@
 from urllib.parse import urlsplit
 
-from pulsar import ImproperlyConfigured
+from pulsar.api import ImproperlyConfigured
 
 from lux.utils import test
 from lux.extensions.rest import DictModel

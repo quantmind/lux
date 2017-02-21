@@ -2,7 +2,7 @@ import sys
 
 import pip
 
-from pulsar import Http404
+from pulsar.api import Http404
 from pulsar.apps.wsgi import route, WsgiResponse
 
 from lux.core import JsonRouter, GET_HEAD, app_attribute

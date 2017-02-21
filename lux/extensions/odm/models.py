@@ -13,7 +13,7 @@ from sqlalchemy.exc import DataError, StatementError
 from sqlalchemy.orm.exc import (NoResultFound, MultipleResultsFound,
                                 ObjectDeletedError)
 
-from pulsar import Http404
+from pulsar.api import Http404
 
 from odm.utils import get_columns
 

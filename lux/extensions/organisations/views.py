@@ -1,6 +1,6 @@
 from collections import OrderedDict
 
-from pulsar import HttpRedirect, Http404
+from pulsar.api import HttpRedirect, Http404
 
 from lux.core import HtmlRouter
 from lux.forms import ActionsRouter
