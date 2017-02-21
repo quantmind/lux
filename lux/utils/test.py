@@ -6,22 +6,20 @@ import logging
 import pickle
 from asyncio import get_event_loop
 from collections import OrderedDict
+from urllib.parse import urlparse
 from unittest import mock
 from io import StringIO
 
 from pulsar.api import as_coroutine
-from pulsar.utils.httpurl import (
-    encode_multipart_formdata, ENCODE_BODY_METHODS, remove_double_slash
-)
+from pulsar.utils.httpurl import remove_double_slash
 from pulsar.utils.string import random_string
 from pulsar.utils.websocket import frame_parser
-from pulsar.apps.wsgi import WsgiResponse
-from pulsar.apps.http import full_url
+from pulsar.apps.wsgi import WsgiResponse, wsgi_request
+from pulsar.apps.http import HttpWsgiClient
 from pulsar.utils.system import json as _json
 from pulsar.apps.test import test_timeout, sequential
 
 from lux.core import App, AppComponent
-from lux.extensions.rest import HttpRequestMixin
 from lux.core.commands.generate_secret_key import generate_secret
 
 from .token import app_token
@@ -186,36 +184,30 @@ async def load_fixtures(app, path=None, api_url=None, testuser=None,
     logger.info('Created %s objects', total)
 
 
-class TestClient(AppComponent, HttpRequestMixin):
+class TestClient(HttpWsgiClient, AppComponent):
     """An utility for simulating lux clients
     """
+    def __init__(self, app):
+        super().__init__(app)
+        AppComponent.__init__(self, app)
+
     def run_command(self, command, argv=None, **kwargs):
         """Run a lux command"""
         argv = argv or []
         cmd = self.app.get_command(command)
         return cmd(argv, **kwargs)
 
-    async def request(self, method, path=None, **params):
-        request, sr = self.request_start_response(method, path, **params)
-        await self.app(request.environ, sr)
-        return request
-
-    def request_start_response(self, method, path, HTTP_ACCEPT=None,
-                               headers=None, data=None, json=None,
-                               content_type=None, token=None, oauth=None,
-                               jwt=None, cookie=None, params=None, **extra):
-        method = method.upper()
-        extra['REQUEST_METHOD'] = method.upper()
-        path = path or '/'
-        extra['HTTP_ACCEPT'] = HTTP_ACCEPT or '*/*'
-        extra['pulsar.connection'] = mock.MagicMock()
+    async def _request(self, method, url=None, headers=None,
+                       content_type=None, token=None, oauth=None,
+                       jwt=None, cookie=None, **kw):
+        url = url or '/'
+        if not urlparse(url).scheme:
+            url = 'http://www.example.com/%s' % (
+                url[1:] if url.startswith('/') else url
+            )
         heads = []
         if headers:
             heads.extend(headers)
-        if json is not None:
-            content_type = 'application/json'
-            assert not data
-            data = json
         if content_type:
             heads.append(('content-type', content_type))
         if token:
@@ -226,25 +218,8 @@ class TestClient(AppComponent, HttpRequestMixin):
             heads.append(('Authorization', 'JWT %s' % jwt))
         if cookie:
             heads.append(('Cookie', cookie))
-
-        if params:
-            path = full_url(path, params)
-
-        # Encode data
-        if (method in ENCODE_BODY_METHODS and data is not None and
-                not isinstance(data, bytes)):
-            content_type = Headers(heads).get('content-type')
-            if content_type is None:
-                data, content_type = encode_multipart_formdata(data)
-                heads.append(('content-type', content_type))
-            elif content_type == 'application/json':
-                data = _json.dumps(data).encode('utf-8')
-
-        request = self.app.wsgi_request(path=path, headers=heads, body=data,
-                                        **extra)
-        request.environ['SERVER_NAME'] = 'localhost'
-        start_response = mock.MagicMock()
-        return request, start_response
+        response = await super()._request(method, url, headers=heads, **kw)
+        return wsgi_request(response.server_side.request.environ)
 
 
 class TestMixin:

@@ -26,8 +26,7 @@ from lux import __version__
 from lux.utils.data import multi_pop
 from lux.utils.token import encode_json
 
-from .commands import ConfigError
-from .console import ConsoleMixin
+from .commands import ConfigError, ConsoleMixin
 from .extension import LuxExtension, Parameter, EventMixin, app_attribute
 from .wrappers import HeadMeta, LuxContext, formreg
 from .templates import render_data, template_engine, Template
@@ -72,7 +71,6 @@ def is_html(app):
 class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
     """A WSGI callable for serving lux applications.
     """
-    cfg = None
     channels = None
     debug = False
     logger = None
@@ -209,6 +207,7 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
 
     def __init__(self, callable):
         self.callable = callable
+        self.cfg = callable.cfg
         self.meta.argv = callable.argv
         self.meta.script = callable.script
         self.threads = threading.local()
@@ -224,8 +223,14 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
 
     def __call__(self, environ, start_response):
         """The WSGI thing."""
+        config = self.config
+        request = wsgi_request(environ)
         wsgi_handler = self.wsgi_handler()
-        self.wsgi_request(environ, start_response=start_response)
+        environ['error.handler'] = module_attribute(config['ERROR_HANDLER'])
+        environ['default.content_type'] = config['DEFAULT_CONTENT_TYPE']
+        request.cache.app = self
+        if environ.get('HTTP_X_HTTP_LOCAL') == 'local':
+            request.cache.logger = LOCAL_LOGGER
         return wsgi_handler(environ, start_response)
 
     def wsgi_handler(self):
@@ -287,33 +292,6 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
         """Get version of this :class:`App`. Required by
         :class:`~.ConsoleParser`."""
         return self.meta.version
-
-    def wsgi_request(self, environ=None, loop=None, path=None,
-                     app_handler=None, urlargs=None, start_response=None,
-                     **kw):
-        """Create a :class:`.WsgiRequest` from a wsgi ``environ`` and set the
-        ``app`` attribute in the cache.
-        Additional keyed-valued parameters can be inserted.
-        """
-        if not environ:
-            # No WSGI environment, build a test one
-            environ = test_wsgi_environ(path=path, loop=loop, **kw)
-        request = wsgi_request(environ, app_handler=app_handler,
-                               urlargs=urlargs)
-        environ['error.handler'] = module_attribute(
-            self.config['ERROR_HANDLER'])
-        environ['default.content_type'] = self.config['DEFAULT_CONTENT_TYPE']
-        # Check if pulsar is serving the application
-        if 'pulsar.cfg' not in environ:
-            if not self.cfg:
-                self.cfg = Config(debug=self.debug)
-            environ['pulsar.cfg'] = self.cfg
-        request.cache.app = self
-        if request.get('HTTP_X_HTTP_LOCAL') == 'local':
-            request.cache.logger = LOCAL_LOGGER
-        if start_response:
-            request.cache.start_response = start_response
-        return request
 
     def html_document(self, request):
         """Build the HTML document.

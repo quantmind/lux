@@ -1,18 +1,18 @@
-'''
-.. autoclass:: Command
-   :members:
-   :member-order: bysource
-
-'''
+import os
 import argparse
 import logging
+from inspect import getfile
 from inspect import isawaitable
+from collections import OrderedDict
+from importlib import import_module
 
+from pulsar.utils.log import lazyproperty
 from pulsar.api import Setting, Application, ImproperlyConfigured
 from pulsar.utils.config import Config, LogLevel, Debug, LogHandlers
 
 from lux import __version__
 from lux.utils.async import maybe_green
+from lux.utils.files import skipfile
 
 
 class ConfigError(Exception):
@@ -183,3 +183,82 @@ class LuxCommand(ConsoleParser):
                            debug=app.debug,
                            config=config or app.config_module,
                            **kw)
+
+
+class ConsoleMixin(ConsoleParser):
+
+    @lazyproperty
+    def commands(self):
+        """Load all commands from installed applications"""
+        cmnds = OrderedDict()
+        available = set()
+        for e in reversed(self.config['EXTENSIONS']):
+            try:
+                modname = e + ('.core' if e == 'lux' else '') + '.commands'
+                mod = import_module(modname)
+                if hasattr(mod, '__path__'):
+                    path = os.path.dirname(getfile(mod))
+                    try:
+                        commands = []
+
+                        for f in os.listdir(path):
+                            if skipfile(f) or not f.endswith('.py'):
+                                continue
+                            command = f[:-3]
+                            if command not in available:
+                                available.add(command)
+                                commands.append(command)
+
+                        if commands:
+                            cmnds[e] = tuple(commands)
+                    except OSError:
+                        continue
+            except ImportError:
+                pass  # No management module
+        return OrderedDict(((e, cmnds[e]) for e in reversed(cmnds)))
+
+    def get_command(self, name):
+        """Construct and return a :class:`.Command` for this application
+        """
+        for e, cmnds in self.commands.items():
+            if name in cmnds:
+                modname = 'lux.core' if e == 'lux' else e
+                mod = import_module('%s.commands.%s' % (modname, name))
+                return mod.Command(name, self)
+        raise CommandError("Unknown command '%s'" % name)
+
+    def get_usage(self, description=None):
+        """Returns the script's main help text, as a string."""
+        if not description:
+            description = self.config['DESCRIPTION'] or 'Lux toolkit'
+        usage = ['',
+                 '',
+                 '----------------------------------------------',
+                 description,
+                 '----------------------------------------------',
+                 '',
+                 "Type '%s <command> --help' for help on a specific command." %
+                 (self.meta.script or ''),
+                 '', '', "Available commands:", ""]
+        for name, commands in self.commands.items():
+            usage.append(name)
+            usage.extend(('    %s' % cmd for cmd in sorted(commands)))
+            usage.append('')
+        text = '\n'.join(usage)
+        return text
+
+    def get_parser(self, with_commands=True, nargs='?', description=None,
+                   **params):
+        """Return a python :class:`argparse.ArgumentParser` for parsing
+        the command line.
+
+        :param with_commands: Include parsing of all commands (default True).
+        :param params: parameters to pass to the
+            :class:`argparse.ArgumentParser` constructor.
+        """
+        if with_commands:
+            params['usage'] = self.get_usage(description=description)
+            description = None
+        parser = super().get_parser(description=description, **params)
+        parser.add_argument('command', nargs=nargs, help='command to run')
+        return parser
