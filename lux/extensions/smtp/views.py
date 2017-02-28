@@ -1,4 +1,4 @@
-from pulsar import MethodNotAllowed, as_coroutine
+from pulsar.api import MethodNotAllowed, as_coroutine
 
 from lux import forms
 from lux.forms import WebFormRouter, Layout, Fieldset, Submit, formreg

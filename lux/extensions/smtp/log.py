@@ -1,7 +1,9 @@
 import logging
 import json
+from inspect import isawaitable
 
-from pulsar import ensure_future, isawaitable
+from pulsar.api import ensure_future
+
 
 MESSAGE = 'Exception while posting message to Slack'
 

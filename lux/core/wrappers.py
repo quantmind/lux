@@ -133,7 +133,7 @@ class HtmlRouter(JsonRouter):
         page = cms.page(request.path[1:])
         # render the inner part of the html page
         if isinstance(inner_html, Html):
-            inner_html = inner_html.render(request)
+            inner_html = inner_html.to_string(request)
         page.inner_template = cms.inner_html(request, page, inner_html)
 
         # This request is for the inner template only

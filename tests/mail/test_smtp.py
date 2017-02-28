@@ -1,4 +1,5 @@
 from lux.utils import test
+from lux.extensions.smtp import EmailBackend
 
 
 class SmtpTest(test.AppTestCase):
@@ -10,7 +11,6 @@ class SmtpTest(test.AppTestCase):
         email.send_mails = email._send_mails
 
     def test_backend(self):
-        from lux.extensions.smtp import EmailBackend
         backend = self.app.email_backend
         self.assertIsInstance(backend, EmailBackend)
 

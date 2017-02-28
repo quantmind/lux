@@ -24,7 +24,9 @@ def default_filter(cls):
 
 
 def grid(options):
-    return Html('lux-grid').attr('grid-options', json.dumps(options)).render()
+    return Html('lux-grid').attr(
+        'grid-options', json.dumps(options)
+    ).to_string()
 
 
 class register:
@@ -168,7 +170,7 @@ class AdminModel(AdminRouter):
     def get_grid(self, request, basePath=None, **kw):
         options_url = request.full_path(json='grid')
         tag = request.config['HTML_GRID_TAG']
-        return Html(tag, url=options_url).render()
+        return Html(tag, url=options_url).to_string(request)
         # options = self.grid_options.copy()
         # options['target'] = self.get_target(request, **kw)
         # options['basePath'] = basePath

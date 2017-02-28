@@ -1,4 +1,3 @@
-pip
 psycopg2
 alembic
 unidecode
@@ -12,4 +11,6 @@ flake8
 lxml
 recommonmark
 premailer
-http-parser
+uvloop
+httptools
+pyslink
