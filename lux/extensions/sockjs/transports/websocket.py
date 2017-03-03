@@ -1,6 +1,6 @@
 import logging
 
-from pulsar import Http404
+from pulsar.api import Http404
 from pulsar.apps import ws
 
 from . import Transport

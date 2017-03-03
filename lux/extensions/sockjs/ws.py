@@ -6,7 +6,7 @@ import json
 import hashlib
 import logging
 
-from pulsar import ProtocolError
+from pulsar.api import ProtocolError
 from pulsar.apps import ws
 
 from .rpc import WsRpc

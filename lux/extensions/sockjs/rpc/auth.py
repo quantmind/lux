@@ -1,5 +1,5 @@
 """Websocket RPC for Authentication"""
-from pulsar import PermissionDenied, BadRequest, Http401
+from pulsar.api import PermissionDenied, BadRequest, Http401
 from pulsar.apps import rpc
 
 from lux.core import Resource

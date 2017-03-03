@@ -106,10 +106,11 @@ class MultiAuthBackend:
         return self._execute_backend_method('request', request)
 
     def response(self, environ, response):
+        request = wsgi_request(environ)
         for backend in reversed(self.backends):
             backend_method = getattr(backend, 'response', None)
             if backend_method:
-                response = backend_method(response) or response
+                response = backend_method(request, response) or response
         return response
 
     def has_permission(self, request, resource, action):

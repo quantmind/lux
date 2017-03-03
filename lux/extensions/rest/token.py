@@ -16,7 +16,7 @@ CORS = 'Access-Control-Allow-Origin'
 class ServiceUser(UserMixin):
 
     def __init__(self, request):
-        self._authenticated = bool(request.cache.token)
+        self._authenticated = bool(request.cache.get('token'))
 
     def is_superuser(self):
         return self._authenticated
@@ -90,10 +90,10 @@ class TokenBackend(PemissionsMixin):
             if user:
                 request.cache.user = user
 
-    def response(self, response):
+    def response(self, request, response):
         if CORS not in response.headers:
-            origin = response.environ.get('HTTP_ORIGIN', '*')
-            response[CORS] = origin
+            origin = request.get('HTTP_ORIGIN', '*')
+            response.headers[CORS] = origin
         return response
 
     def response_middleware(self, app):

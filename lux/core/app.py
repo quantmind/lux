@@ -218,27 +218,25 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
         self.models = ModelContainer(self)
         self.extensions = OrderedDict()
         self.config = _build_config(self)
-
         self.fire('on_config')
 
     def __call__(self, environ, start_response):
         """The WSGI thing."""
-        config = self.config
-        request = wsgi_request(environ)
-        wsgi_handler = self.wsgi_handler()
-        environ['error.handler'] = module_attribute(config['ERROR_HANDLER'])
-        environ['default.content_type'] = config['DEFAULT_CONTENT_TYPE']
-        request.cache.app = self
-        if environ.get('HTTP_X_HTTP_LOCAL') == 'local':
-            request.cache.logger = LOCAL_LOGGER
-        return wsgi_handler(environ, start_response)
+        return self.wsgi_handler()(environ, start_response)
 
     def wsgi_handler(self):
-        if self._handler is None:
+        if not self._handler:
             self.forms = formreg.copy()
             self._handler = _build_handler(self)
             self.fire('on_loaded')
         return self._handler
+
+    def environ(self, environ, start_response):
+        config = self.config
+        request = wsgi_request(environ)
+        environ['error.handler'] = module_attribute(config['ERROR_HANDLER'])
+        environ['default.content_type'] = config['DEFAULT_CONTENT_TYPE']
+        request.cache.app = self
 
     @property
     def app(self):
@@ -254,6 +252,10 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
     @property
     def params(self):
         return self.callable.params
+
+    @property
+    def argv(self):
+        return self.callable.argv
 
     @property
     def _loop(self):
@@ -695,7 +697,7 @@ def _build_handler(self):
         self.cms = CMS(self)
 
     extensions = list(self.extensions.values())
-    middleware = [self.auth_backend.request]
+    middleware = [self.environ, self.auth_backend.request]
     rmiddleware = [self.auth_backend.response]
     for extension in extensions:
         middle = extension.middleware(self)

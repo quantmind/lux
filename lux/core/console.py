@@ -23,8 +23,7 @@ def execute_from_config(config_file, description=None, argv=None,
         argv = sys.argv[:]
         params['script'] = argv.pop(0)
 
-    app = App(config_file, argv, **params)
-    application = app.setup(handler=False)
+    application = App(config_file, argv, **params).setup()
 
     # Parse for the command
     parser = application.get_parser(add_help=False, description=description)
@@ -36,14 +35,14 @@ def execute_from_config(config_file, description=None, argv=None,
             command = application.get_command(opts.command)
         except CommandError as e:
             print('\n'.join(('%s.' % e, 'Pass -h for list of commands')))
-            exit(1)
-        app.argv.remove(command.name)
+            return 1
+        application.argv.remove(command.name)
         cmdparams = cmdparams or {}
         try:
-            return command(app.argv, **cmdparams)
+            return command(application.argv, **cmdparams)
         except CommandError as e:
             print(str(e))
-            exit(1)
+            return 1
     else:
         # this should fail unless we pass -h
         parser = application.get_parser(nargs=1, description=description)
@@ -51,7 +50,8 @@ def execute_from_config(config_file, description=None, argv=None,
 
 
 class App(LazyWsgi):
-
+    """WSGI callable app
+    """
     def __init__(self, config_file, argv, script=None, config=None,
                  cfg=None, **kw):
         params = config or {}
@@ -63,13 +63,8 @@ class App(LazyWsgi):
         self.command = None
         self.cfg = cfg
 
-    def setup(self, environ=None, on_config=None, handler=True):
-        app = Application(self)
-        if on_config:
-            on_config(app)
-        if handler:
-            app.wsgi_handler()
-        return app
+    def setup(self, environ=None):
+        return Application(self)
 
     def clone(self, **kw):
         params = self.params.copy()

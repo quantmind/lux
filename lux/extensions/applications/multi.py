@@ -87,7 +87,7 @@ class MultiBackend:
     def request(self, request):
         #
         # First time here
-        if not request.cache.x_runtime:
+        if not request.cache.get('x_runtime'):
             loop = get_event_loop()
             request.cache.x_count = 0
             request.cache.x_runtime = loop.time()
@@ -127,8 +127,7 @@ class MultiBackend:
 
         return app_domain.request(request, self.api_url(request, multi))
 
-    def response(self, response):
-        request = wsgi_request(response.environ)
+    def response(self, request, response):
         if request.cache.x_count > 0:
             request.cache.x_count -= 1
         else:

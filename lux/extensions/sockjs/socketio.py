@@ -2,8 +2,8 @@ import sys
 import hashlib
 from random import randint
 
-from pulsar import HttpException
-from pulsar.apps.wsgi import Router, Json, route
+from pulsar.api import HttpException
+from pulsar.apps.wsgi import Router, route
 from pulsar.utils.httpurl import CacheControl
 
 from .transports.websocket import WebSocket
@@ -35,10 +35,11 @@ class SocketIO(Router):
         response = request.response
         self.info_cache(response.headers)
         self.origin(request)
-        return Json({'websocket': request.config['WEBSOCKET_AVAILABLE'],
-                     'origins': ['*:*'],
-                     'entropy': randint(0, sys.maxsize)}
-                    ).http_response(request)
+        return request.json_response({
+            'websocket': request.config['WEBSOCKET_AVAILABLE'],
+            'origins': ['*:*'],
+            'entropy': randint(0, sys.maxsize)
+        })
 
     @route('iframe[0-9-.a-z_]*.html', re=True,
            response_content_types=('text/html',))

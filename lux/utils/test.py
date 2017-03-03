@@ -17,7 +17,7 @@ from pulsar.utils.websocket import frame_parser
 from pulsar.apps.wsgi import WsgiResponse, wsgi_request
 from pulsar.apps.http import HttpWsgiClient
 from pulsar.utils.system import json as _json
-from pulsar.apps.test import test_timeout, sequential
+from pulsar.apps.test import test_timeout, sequential, test_wsgi_request
 
 from lux.core import App, AppComponent
 from lux.core.commands.generate_secret_key import generate_secret
@@ -88,8 +88,7 @@ def test_app(test, config_file=None, config_params=True, argv=None, **params):
         argv.append('--log-level')
         levels = test.cfg.log_level if hasattr(test, 'cfg') else ['none']
         argv.extend(levels)
-    app = App(config_file, argv=argv, cfg=test.cfg, **kwargs).setup(
-        on_config=test.app_test_providers)
+    app = App(config_file, argv=argv, cfg=test.cfg, **kwargs).setup()
     if app.config['SECRET_KEY'] == 'secret-key':
         app.config['SECRET_KEY'] = generate_secret()
     app.stdout = StringIO()
@@ -107,7 +106,8 @@ def create_users(app, items, testuser, index=None):
             "active": True
         })
     logger.debug('Creating %d users', len(items))
-    request = app.wsgi_request()
+    request = test_wsgi_request()
+    app.environ(request.environ, None)
     auth = app.auth_backend
     processed = set()
     for params in items:
@@ -232,10 +232,6 @@ class TestMixin:
     :attr:`config_file`
     """
     prefixdb = 'testlux_'
-
-    @classmethod
-    def app_test_providers(cls, app):
-        pass
 
     def authenticity_token(self, doc):
         name = doc.find('meta', attrs={'name': 'csrf-param'})
