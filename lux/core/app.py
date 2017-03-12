@@ -110,6 +110,7 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
                   'their extensions with .min.ext. For example, javascript '
                   'links *.js become *.min.js', True),
         #
+        Parameter('SERVER_NAME', 'Lux/%s' % __version__),
         Parameter('SECRET_KEY',
                   'secret-key',
                   'A string or bytes used for encrypting data. Must be unique '

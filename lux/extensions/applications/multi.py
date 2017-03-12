@@ -7,7 +7,6 @@ from urllib.parse import urlparse
 from sqlalchemy.orm.exc import NoResultFound
 
 from pulsar.api import Http404
-from pulsar.apps.wsgi import wsgi_request
 
 from lux.core import app_attribute, extend_config, execute_from_config
 from lux.utils.crypt import generate_secret
@@ -87,15 +86,10 @@ class MultiBackend:
     def request(self, request):
         #
         # First time here
-        if not request.cache.get('x_runtime'):
-            loop = get_event_loop()
-            request.cache.x_count = 0
-            request.cache.x_runtime = loop.time()
-            request.response['X-Request-ID'] = generate_secret(32, xchars)
-        else:
-            request.cache.x_count += 1
+        if request.cache.get('x_multi_pass'):
             return
 
+        request.cache.x_multi_pass = True
         app = request.app
 
         # listen for all events on applications model
@@ -126,14 +120,6 @@ class MultiBackend:
             return
 
         return app_domain.request(request, self.api_url(request, multi))
-
-    def response(self, request, response):
-        if request.cache.x_count > 0:
-            request.cache.x_count -= 1
-        else:
-            loop = get_event_loop()
-            runtime = loop.time() - request.cache.x_runtime
-            request.response['X-Runtime'] = '%.6f' % runtime
 
     def api_url(self, request, multi):
         host = request.get_host().split(':')
@@ -252,4 +238,4 @@ def _create_admin_app(app):
 
     odm = app.odm()
     with odm.begin() as session:
-        session.add(odm.appdomain(id=id, name=name, token=token))
+        session.add(odm.appdomain(id=id, name=name, secret=token))

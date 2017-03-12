@@ -299,7 +299,7 @@ def error_handler(request, exc):
     is_html = content_type == 'text/html'
 
     msg = (str(exc) or error_messages.get(response.status_code) or
-           response.response)
+           response.status)
     trace = None
     if response.status_code >= 500:
         if app.debug:

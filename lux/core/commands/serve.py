@@ -20,7 +20,8 @@ class Command(LuxCommand):
     def __call__(self, argv, start=True, get_app=False):
         self.app.callable.command = self.name
         app = self.app
-        server = self.pulsar_app(argv, self.wsgiApp)
+        server = self.pulsar_app(argv, self.wsgiApp,
+                                 server_software=app.config['SERVER_NAME'])
         if server.cfg.nominify:
             app.params['MINIFIED_MEDIA'] = False
 
