@@ -17,6 +17,7 @@ from .forms import RelationshipField, UniqueField
 from .query import Query, RestSession
 from .token import TokenBackend, ServiceUser, CORS
 from .permissions import user_permissions, validate_policy
+from .openapi import openapi
 
 
 __all__ = [
@@ -54,7 +55,9 @@ __all__ = [
     'user_permissions',
     #
     'TokenBackend',
-    'ServiceUser'
+    'ServiceUser',
+    #
+    'openapi'
 ]
 
 
