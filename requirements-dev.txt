@@ -1,5 +1,3 @@
-psycopg2
-alembic
 unidecode
 markdown
 sphinx
@@ -11,6 +9,17 @@ flake8
 lxml
 recommonmark
 premailer
+pyslink
+#
+# pulsar speedup
 uvloop
 httptools
-pyslink
+#
+# required by rest extension
+apispec
+marshmallow
+#
+# required by odm extension
+psycopg2
+alembic
+#

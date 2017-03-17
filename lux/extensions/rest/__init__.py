@@ -5,6 +5,8 @@ from pulsar.api import ImproperlyConfigured, Http404
 from pulsar.utils.importer import module_attribute
 from pulsar.utils.httpurl import remove_double_slash
 
+from apispec import APISpec
+
 from lux.core import Parameter, LuxExtension
 
 from .models import RestModel, DictModel, RestField, is_rel_field
@@ -17,7 +19,7 @@ from .forms import RelationshipField, UniqueField
 from .query import Query, RestSession
 from .token import TokenBackend, ServiceUser, CORS
 from .permissions import user_permissions, validate_policy
-from .openapi import openapi
+from .openapi import apidoc
 
 
 __all__ = [
@@ -57,7 +59,7 @@ __all__ = [
     'TokenBackend',
     'ServiceUser',
     #
-    'openapi'
+    'apidoc'
 ]
 
 
@@ -86,6 +88,14 @@ class Extension(LuxExtension):
     _config = [
         Parameter('DEFAULT_POLICY', (),
                   'List/tuple of default policy documents'),
+        #
+        # OPEN API SPEC SETTINGS
+        Parameter('API_TITLE', None,
+                  'Open API title, if not set the openapi spec wont be '
+                  'created'),
+        Parameter('API_SPEC_PLUGINS', ['apispec.ext.marshmallow',
+                                       'lux.extensions.rest.openapi'],
+                  'Open API spec extensions'),
         #
         # REST API SETTINGS
         Parameter('API_URL', None, 'URL FOR THE REST API', True),
@@ -118,6 +128,14 @@ class Extension(LuxExtension):
     def on_config(self, app):
         app.providers['Api'] = ApiClient
         app.apis = Apis.make(app)
+        spec = None
+        if app.config['API_TITLE']:
+            spec = APISpec(app.config['API_TITLE'],
+                           version=app.get_version(),
+                           plugins=app.config['API_SPEC_PLUGINS'])
+            spec.app = app
+
+        app.api_spec = spec
         app.add_events(('on_jwt',
                         'on_query',
                         'on_before_flush',

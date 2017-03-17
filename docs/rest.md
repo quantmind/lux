@@ -1,18 +1,21 @@
 # Rest Extension
 
 Extension for Restful web services.
-
-When using default lux extensions, the usual position of this extension is
-just after the `lux.extensions.base`:
+It requires [apispec][] and [marshmallow][] packages:
 ```python
 EXTENSIONS = [
-    'lux.extensions.base',
+    ...,
     'lux.extensions.rest',
     ...
 ]
 ```
-            
+
 ## Token Backend
 
 This extensions implements an abstract authentication backend based on **authorization tokens**,
 the ``lux.extensions.rest.TokenBackend``.
+
+
+
+[apispec]: https://github.com/marshmallow-code/apispec
+[marshmallow]: https://github.com/marshmallow-code/marshmallow

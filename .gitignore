@@ -8,6 +8,7 @@
 *.pyc
 .coverage
 .eggs
+.venv
 _doc_build
 __pycache__
 htmlcov
@@ -17,6 +18,7 @@ dist
 _build
 src
 deps
+venv
 release-notes.md
 *.egg-info
 
