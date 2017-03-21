@@ -1,6 +1,5 @@
 import string
 import json
-from asyncio import get_event_loop
 from collections import namedtuple
 from urllib.parse import urlparse
 
@@ -9,7 +8,6 @@ from sqlalchemy.orm.exc import NoResultFound
 from pulsar.api import Http404
 
 from lux.core import app_attribute, extend_config, execute_from_config
-from lux.utils.crypt import generate_secret
 from lux.extensions.rest import ApiClient
 from lux.utils.crypt import create_token
 

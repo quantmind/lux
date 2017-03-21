@@ -1,14 +1,14 @@
 import os
 import argparse
 import logging
-from inspect import getfile
-from inspect import isawaitable
+from inspect import isawaitable, cleandoc, getdoc, getfile
 from collections import OrderedDict
 from importlib import import_module
 
 from pulsar.utils.log import lazyproperty
 from pulsar.api import Setting, Application, ImproperlyConfigured
 from pulsar.utils.config import Config, LogLevel, Debug, LogHandlers
+from pulsar.utils.slugify import slugify
 
 from lux import __version__
 from lux.utils.async import maybe_green
@@ -34,12 +34,24 @@ def service_parser(services, description, help=True):
     return p
 
 
+class CmdType(type):
+
+    def __new__(cls, name, bases, attrs):
+        commands = {}
+        for key, value in attrs.items():
+            if key.startswith('command_') and hasattr(value, '__call__'):
+                commands[key[8:]] = value
+        attrs['commands'] = commands
+        return super(CmdType, cls).__new__(cls, name, bases, attrs)
+
+
 class ConsoleParser:
     '''A class for parsing the console inputs.
 
     Used as base class for both :class:`.LuxCommand` and :class:`.App`
     '''
     help = None
+    commands = None
     option_list = ()
     default_option_list = (LogLevel(),
                            LogHandlers(default=['console']),
@@ -86,7 +98,7 @@ class LuxApp(Application):
         return False
 
 
-class LuxCommand(ConsoleParser):
+class LuxCommand(ConsoleParser, metaclass=CmdType):
     '''Signature class for lux commands.
 
     A :class:`.LuxCommand` is never initialised directly, instead,
@@ -119,6 +131,11 @@ class LuxCommand(ConsoleParser):
         self.app = app
 
     def __call__(self, argv, **params):
+        if self.commands:
+            if not argv or argv[0] not in self.commands:
+                return self.write('\n'.join(self.get_usage()))
+            return self.command(self.commands[argv[0]], argv[1:], **params)
+
         if not self.app.callable.command:
             self.app.callable.command = self.name
         app = self.pulsar_app(argv)
@@ -160,6 +177,35 @@ class LuxCommand(ConsoleParser):
     def write_err(self, stream=''):
         '''Write ``stream`` to the :attr:`stderr`.'''
         self.app.write_err(stream)
+
+    def get_usage(self):
+        usage = [
+            '',
+            '%s - %s' % (self.name, self.help or 'no description'),
+            '',
+            'List of available commands',
+            '--------------------------'
+        ]
+        N = max((len(c) for c in self.commands))
+        frmt = '% ' + str(N) + 's - %s'
+        usage.extend((
+            frmt % (name, doc_command(self.commands[name]))
+            for name in sorted(self.commands)
+        ))
+        usage.append('')
+        return usage
+
+    def command(self, executable, argv, **kwargs):
+        parser = argparse.ArgumentParser(description=doc_command(executable))
+        settings = getattr(executable, 'settings', [])
+        for setting in settings:
+            setting.add_argument(parser, True)
+        options = parser.parse_args(argv)
+        args = []
+        for setting in settings:
+            value = getattr(options, setting.name, kwargs.get(setting.name))
+            args.append(value)
+        return executable(self, *args)
 
     def pulsar_app(self, argv, application=None, callable=None,
                    log_name='lux', config=None, **kw):
@@ -262,3 +308,40 @@ class ConsoleMixin(ConsoleParser):
         parser = super().get_parser(description=description, **params)
         parser.add_argument('command', nargs=nargs, help='command to run')
         return parser
+
+
+class option:
+
+    def __init__(self, *flags, help=None, nargs=None, **kwargs):
+        name = None
+        oflags = []
+        for flag in flags:
+            if not flag.startswith('-'):
+                name = flag
+                if not nargs:
+                    nargs = '?'
+                    oflags = None
+            else:
+                if oflags is None:
+                    raise ImproperlyConfigured(
+                        'cannot mix positional and keyed-valued arguments'
+                    )
+                if flag.startswith('--') or not name:
+                    name = slugify(flag, '_')
+                oflags.append(flag)
+        if not name:
+            raise ImproperlyConfigured('options with no name')
+        if help:
+            kwargs['desc'] = help
+        self.setting = Setting(name, oflags, nargs=nargs, **kwargs)
+
+    def __call__(self, method):
+        settings = getattr(method, 'settings', [])
+        settings.append(self.setting)
+        method.settings = settings
+        return method
+
+
+def doc_command(method):
+    doc = cleandoc(getdoc(method)).strip()
+    return ', '.join((v for v in (d.strip() for d in doc.split('\n')) if v))

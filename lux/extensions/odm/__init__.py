@@ -15,13 +15,15 @@ from lux.core import Parameter, LuxExtension
 
 from .mapper import Mapper, model_base
 from .models import RestModel, RestField, odm_models
+from .migrations import migrations
 
 
 __all__ = ['model_base',
            'odm_models',
            'declared_attr',
            'RestModel',
-           'RestField']
+           'RestField',
+           'migrations']
 
 
 sql_delete = 'delete'

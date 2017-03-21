@@ -1,6 +1,6 @@
 from pulsar.apps.wsgi import route
 
-from .commands import ConsoleParser, CommandError, LuxCommand, Setting
+from .commands import ConsoleParser, CommandError, LuxCommand, Setting, option
 from .extension import LuxExtension, Parameter, app_attribute
 from .models import LuxModel, Query, ModelInstance, ModelNotAvailable
 from .console import App, execute_from_config
@@ -31,6 +31,7 @@ __all__ = [
     'ConsoleParser',
     'CommandError',
     'LuxCommand',
+    'option',
     'Setting',
     'LuxExtension',
     'Parameter',

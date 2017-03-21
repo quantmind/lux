@@ -7,6 +7,7 @@ pip install -r requirements.txt
 pyslink lux
 
 # temporary
+pip install -r ../pulsar/requirements.txt
 pyslink ../pulsar/pulsar
 pyslink ../pulsar/pulsar_test
 pyslink ../pulsar-odm/odm
