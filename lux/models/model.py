@@ -1,0 +1,284 @@
+from abc import ABC, abstractmethod
+from copy import copy
+
+from lux.utils.crypt import as_hex
+
+from .component import Component
+
+
+GET_HEAD = frozenset(('GET', 'HEAD'))
+POST_PUT = frozenset(('POST', 'PUT'))
+
+
+class ModelNotAvailable(Exception):
+    pass
+
+
+class ModelContainer(dict, Component):
+    """Mapping of model identifiers to :class:`.LuxModel` objects
+    """
+    def register(self, model, clone=True):
+        '''Register a new Lux Model to the application
+        '''
+        if not model:
+            return
+
+        if not isinstance(model, Model):
+            model = model()
+
+        if model.identifier in self:
+            return self[model.identifier]
+
+        if clone:
+            model = copy(model)
+
+        model.init_app(self.app)
+        if model.identifier:
+            self[model.identifier] = model
+
+        return model
+
+    def get(self, name, default=None):
+        if isinstance(name, Model):
+            name = name.identifier
+        return super().get(name, default)
+
+
+class Model(ABC, Component):
+    """Base class for models
+
+    A model has the ability to perform CRUD operations and pagination
+    """
+    uri = None
+    """Unique resource identifier of the model, usually a url or a url path"""
+    model_schema = None
+    """Defines the model properties"""
+    create_schema = None
+    """Defines which properties are needed to create a new instance"""
+    update_schema = None
+    """Defines which properties can be updated"""
+    query_schema = None
+    """Defines which properties can be used for querying"""
+
+    def __init__(self, uri, model_schema=None, create_schema=None,
+                 update_schema=None, query_schema=None, **metadata):
+        assert uri, 'model uri not available'
+        self.uri = uri
+        self.model_schema = self.model_schema or model_schema
+        self.create_schema = self.create_schema or create_schema
+        self.update_schema = self.update_schema or update_schema
+        self.query_schema = self.query_schema or query_schema
+        self.metadata = metadata
+
+    def __repr__(self):
+        return self.uri
+    __str__ = __repr__
+
+    # ABSTRACT METHODS
+    @abstractmethod
+    def session(self, request, session=None):
+        """Return a session for aggregating a query.
+
+        This method must return a context manager with the following methods:
+
+        * ``add(model)``: add a model to the session
+        * ``delete(model)`: delete a model
+        """
+
+    @abstractmethod
+    def get_query(self, session):
+        """Create a new :class:`.Query` from a session
+        """
+
+    @abstractmethod
+    def tojson(self, request, instance, **kw):
+        """Convert a ``instance`` into a JSON serialisable dictionary
+        """
+
+    @abstractmethod
+    def create_instance(self):
+        """Create the underlying instance for this model
+        """
+
+    # API
+    def instance_verbs(self):
+        methods = set(GET_HEAD)
+        methods.add('DELETE')
+        if self.update_schema:
+            methods.add('PATCH')
+        if self.create_schema:
+            methods.add('POST')
+        return methods
+
+    def instance(self, o=None, fields=None):
+        """Return a :class:`.ModelInstance`
+
+        :param o: None, a raw instance or a :class:`.ModelInstance
+        :param fields: optional list of fields to include in the instance
+        """
+        if isinstance(o, ModelInstance):
+            return o
+        if o is None:
+            o = self.create_instance()
+        return ModelInstance.create(self, o, fields)
+
+    # QUERY API
+    def query(self, request, session, *filters, check_permission=None,
+              load_only=None, query=None, **params):
+        """Get a :class:`.Query` object
+
+        :param request: WsgiRequest object
+        :param session: A session for this model query
+        :param filters: optional positional filters
+        :param check_permission: Optional action or dictionary to check
+            permission for (string or dictionary)
+        :param load_only: optional list of fields to load
+        :param params: key-valued filters
+        """
+        if query is None:
+            query = self.get_query(session)
+        if load_only and isinstance(load_only, str):
+            load_only = (load_only,)
+        if check_permission:
+            fields = check_permission(request, load_only=load_only)
+            query = query.load_only(*fields)
+        elif load_only:
+            query = query.load_only(*load_only)
+        return query.filter(*filters, **params)
+
+    def get_instance(self, request, *filters, session=None, **kwargs):
+        """Get a single instance from positional and keyed-valued filters
+        """
+        with self.session(request, session=session) as session:
+            query = self.query(request, session, *filters, **kwargs)
+            return query.one()
+
+    def get_list(self, request, *filters, session=None, **kwargs):
+        """Get a list of instances from positional and keyed-valued filters
+        """
+        with self.session(request, session=session) as session:
+            query = self.query(request, session, *filters, **kwargs)
+            return query.all()
+
+    # CRUD API
+    def create_model(self, request, instance=None, data=None, session=None):
+        """Create a model ``instance``"""
+        if instance is None:
+            instance = self.instance()
+        return self.update_model(request, instance, data,
+                                 session=session, flush=True)
+
+    def update_model(self, request, instance, data, session=None, flush=False):
+        """Update a model ``instance``"""
+        if data is None:
+            data = {}
+        instance = self.instance(instance)
+        with self.session(request, session=session) as session:
+            session.add(instance.obj)
+            for name, value in data.items():
+                if instance.has(name):
+                    instance.set(name, value)
+            if flush:
+                session.flush()
+        return instance
+
+    def delete_model(self, request, instance, session=None):
+        """Delete a model ``instance``"""
+        instance = self.instance(instance)
+        with self.session(request, session=session) as session:
+            session.delete(instance.obj)
+
+    def set_instance_value(self, instance, name, value):
+        setattr(instance.obj, name, value)
+
+    def get_instance_value(self, instance, name):
+        return as_hex(getattr(instance.obj, name, None))
+
+    def value_from_data(self, name, data, instance=None):
+        if name in data:
+            return data[name]
+        elif instance is not None:
+            return self.get_instance_value(self.instance(instance), name)
+
+    def same_instance(self, instance1, instance2):
+        if instance1 is not None and instance2 is not None:
+            obj1 = self.instance(instance1).obj
+            obj2 = self.instance(instance2).obj
+            return self._same_instance(obj1, obj2)
+        return False
+
+    # INTERNALS
+    def _same_instance(self, obj1, obj2):
+        return obj1 == obj2
+
+    def load_only_fields(self, load_only=None):
+        """Generator of field names"""
+        for field in self.fields():
+            if load_only is None or field in load_only:
+                yield field
+
+    def context(self, request, instance, context):
+        """Add context to an instance context
+
+        :param request: WSGI request
+        :param instance: an instance of this model
+        :param context: context dictionary
+        :return:
+        """
+
+    def validate_fields(self, request, instance, data):
+        """Validate fields values
+        """
+        pass
+
+
+class ModelInstance:
+    __slots__ = ('model', 'obj', 'fields')
+
+    def __init__(self, model, obj, fields=None):
+        self.model = model
+        self.obj = obj
+        self.fields = fields
+        try:
+            obj._model_instance = self
+        except Exception:
+            pass
+
+    @property
+    def id(self):
+        return self.get(self.model.id_field)
+
+    def __repr__(self):
+        return repr(self.obj)
+
+    def __str__(self):
+        return str(self.obj)
+
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) and self.id == other.id
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __getattr__(self, name):
+        return self.model.get_instance_value(self, name)
+
+    @classmethod
+    def create(cls, model, obj, fields=None):
+        if hasattr(obj, '_model_instance'):
+            return obj._model_instance
+        return cls(model, obj, fields)
+
+    @classmethod
+    def get_model(cls, obj):
+        if hasattr(obj, '_model_instance'):
+            return obj._model_instance.model
+
+    def has(self, field):
+        return self.fields is None or field in self.fields
+
+    def set(self, name, value):
+        self.model.set_instance_value(self, name, value)
+
+    def get(self, name):
+        return self.model.get_instance_value(self, name)

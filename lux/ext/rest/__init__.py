@@ -1,0 +1,150 @@
+from urllib.parse import urljoin
+
+from pulsar.api import Http404
+
+from lux.core import Parameter, LuxExtension
+
+# from .models import RestModel, DictModel, RestField, is_rel_field
+from .api import Apis, RestRouter, CRUD, Pagination, GithubPagination
+from .api.client import ApiClient, HttpRequestMixin
+from .token import TokenBackend, ServiceUser, CORS
+from .permissions import user_permissions, validate_policy
+from . import html  # noqa
+
+
+__all__ = [
+    'RestModel',
+    'RestField',
+    'is_rel_field',
+    'DictModel',
+    #
+    'RestRouter',
+    'MetadataMixin',
+    'CRUD',
+    'Specification',
+    ""
+    "ApiClient",
+    "HttpRequestMixin",
+    #
+    'Query',
+    'RestSession',
+    #
+    'Pagination',
+    'GithubPagination',
+    #
+    # Form fields related to rest models
+    'RelationshipField',
+    'UniqueField',
+    #
+    'api_url',
+    'api_path',
+    #
+    'login',
+    'logout',
+    'check_username',
+    #
+    'validate_policy',
+    'user_permissions',
+    #
+    'TokenBackend',
+    'ServiceUser',
+    #
+    'apidoc'
+]
+
+
+def api_url(request, location=None):
+    try:
+        api = request.app.apis.get(location)
+        return api.url(location)
+    except Http404:
+        url = request.absolute_uri('/')
+        if location:
+            url = urljoin(url, location)
+        return url
+
+
+def api_path(request, model, *args, **params):
+    model = request.app.models.get(model)
+    if model:
+        path = model.api_url(request, **params)
+        if path and args:
+            path = '%s/%s' % (path, '/'.join((str(s) for s in args)))
+        return path
+
+
+class Extension(LuxExtension):
+
+    _config = [
+        Parameter('DEFAULT_POLICY', (),
+                  'List/tuple of default policy documents'),
+        #
+        # OPEN API SPEC SETTINGS
+        Parameter('API_TITLE', None,
+                  'Open API title, if not set the openapi spec wont be '
+                  'created'),
+        Parameter('API_SPEC_PLUGINS', ['apispec.ext.marshmallow',
+                                       'lux.extensions.rest.openapi'],
+                  'Open API spec extensions'),
+        #
+        # REST API SETTINGS
+        Parameter('API_URL', None, 'List of API specifications', True),
+        Parameter('API_SEARCH_KEY', 'q',
+                  'The query key for full text search'),
+        Parameter('API_OFFSET_KEY', 'offset', ''),
+        Parameter('API_LIMIT_KEY', 'limit', ''),
+        Parameter('API_LIMIT_DEFAULT', 25,
+                  'Default number of items returned when no limit '
+                  'API_LIMIT_KEY available in the url'),
+        Parameter('API_LIMIT_AUTH', 100,
+                  ('Maximum number of items returned when user is '
+                   'authenticated')),
+        Parameter('API_LIMIT_NOAUTH', 30,
+                  ('Maximum number of items returned when user is '
+                   'not authenticated')),
+        Parameter('PAGINATION', 'lux.ext.rest.Pagination',
+                  'Pagination class'),
+        Parameter('MAX_TOKEN_SESSION_EXPIRY', 7 * 24 * 60 * 60,
+                  'Maximum expiry for a token used by a web site in seconds.'),
+        #
+        Parameter('CORS_ALLOWED_METHODS', 'GET, PUT, POST, DELETE, HEAD',
+                  'Access-Control-Allow-Methods for CORS'),
+        # TOKENS
+        Parameter('JWT_ALGORITHM', 'HS512', 'Signing algorithm')
+    ]
+
+    def on_config(self, app):
+        app.providers['Api'] = ApiClient
+        app.apis = Apis.create(app)
+        app.add_events(('on_jwt',
+                        'on_query',
+                        'on_before_flush',
+                        'on_after_flush',
+                        'on_before_commit',
+                        'on_after_commit'))
+
+    def middleware(self, app):
+        # API urls not available - no middleware to add
+        if not app.apis:
+            return
+        # Create the api client and return api routes
+        app.api = app.providers['Api'](app)
+        return app.apis.routes()
+
+    def on_preflight(self, app, request, methods=None):
+        '''Preflight handler
+        '''
+        headers = request.get('HTTP_ACCESS_CONTROL_REQUEST_HEADERS')
+        methods = methods or app.config['CORS_ALLOWED_METHODS']
+        response = request.response
+        origin = request.get('HTTP_ORIGIN', '*')
+
+        if origin == 'null':
+            origin = '*'
+
+        response[CORS] = origin
+        if headers:
+            response['Access-Control-Allow-Headers'] = headers
+        if not isinstance(methods, (str, list)):
+            methods = list(methods)
+        response['Access-Control-Allow-Methods'] = methods

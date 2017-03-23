@@ -22,4 +22,5 @@ marshmallow
 # required by odm extension
 psycopg2
 alembic
+marshmallow-sqlalchemy
 #

@@ -2,10 +2,8 @@ from pulsar.apps.wsgi import route
 
 from .commands import ConsoleParser, CommandError, LuxCommand, Setting, option
 from .extension import LuxExtension, Parameter, app_attribute
-from .models import LuxModel, Query, ModelInstance, ModelNotAvailable
 from .console import App, execute_from_config
 from .app import Application, extend_config, is_html
-from .component import AppComponent
 from .wrappers import (
     WsgiRequest, Router, HtmlRouter, JsonRouter, json_message,
     RedirectRouter, LuxContext, JSON_CONTENT_TYPES, DEFAULT_CONTENT_TYPES
@@ -23,10 +21,6 @@ from .channels import LuxChannels
 from .user import UserMixin, User
 
 
-GET_HEAD = frozenset(('GET', 'HEAD'))
-POST_PUT = frozenset(('POST', 'PUT'))
-
-
 __all__ = [
     'ConsoleParser',
     'CommandError',
@@ -37,11 +31,6 @@ __all__ = [
     'Parameter',
     'app_attribute',
     'is_html',
-    #
-    'LuxModel',
-    'Query',
-    'ModelInstance',
-    'ModelNotAvailable',
     #
     'Application',
     'App',
@@ -78,8 +67,6 @@ __all__ = [
     'LuxContext',
     'JSON_CONTENT_TYPES',
     'DEFAULT_CONTENT_TYPES',
-    'GET_HEAD',
-    'POST_PUT',
     #
     'UserMixin',
     'PasswordMixin',

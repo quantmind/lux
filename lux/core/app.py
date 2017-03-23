@@ -31,11 +31,12 @@ from .extension import LuxExtension, Parameter, EventMixin, app_attribute
 from .wrappers import HeadMeta, LuxContext, formreg
 from .templates import render_data, template_engine, Template
 from .cms import CMS
-from .models import ModelContainer
 from .cache import create_cache
 from .exceptions import ShellError
 from .channels import LuxChannels
 from .auth import BackendMixin
+
+from ..models import ModelContainer
 
 
 LUX_CORE = os.path.dirname(__file__)
@@ -216,7 +217,7 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
             'Http': Http,
             'Channels': LuxChannels.create
         }
-        self.models = ModelContainer(self)
+        self.models = ModelContainer().init_app(self)
         self.extensions = OrderedDict()
         self.config = _build_config(self)
         self.fire('on_config')
