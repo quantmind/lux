@@ -1,7 +1,6 @@
 """Lux Application class
 """
 import os
-import json
 import asyncio
 import logging
 import threading
@@ -21,9 +20,9 @@ from pulsar.utils.importer import module_attribute
 from pulsar.apps.greenio import GreenWSGI, GreenHttp
 from pulsar.apps.http import HttpClient
 from pulsar.utils.string import to_bytes
+from pulsar.utils.slugify import slugify
 
 from lux import __version__
-from lux.utils.data import multi_pop
 from lux.utils.token import encode_json
 
 from .commands import ConfigError, ConsoleMixin
@@ -100,8 +99,6 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
                   'Application site name', True),
         Parameter('ENCODING', 'utf-8',
                   'Default encoding for text.'),
-        Parameter('SETTINGS_FILES', None,
-                  'Path to a json file with additional settings'),
         Parameter('ERROR_HANDLER', 'lux.core.wrappers:error_handler',
                   'Dotted path to handler of Http exceptions'),
         Parameter('MEDIA_URL', '/media/',
@@ -663,11 +660,12 @@ def _build_config(self):
         raise ConfigError(opts.config)
     #
     # setup application
+    cfg = dict(_load_config(vars(config_module)))
+    prefix = slugify(cfg.get('APP_NAME', ''), '_').upper()
     config = {'_parameters': {}}
-    self.setup(config, opts)
-    configs = _load_configs(self, config, config_module)
     #
     # Load extensions
+    self.setup(config, cfg, prefix, opts=opts)
     self.logger.debug('Setting up extensions')
     apps = list(config['EXTENSIONS'])
     _add_app(apps, 'lux', 0)
@@ -681,14 +679,10 @@ def _build_config(self):
             extension = Ext()
             extensions[extension.meta.name] = extension
             self.bind_events(extension)
-            extension.setup(config)
+            extension.setup(config, cfg, prefix)
 
-    params = configs.pop()
-    _config_from_json(configs, config)
-    config.update(params)
+    config.update(((k, v) for k, v in self.params.items() if k == k.upper()))
     config['EXTENSIONS'] = tuple(apps)
-    for on in getattr(self, '_on_config', ()):
-        on(self, config)
     return config
 
 
@@ -746,47 +740,7 @@ def _build_middleware(self, extensions, middleware, rmiddleware):
             rmiddleware.extend(middle)
 
 
-def _load_configs(self, config, config_module):
-    params = self.params.copy()
-    cfg = dict(_load_config(vars(config_module)))
-    configs = [cfg]
-    settings_files = multi_pop('SETTINGS_FILES', cfg, params)
-
-    if settings_files:
-        if isinstance(settings_files, str):
-            settings_files = [settings_files]
-        ok = []
-
-        for filename in settings_files:
-            try:
-                with open(filename) as fp:
-                    cfg = json.load(fp)
-            except FileNotFoundError:
-                self.logger.error('Could not load "%s", no such file',
-                                  filename)
-            except json.JSONDecodeError:
-                self.logger.error('Could not json decode "%s", skipping',
-                                  filename)
-            else:
-                cfg.pop('SETTINGS_FILES', None)
-                configs.append(cfg)
-                ok.append(filename)
-
-        if ok:
-            config['SETTINGS_FILES'] = ok
-
-    configs.append(params)
-    config['EXTENSIONS'] = multi_pop('EXTENSIONS', *configs) or ()
-    return configs
-
-
 def _load_config(cfg):
     for name, value in cfg.items():
         if name == name.upper():
             yield name, value
-
-
-def _config_from_json(configs, parameters):
-
-    for config in configs:
-        extend_config(parameters, config)

@@ -197,16 +197,18 @@ class LuxExtension(metaclass=ExtensionType):
                 raise ImproperlyConfigured(
                     '"%s" extension requires "%s" extension' % (self, ext))
 
-    def setup(self, config, opts=None):
+    def setup(self, config, values, prefix=None, opts=None):
         """Internal method which prepare the extension for usage.
         """
         parameters = config['_parameters']
         for setting in self.meta.config.values():
-            if setting.name in parameters:
+            name = setting.name
+            if name in parameters:
                 setting.override = True
-            parameters[setting.name] = setting
-            value = os.environ.get(setting.name, setting.default)
-            config[setting.name] = value
+            parameters[name] = setting
+            env = '%s_%s' % (prefix, name) if prefix else name
+            value = os.environ.get(env, values.get(name, setting.default))
+            config[name] = value
         self._setup_logger(config, opts)
 
     def get_template_full_path(self, app, name):
