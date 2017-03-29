@@ -80,7 +80,6 @@ class AppDomain:
 class MultiBackend:
     """If used, this should be the first backend
     """
-
     def request(self, request):
         #
         # First time here

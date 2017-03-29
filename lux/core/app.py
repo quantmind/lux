@@ -204,7 +204,11 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
                   'Channel name for the server'),
         #
         Parameter('HTTP_CLIENT_PARAMETERS', None,
-                  'A dictionary of parameters to pass to the Http Client')
+                  'A dictionary of parameters to pass to the Http Client'),
+        #
+        Parameter('AUTHENTICATION_BACKENDS', [],
+                  'List of python dotted paths to classes which provide '
+                  'a backend for authentication.')
         ]
 
     def __init__(self, callable):

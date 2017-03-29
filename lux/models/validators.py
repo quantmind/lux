@@ -1,0 +1,4 @@
+
+
+def string(value):
+    pass

@@ -53,7 +53,7 @@ class Extension(LuxExtension):
 
     def on_config(self, app):
         '''Initialise Object Data Mapper'''
-        self.require(app, 'lux.extensions.rest')
+        self.require(app, 'lux.ext.rest')
         app.odm = Odm(app)
 
     def on_after_flush(self, app, session):

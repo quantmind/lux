@@ -1,4 +1,7 @@
-"""Lux schemas are built on top of Marshmallow Schemas
+"""Lux models are built on top of
+
+* Marshmallow Schemas
+* SqlAlchemy models
 """
 from marshmallow import Schema, fields, ValidationError
 

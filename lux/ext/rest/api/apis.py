@@ -21,10 +21,10 @@ LOCAL_API_LOGGER = logging.getLogger('lux.local.api')
 
 
 class Apis(models.Component):
-    """Handle one or more Api
+    """Handle one or more server-side or client-side Api
     """
     def __init__(self):
-        self._apis = OrderedDict()
+        self._apis = []
 
     @classmethod
     def create(cls, app):
@@ -34,10 +34,11 @@ class Apis(models.Component):
         if isinstance(urls, str):
             urls = [
                 {
+                    "TITLE": app.config['APP_NAME'],
                     "BASE_URL": urls
                 }
             ]
-        return cls().init_app(app).update(urls)
+        return cls().init_app(app).extend(urls)
 
     def __repr__(self):
         return repr(self._apis)
@@ -51,35 +52,32 @@ class Apis(models.Component):
     def routes(self):
         #
         # Create paginator
-        dotted_path = app.config['PAGINATION']
+        dotted_path = self.config['PAGINATION']
         pagination = module_attribute(dotted_path)
         if not pagination:
             raise ImproperlyConfigured('Could not load paginator "%s"',
                                        dotted_path)
-        app.pagination = pagination()
-
-
+        self.app.pagination = pagination()
         api_routers = OrderedDict()
 
+        # Allow router override
         for extension in self.app.extensions.values():
             api_sections = getattr(extension, 'api_sections', None)
             if api_sections:
                 for router in api_sections(self.app) or ():
                     api_routers[router.route.path] = router
 
-        # Allow router override
         for router in api_routers.values():
             if isinstance(router, RestRouter):
                 # Register model
-                router.model = app.models.register(router.model)
+                router.model = self.app.models.register(router.model)
                 if router.model:
                     router.model.api_route = router.route
-            # Add router to API root-router
-            app.apis.add_child(router)
+            # Add router to an API
+            self.add_child(router)
 
         has_api = False
         for api in self:
-
             # router not required when api is remote
             if api.netloc:
                 continue
@@ -88,25 +86,21 @@ class Apis(models.Component):
                 self.app.add_events(('on_preflight', 'on_token'))
             #
             # Add API root-router to middleware
-            routes.append(api.router)
+            yield api.router
             url = str(api.router)
             if url != '/':
                 # when the api is served by a path, make sure 404 is raised
                 # when no suitable routes are found
-                routes.append(
-                    Rest404(remove_double_slash('%s/<path:path>' % url))
-                )
-        return routes
+                yield Rest404(remove_double_slash('%s/<path:path>' % url))
 
-    def update(self, iterable):
-        apis = self._apis
+    def extend(self, iterable):
         for cfg in mapping_iterator(iterable):
             if not isinstance(cfg, dict):
                 self.logger.error('API spec must be a dictionary, got %s', cfg)
                 continue
             api = Api.from_cfg(self.app, cfg)
             if api:
-                apis[api.url] = api
+                self._apis.append(api)
         return self
 
     def get(self, path=None):
@@ -151,7 +145,7 @@ class Api:
             return
         data = api_schema.dump(schema.data).data
         url = urlparse(data['BASE_URL'])
-        schemes = [url.schema] if url.schema else None
+        schemes = [url.scheme] if url.scheme else None
         spec = APISpec(data['TITLE'],
                        version=data['VERSION'],
                        plugins=data['SPEC_PLUGINS'],

@@ -1,6 +1,5 @@
-from lux.extensions.rest import CRUD, RestField
-
-from . import RestModel
+from lux.ext.rest import CRUD, RestField
+from lux.ext.odm import RestModel
 
 
 class GroupCRUD(CRUD):

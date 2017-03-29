@@ -9,6 +9,8 @@ from pulsar.api import ImproperlyConfigured
 
 from lux import __version__
 
+from .wrappers import JsonRouter, HtmlRouter
+
 
 __all__ = ['LuxExtension', 'Parameter', 'app_attribute']
 
@@ -173,6 +175,8 @@ class LuxExtension(metaclass=ExtensionType):
     abstract = True
     stdout = None
     stderr = None
+    json_router = JsonRouter
+    html_router = HtmlRouter
 
     def middleware(self, app):
         '''Called by application ``app`` when creating the middleware.

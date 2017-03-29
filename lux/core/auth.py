@@ -9,7 +9,6 @@ from pulsar.utils.string import to_bytes
 
 from lux.utils.data import as_tuple
 
-from .extension import Parameter
 from .user import Anonymous
 
 
@@ -40,12 +39,6 @@ class AuthenticationError(ValueError):
 class BackendMixin:
     """Add authentication backends to the application
     """
-    _config = [
-        Parameter('AUTHENTICATION_BACKENDS', [],
-                  'List of python dotted paths to classes which provide '
-                  'a backend for authentication.')
-    ]
-
     def _on_config(self, config):
         self.auth_backend = MultiAuthBackend()
         for dotted_path in config['AUTHENTICATION_BACKENDS']:
