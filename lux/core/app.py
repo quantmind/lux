@@ -33,7 +33,7 @@ from .cms import CMS
 from .cache import create_cache
 from .exceptions import ShellError
 from .channels import LuxChannels
-from .auth import BackendMixin
+from .auth import MultiAuthBackend
 
 from ..models import ModelContainer
 
@@ -68,7 +68,7 @@ def is_html(app):
     return app.config['DEFAULT_CONTENT_TYPE'] == 'text/html'
 
 
-class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
+class Application(ConsoleMixin, LuxExtension, EventMixin):
     """A WSGI callable for serving lux applications.
     """
     channels = None
@@ -86,6 +86,7 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
     _WsgiHandler = WsgiHandler
     _http = None
     _config = [
+        #
         Parameter('EXTENSIONS', [],
                   'List of extension names to use in your application. '
                   'The order matter since the wsgi middleware of extension is '
@@ -203,6 +204,7 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
         Parameter('HTTP_CLIENT_PARAMETERS', None,
                   'A dictionary of parameters to pass to the Http Client'),
         #
+        # Authentication
         Parameter('AUTHENTICATION_BACKENDS', [],
                   'List of python dotted paths to classes which provide '
                   'a backend for authentication.')
@@ -221,6 +223,7 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
         self.models = ModelContainer().init_app(self)
         self.extensions = OrderedDict()
         self.config = _build_config(self)
+        self.auth_backend = MultiAuthBackend.from_app(self)
         self.fire('on_config')
 
     def __call__(self, environ, start_response):

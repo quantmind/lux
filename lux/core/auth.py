@@ -36,21 +36,6 @@ class AuthenticationError(ValueError):
     pass
 
 
-class BackendMixin:
-    """Add authentication backends to the application
-    """
-    def _on_config(self, config):
-        self.auth_backend = MultiAuthBackend()
-        for dotted_path in config['AUTHENTICATION_BACKENDS']:
-            backend = module_attribute(dotted_path)
-            if not backend:
-                self.logger.error('Could not load backend "%s"', dotted_path)
-                continue
-            backend = backend()
-            self.auth_backend.append(backend)
-            self.bind_events(backend)
-
-
 class AuthBase:
 
     @backend_action
@@ -86,6 +71,19 @@ class MultiAuthBackend:
     '''
     def __init__(self):
         self.backends = []
+
+    @classmethod
+    def from_app(cls, app):
+        auth = cls()
+        for dotted_path in app.config['AUTHENTICATION_BACKENDS']:
+            backend = module_attribute(dotted_path)
+            if not backend:
+                app.logger.error('Could not load backend "%s"', dotted_path)
+                continue
+            backend = backend()
+            auth.append(backend)
+            app.bind_events(backend)
+        return auth
 
     def append(self, backend):
         self.backends.append(backend)
