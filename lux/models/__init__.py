@@ -10,6 +10,7 @@ from .model import ModelContainer, Model
 from .query import Query
 from .extra import Slug, Password
 from .unique import UniqueField
+from .registry import registry, get_form, get_form_class, get_form_layout
 from . import html
 
 
@@ -19,6 +20,11 @@ __all__ = [
     'fields',
     'html',
     'ValidationError',
+    #
+    'registry',
+    'get_form',
+    'get_form_class',
+    'get_form_layout',
     #
     'ModelContainer',
     'Model',

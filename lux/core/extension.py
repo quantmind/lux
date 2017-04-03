@@ -9,7 +9,7 @@ from pulsar.api import ImproperlyConfigured
 
 from lux import __version__
 
-from .wrappers import JsonRouter, HtmlRouter
+from .routers import JsonRouter, HtmlRouter
 
 
 __all__ = ['LuxExtension', 'Parameter', 'app_attribute']
@@ -132,11 +132,6 @@ class ExtensionType(type):
             cfg = getattr(base, '_config', None)
             if isinstance(cfg, (list, tuple)):
                 config.extend(cfg)
-            cfg = getattr(base, '_on_config', None)
-            if isinstance(cfg, (list, tuple)):
-                on_config.extend(cfg)
-            elif hasattr(cfg, '__call__'):
-                on_config.append(cfg)
 
         version = attrs.pop('version', None)
         abstract = attrs.pop('abstract', False)
@@ -314,8 +309,8 @@ class EventMixin:
                         raise
 
 
-def app_attribute(func):
-    name = '_cache_%s' % func.__name__
+def app_attribute(func, name=None):
+    name = '_cache_%s' % (name or func.__name__)
 
     @wraps(func)
     def _(app):

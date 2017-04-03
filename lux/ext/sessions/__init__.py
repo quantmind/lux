@@ -1,6 +1,6 @@
 import time
 
-from pulsar import PermissionDenied
+from pulsar.api import PermissionDenied
 
 import jwt
 
@@ -123,7 +123,7 @@ class Extension(LuxExtension):
 
     # CSRF
     def csrf_token(self, request):
-        session = request.cache.session
+        session = request.cache.get('session')
         if session:
             expiry = request.config['CSRF_EXPIRY']
             return jwt.encode({'exp': time.time() + expiry}, session.id)

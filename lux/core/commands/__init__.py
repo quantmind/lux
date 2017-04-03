@@ -52,6 +52,7 @@ class ConsoleParser:
     '''
     help = None
     commands = None
+    description = None
     option_list = ()
     default_option_list = (LogLevel(),
                            LogHandlers(default=['console']),
@@ -64,8 +65,9 @@ class ConsoleParser:
     def get_version(self):
         raise NotImplementedError
 
-    def get_parser(self, **params):
-        parser = argparse.ArgumentParser(**params)
+    def get_parser(self, description=None, **params):
+        description = description or self.description
+        parser = argparse.ArgumentParser(description=description, **params)
         parser.add_argument('--version',
                             action='version',
                             version=self.get_version(),

@@ -27,7 +27,7 @@ from lux.utils.token import encode_json
 
 from .commands import ConfigError, ConsoleMixin
 from .extension import LuxExtension, Parameter, EventMixin, app_attribute
-from .wrappers import HeadMeta, LuxContext, formreg
+from .wrappers import HeadMeta, LuxContext
 from .templates import render_data, template_engine, Template
 from .cms import CMS
 from .cache import create_cache
@@ -35,7 +35,7 @@ from .exceptions import ShellError
 from .channels import LuxChannels
 from .auth import MultiAuthBackend
 
-from ..models import ModelContainer
+from ..models import ModelContainer, registry
 
 
 LUX_CORE = os.path.dirname(__file__)
@@ -232,7 +232,7 @@ class Application(ConsoleMixin, LuxExtension, EventMixin):
 
     def wsgi_handler(self):
         if not self._handler:
-            self.forms = formreg.copy()
+            self.forms = registry.copy()
             self._handler = _build_handler(self)
             self.fire('on_loaded')
         return self._handler
@@ -262,6 +262,10 @@ class Application(ConsoleMixin, LuxExtension, EventMixin):
     @property
     def argv(self):
         return self.callable.argv
+
+    @property
+    def description(self):
+        return self.callable.description
 
     @property
     def _loop(self):

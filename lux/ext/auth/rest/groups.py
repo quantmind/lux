@@ -1,12 +1,11 @@
-from lux.ext.rest import CRUD, RestField
-from lux.ext.odm import RestModel
+from lux.ext.rest import CRUD
+from lux.ext.odm import Model
 
 
 class GroupCRUD(CRUD):
-    model = RestModel(
+    model = Model(
         'group',
         'create-group',
         'group',
-        id_field='name',
-        fields=[RestField('permissions', model='permissions')]
+        id_field='name'
     )

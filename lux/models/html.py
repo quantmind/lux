@@ -4,12 +4,6 @@ from pulsar.apps.wsgi import Html
 from pulsar.utils.slugify import slugify
 
 
-#
-# Global Html form registry
-# It can be overwritten in the on_load event of a lux application
-reg = {}
-
-
 def attributes(form, attrs):
     for k, v in attrs.items():
         if hasattr(v, '__call__'):
@@ -194,9 +188,8 @@ class Layout(Fieldset):
         super().__init__(*children, **attrs)
         self.setup(schema)
 
-    def __call__(self, *args, **kwargs):
-        form = self.schema(*args, **kwargs)
-        return SerialisedForm(self, form)
+    def __call__(self, request=None, **kwargs):
+        return SerialisedForm(self, self.schema, request, **kwargs)
 
     def setup(self, schema):
         self.schema = schema
@@ -219,9 +212,10 @@ class Layout(Fieldset):
 
 class SerialisedForm:
 
-    def __init__(self, layout, form):
+    def __init__(self, layout, form, request=None):
         self.layout = layout
         self.form = form
+        self.request = request
 
     def as_dict(self, **attrs):
         data = self.layout.as_dict(self.form)

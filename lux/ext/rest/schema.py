@@ -1,13 +1,6 @@
 from lux.models import Schema, fields
 
 
-class LoginSchema(Schema):
-    '''The Standard login form'''
-    error_message = 'Incorrect username or password'
-    username = fields.Slug(maxlength=30)
-    password = fields.Password(maxlength=128)
-
-
 class PasswordSchema(Schema):
     password = fields.Password(maxlength=128)
     password_repeat = fields.Password(

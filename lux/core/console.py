@@ -7,9 +7,8 @@ from .commands import CommandError, service_parser
 from .app import Application
 
 
-def execute_from_config(config_file, description=None, argv=None,
-                        services=None, cmdparams=None, **params):
-
+def load_from_config(config_file, description=None, argv=None,
+                     services=None, **params):
     if services:
         p = service_parser(services, description, False)
         opts, argv = p.parse_known_args(argv)
@@ -23,11 +22,16 @@ def execute_from_config(config_file, description=None, argv=None,
         argv = sys.argv[:]
         params['script'] = argv.pop(0)
 
-    application = App(config_file, argv, **params).setup()
+    params['description'] = description
+    return App(config_file, argv, **params)
+
+
+def execute_from_config(config_file, cmdparams=None, **params):
+    application = load_from_config(config_file, **params).setup()
 
     # Parse for the command
-    parser = application.get_parser(add_help=False, description=description)
-    opts, _ = parser.parse_known_args(argv)
+    parser = application.get_parser(add_help=False)
+    opts, _ = parser.parse_known_args(application.argv)
     #
     # we have a command
     if opts.command:
@@ -45,21 +49,22 @@ def execute_from_config(config_file, description=None, argv=None,
             return 1
     else:
         # this should fail unless we pass -h
-        parser = application.get_parser(nargs=1, description=description)
-        parser.parse_args(argv)
+        parser = application.get_parser(nargs=1)
+        parser.parse_args(application.argv)
 
 
 class App(LazyWsgi):
     """WSGI callable app
     """
-    def __init__(self, config_file, argv, script=None, config=None,
-                 cfg=None, **kw):
+    def __init__(self, config_file, argv, script=None, description=None,
+                 config=None, cfg=None, **kw):
         params = config or {}
         params.update(kw)
         self.params = params
         self.config_file = config_file
         self.script = script
         self.argv = argv
+        self.description = description
         self.command = None
         self.cfg = cfg
 

@@ -3,7 +3,8 @@ from pulsar.api import Http401, BadRequest
 from lux.core import AuthenticationError
 from lux.models import Schema, fields, validators
 from lux.utils.date import date_from_now
-from lux.ext.rest import RestRouter, RestModel
+from lux.ext.rest import RestRouter
+from lux.ext.odm import Model
 
 from . import auth_form, ensure_service_user
 
@@ -35,7 +36,7 @@ class AuthorizeSchema(LoginSchema):
 class Authorization(RestRouter):
     """Authentication views for Restful APIs
     """
-    model = RestModel(
+    model = Model(
         'authorizations',
         post_form=AuthorizeSchema,
         url='authorizations',

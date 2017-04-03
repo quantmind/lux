@@ -1,4 +1,4 @@
-from pulsar import ImproperlyConfigured
+from pulsar.api import ImproperlyConfigured
 from pulsar.utils.structures import AttributeDictionary
 
 from lux.core import create_cache, app_attribute

@@ -3,7 +3,9 @@
 import time
 from functools import wraps
 
-from pulsar import Http401, PermissionDenied, Http404, HttpRedirect, BadRequest
+from pulsar.api import (
+    Http401, PermissionDenied, Http404, HttpRedirect, BadRequest
+)
 from pulsar.apps.wsgi import Route, wsgi_request
 
 from lux.utils.date import to_timestamp, date_from_now, iso8601
@@ -30,7 +32,7 @@ def session_backend_action(method):
 
     @wraps(method)
     def _(self, r, *args, **kwargs):
-        if wsgi_request(r.environ).cache.skip_session_backend:
+        if r.cache.get('skip_session_backend'):
             return
 
         return method(self, r, *args, **kwargs)
@@ -116,9 +118,8 @@ class SessionBackend:
             request.cache.user = User(user)
 
     @session_backend_action
-    def response(self, response):
-        request = wsgi_request(response.environ)
-        session = request.cache.session
+    def response(self, request, response):
+        session = request.cache.get('session')
         if session:
             if response.can_set_cookies():
                 key = request.config['SESSION_COOKIE_NAME']
