@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from copy import copy
 
+from pulsar.api import UnprocessableEntity
+
 from lux.utils.crypt import as_hex
 
 from .component import Component
@@ -26,21 +28,21 @@ class ModelContainer(dict, Component):
         if not isinstance(model, Model):
             model = model()
 
-        if model.identifier in self:
-            return self[model.identifier]
+        if model.uri in self:
+            return self[model.uri]
 
         if clone:
             model = copy(model)
 
         model.init_app(self.app)
-        if model.identifier:
-            self[model.identifier] = model
+        if model.uri:
+            self[model.uri] = model
 
         return model
 
     def get(self, name, default=None):
         if isinstance(name, Model):
-            name = name.identifier
+            name = name.uri
         return super().get(name, default)
 
 
@@ -85,30 +87,23 @@ class Model(ABC, Component):
         * ``delete(model)`: delete a model
         """
 
-    @abstractmethod
     def get_query(self, session):
         """Create a new :class:`.Query` from a session
         """
+        return session
 
-    @abstractmethod
-    def tojson(self, request, instance, **kw):
-        """Convert a ``instance`` into a JSON serialisable dictionary
+    def create_response(self, request, schema=None):
+        """Create a new instance and return a response
         """
-
-    @abstractmethod
-    def create_instance(self):
-        """Create the underlying instance for this model
-        """
-
-    # API
-    def instance_verbs(self):
-        methods = set(GET_HEAD)
-        methods.add('DELETE')
-        if self.update_schema:
-            methods.add('PATCH')
-        if self.create_schema:
-            methods.add('POST')
-        return methods
+        schema = self.get_schema(schema or self.create_schema)
+        data, files = request.data_and_files()
+        with self.session(request) as session:
+            model, errors = schema.load(data, session=session)
+            if errors:
+                raise UnprocessableEntity(errors)
+            session.flush()
+            data, _ = schema.dumps(model)
+            return request.json_response(data, 201)
 
     def instance(self, o=None, fields=None):
         """Return a :class:`.ModelInstance`

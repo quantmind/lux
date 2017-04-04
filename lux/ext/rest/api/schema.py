@@ -12,6 +12,7 @@ class APISchema(Schema):
     PRODUCES = fields.List(fields.String(), default=['application/json'])
     SPEC_PATH = fields.String(default='spec')
     MODEL = fields.String(default='*')
+    CORS = fields.Boolean(default=True)
 
 
 api_schema = APISchema()

@@ -1,22 +1,23 @@
-from lux.extensions.rest import CRUD, RestField
+from lux.models import Schema, fields
+from lux.ext.rest import RestRouter
+from lux.ext.odm import Model
 from lux.utils.auth import ensure_authenticated
 
-from . import RestModel
+
+class TokenSchema(Schema):
+    user = fields.Nested('UserSchema')
 
 
-class TokenModel(RestModel):
+class NewTokenSchema(Schema):
+    """Create a new Authorization ``Token`` for the authenticated ``User``.
+    """
+    description = fields.String(required=True, minLength=2, maxLength=256,
+                                html_type='textarea')
+
+
+class TokenModel(Model):
     """REST model for tokens
     """
-    @classmethod
-    def create(cls):
-        return cls(
-            'token',
-            form='create-token',
-            fields=[
-                RestField('user', field='user_id', model='users')
-            ]
-        )
-
     def create_model(self, request, instance, data, session=None):
         user = ensure_authenticated(request)
         auth = request.cache.auth_backend
@@ -24,5 +25,9 @@ class TokenModel(RestModel):
         return auth.create_token(request, user, **data)
 
 
-class TokenCRUD(CRUD):
-    model = TokenModel.create()
+class TokenCRUD(RestRouter):
+    model = TokenModel(
+        'tokens',
+        model_schema=TokenSchema,
+        create_schema=NewTokenSchema
+    )

@@ -5,11 +5,13 @@ from pulsar.api import Http404
 from lux.core import Parameter, LuxExtension
 
 # from .models import RestModel, DictModel, RestField, is_rel_field
-from .api import Apis, RestRouter, CRUD, Pagination, GithubPagination
+from .api import (
+    Apis, RestRouter, CRUD, Pagination, GithubPagination,
+    route, api_parameters
+)
 from .api.client import ApiClient, HttpRequestMixin
 from .token import TokenBackend, ServiceUser, CORS
-from .permissions import user_permissions, validate_policy
-from . import html  # noqa
+from .permissions import PolicySchema, user_permissions, validate_policy
 
 
 __all__ = [
@@ -22,7 +24,6 @@ __all__ = [
     'MetadataMixin',
     'CRUD',
     'Specification',
-    ""
     "ApiClient",
     "HttpRequestMixin",
     #
@@ -43,13 +44,16 @@ __all__ = [
     'logout',
     'check_username',
     #
+    'PolicySchema',
     'validate_policy',
     'user_permissions',
     #
     'TokenBackend',
     'ServiceUser',
     #
-    'apidoc'
+    # OpenAPI
+    'route',
+    'api_parameters'
 ]
 
 

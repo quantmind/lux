@@ -24,22 +24,14 @@ email_templates = {
 
 
 class RegistrationSchema(Schema):
-    user = fields.Nested(UserSchema)
+    user = fields.Nested('UserSchema')
 
 
 class RegistrationModel(Model):
 
-    @classmethod
-    def create(cls, form=None, url=None, type=1, **kw):
-        model = cls(
-            'registration',
-            form=form,
-            url=url,
-            fields=[RestField('user', model='users')],
-            **kw
-        )
-        model.type = type
-        return model
+    @property
+    def type(self):
+        return self.metadata.get('type', 1)
 
     def create_model(self, request, instance=None, data=None,
                      session=None, **kw):
@@ -84,9 +76,9 @@ class RegistrationModel(Model):
 
 
 class RegistrationCRUD(ServiceCRUD):
-    model = RegistrationModel.create(
-        form='signup',
-        postform=Form
+    model = RegistrationModel(
+        "registrations",
+        create_schema='signup'
     )
 
     def get(self, request):
@@ -104,6 +96,21 @@ class RegistrationCRUD(ServiceCRUD):
                     $ref: '#/definitions/Registration'
         """
         return self.model.get_list(request)
+
+    def post(self, request):
+        """
+        ---
+        summary: Create a new registration
+        tags:
+            - authentication
+            - registration
+        responses:
+            201:
+                description: A new registration was successfully created
+                schema:
+                    $ref: '#/definitions/Registration'
+        """
+        return self.model.create_response(request)
 
     @route('<id>/activate')
     def post_activate(self, request):

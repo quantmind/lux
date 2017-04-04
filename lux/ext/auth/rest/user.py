@@ -1,16 +1,27 @@
 from pulsar.api import Http401, MethodNotAllowed
 
 from lux.core import route
+from lux.ext.odm import Model
 from lux.ext.rest import RestRouter, user_permissions
-from lux.models import get_form_class, fields, Schema, Model
+from lux.models import get_form_class, fields, Schema
 
 
 class UserSchema(Schema):
+    username = fields.Slug(required=True)
+    email = fields.Email()
+    first_name = fields.String()
+    last_name = fields.String()
+    superuser = fields.Boolean()
+    active = fields.Boolean()
+    joined = fields.DateTime(readOnly=True)
     full_name = fields.String(
         field=('first_name', 'last_name', 'username', 'email'),
         readOnly=True
     )
-    groups = fields.List(fields.Nested('GroupSchema'))
+    groups = fields.Nested('GroupSchema', multi=True)
+
+    class Meta:
+        exclude = ('password', 'type')
 
 
 class UserModel(Model):
@@ -42,11 +53,9 @@ class UserRest(RestRouter):
     summary: Rest operations for the authenticated user
     """
     model = UserModel(
-        url='user',
+        'user',
         model_schema=UserSchema,
         update_schema='user-profile',
-        hidden=('id', 'oauth'),
-        exclude=('password', 'type'),
         authenticated=True
     )
 
@@ -115,8 +124,16 @@ class UserRest(RestRouter):
             data = form.tojson()
         return self.json_response(request, data)
 
-    @route('permissions', method=['get', 'head', 'options'])
+    @route('permissions')
     def get_permissions(self, request):
+        """Check permissions the authenticated user has for a
+        given action.
+        """
+        permissions = user_permissions(request)
+        return self.json_response(request, permissions)
+
+    @route('permissions')
+    def head_permissions(self, request):
         """Check permissions the authenticated user has for a
         given action.
         """

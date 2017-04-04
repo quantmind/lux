@@ -192,10 +192,6 @@ class Query(models.Query):
 class Model(models.Model):
     '''A rest model based on SqlAlchemy ORM
     '''
-    def init_app(self, app):
-        super().init_app(app)
-        odm_models(app)[self.name] = self
-
     # LuxModel VIRTUAL METHODS
     def session(self, request, session=None):
         return self.app.odm().begin(request=request, session=session)

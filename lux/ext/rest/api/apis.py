@@ -128,12 +128,13 @@ class Apis(models.Component):
 class Api:
     """Api container
     """
-    def __init__(self, app, name, spec, spec_path, jwt=None):
+    def __init__(self, app, name, spec, spec_path, jwt=None, cors=True):
         if name == '*':
             name = ''
         self.spec = spec
         self.route = Route('%s/<path:path>' % name)
         self.jwt = jwt
+        self.cors = cors
         self.router = RestRoot(spec.options['basePath'])
         self.router.add_child(Specification(spec_path))
 
@@ -153,7 +154,8 @@ class Api:
                        host=url.netloc,
                        schemes=schemes,
                        produces=data['PRODUCES'])
-        return cls(app, data['MODEL'], spec, data['SPEC_PATH'])
+        return cls(app, data['MODEL'], spec, data['SPEC_PATH'],
+                   cors=data['CORS'])
 
     def __repr__(self):
         return self.path

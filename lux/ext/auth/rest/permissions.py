@@ -1,41 +1,78 @@
 import json
 
-from lux.ext.rest import CRUD, PolicySchema
-from lux.models import Schema, ModelSchema, fields, html
+from lux.ext.rest import RestRouter, PolicySchema, route
+from lux.ext.odm import Model
+from lux.models import Schema, fields
 
-from . import RestModel
 
-
-class PermissionSchema(ModelSchema):
+class PermissionSchema(Schema):
     model = 'permissions'
     name = fields.String(required=True)
     description = fields.String(rows=2, html_type='textarea')
     policy = fields.List(
-        PolicySchema(),
+        fields.Nested(PolicySchema),
         ace=json.dumps({'mode': 'json'})
     )
 
 
-class PermissionCRUD(CRUD):
-    model = RestModel(
+class PermissionCRUD(RestRouter):
+    model = Model(
         'permissions',
         model_schema=PermissionSchema(),
         create_schema='create-permission',
         update_schema='permission',
-        id_field='name',
-        hidden=('id', 'policy')
+        id_field='name'
     )
 
+    def get(self, request):
+        """
+        ---
+        summary: List permissions documents
+        tags:
+            - permission
+        responses:
+            200:
+                description: List of permissions matching filters
+                type: array
+                items:
+                    $ref: '#/definitions/Permission'
+        """
+        return self.model.list_response(request)
 
-html.reg['create-permission'] = html.Layout(
-    PermissionSchema,
-    html.Fieldset(all=True),
-    html.Submit('Create new permissions')
-)
+    def post(self, request):
+        """
+        ---
+        summary: Create a new permission document
+        tags:
+            - permission
+        responses:
+            201:
+                description: A new permission document was successfully created
+                schema:
+                    $ref: '#/definitions/Permission'
+        """
+        return self.model.create_response(request)
 
+    @route('<id>', responses=(400, 401, 404))
+    def patch(self, request):
+        """
+        ---
+        summary: Updated an existing permission document
+        tags:
+            - permission
+        responses:
+            200:
+                description: Permission document was successfully updated
+                schema:
+                    $ref: '#/definitions/Permission'
+        """
+        return self.model.update_response(request)
 
-html.reg['permission'] = html.Layout(
-    PermissionSchema(),
-    html.Fieldset(all=True),
-    html.Submit('Update permissions')
-)
+    @route('<id>', responses=(204, 400, 401, 404))
+    def delete(self, request):
+        """
+        ---
+        summary: Delete an existing permission document
+        tags:
+            - permission
+        """

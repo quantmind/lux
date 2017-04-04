@@ -24,7 +24,7 @@ class RestRoot(JsonRouter):
         for router in self.routes:
             url = '%s%s' % (request.absolute_uri('/'), router.route.rule)
             if isinstance(router, RestRouter) and router.model:
-                routes[router.model.api_name] = url
+                routes[router.model.uri] = url
             else:
                 routes[router.name] = url
         return routes
@@ -60,9 +60,9 @@ class RestRouter(JsonRouter):
 
         if self.model:
             if url is None:
-                url = self.model.identifier
+                url = self.model.uri
             else:
-                url = url.format(self.model.identifier)
+                url = url.format(self.model.uri)
 
         super().__init__(url, *args, **kwargs)
 

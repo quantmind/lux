@@ -57,7 +57,7 @@ class Extension(LuxExtension):
     ]
 
     def on_config(self, app):
-        self.require(app, 'lux.extensions.odm')
+        self.require(app, 'lux.ext.odm')
         if not app.config['PASSWORD_SECRET_KEY']:
             app.config['PASSWORD_SECRET_KEY'] = app.config['SECRET_KEY']
 
