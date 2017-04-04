@@ -12,9 +12,9 @@ from lux import models
 
 from apispec import APISpec
 
-from .schema import api_schema
 from .rest import RestRoot, RestRouter, Rest404
-from .spec import Specification
+from .openapi import rule2openapi, api_operations, api_schema, Specification
+from .cors import cors
 
 
 LOCAL_API_LOGGER = logging.getLogger('lux.local.api')
@@ -122,7 +122,7 @@ class Apis(models.Component):
     def add_child(self, router):
         parent = self.get(router.route)
         if parent:
-            parent.router.add_child(router)
+            parent.add_child(router)
 
 
 class Api:
@@ -131,12 +131,14 @@ class Api:
     def __init__(self, app, name, spec, spec_path, jwt=None, cors=True):
         if name == '*':
             name = ''
+        self.app = app
         self.spec = spec
         self.route = Route('%s/<path:path>' % name)
         self.jwt = jwt
         self.cors = cors
         self.router = RestRoot(spec.options['basePath'])
-        self.router.add_child(Specification(spec_path))
+        if spec_path:
+            self.router.add_child(Specification(spec_path, api=self))
 
     @classmethod
     def from_cfg(cls, app, cfg):
@@ -172,6 +174,12 @@ class Api:
     def match(self, path):
         return self.route.match(path)
 
+    def add_child(self, router):
+        if self.cors:
+            cors(self, router)
+        path = rule2openapi(router.route.rule)
+        self.spec.add_path(path, api_operations(self, router))
+
     def url(self, request, path=None):
         urlp = list(self.urlp)
         if path:
@@ -181,3 +189,4 @@ class Api:
             urlp[0] = r_url.scheme
             urlp[1] = r_url.netloc
         return urlunparse(urlp)
+

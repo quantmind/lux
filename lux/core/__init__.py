@@ -63,6 +63,7 @@ __all__ = [
     'route',
     'json_message',
     'RedirectRouter',
+    'WebFormRouter',
     'LuxContext',
     'JSON_CONTENT_TYPES',
     'DEFAULT_CONTENT_TYPES',
