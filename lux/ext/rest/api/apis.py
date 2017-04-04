@@ -1,4 +1,5 @@
 import logging
+from inspect import isclass
 from collections import OrderedDict
 from urllib.parse import urlparse, urlunparse
 
@@ -126,8 +127,7 @@ class Apis(models.Component):
 
 
 class Api:
-    """Api container
-    """
+
     def __init__(self, app, name, spec, spec_path, jwt=None, cors=True):
         if name == '*':
             name = ''
@@ -178,7 +178,25 @@ class Api:
         if self.cors:
             cors(self, router)
         path = rule2openapi(router.route.rule)
+        model = router.model
+        if model:
+            self.add_definition(model.model_schema)
+            self.add_definition(model.create_schema)
         self.spec.add_path(path, api_operations(self, router))
+        self.router.add_child(router)
+
+    def add_definition(self, schema):
+        if not schema:
+            return
+        if not isclass(schema):
+            schema = type(schema)
+        name = schema.__name__
+        if name.endswith('Schema'):
+            name= name[:-6]
+        try:
+            self.spec.definition(name, schema=schema)
+        except Exception:
+            self.app.logger.exception('Could not add spec definition')
 
     def url(self, request, path=None):
         urlp = list(self.urlp)
