@@ -3,7 +3,7 @@
 from sqlalchemy import Column, String, ForeignKey
 from sqlalchemy.orm import relationship
 
-from lux.extensions import odm
+from lux.ext import odm
 from lux.utils.text import engine
 
 from odm.types import JSONType, UUIDType
@@ -15,16 +15,7 @@ Model = odm.model_base('applications')
 class AppDomain(Model):
     id = Column(UUIDType(binary=False), primary_key=True)
     """Unique ID of application"""
-    name = Column(String(120), nullable=False, unique=True)
-    """Unique name of application"""
-    domain = Column(String(120), nullable=True, unique=True)
-    """Unique domain name of this application"""
-    secret = Column(String(64), nullable=False)
-    """Secret token for root control of application"""
     config = Column(JSONType)
-
-    def __str__(self):
-        return self.name
 
 
 class AppPlugin:

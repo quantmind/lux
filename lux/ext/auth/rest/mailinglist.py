@@ -1,18 +1,17 @@
 from pulsar.api import Http401, Http404
 
-from lux import forms
-from lux.forms import formreg, Layout, Fieldset, Submit
-from lux.extensions.odm import RestModel
-from lux.extensions.rest import CRUD, RestField
+from lux.models import Schema, fields, html, registry
+from lux.ext.odm import Model
+from lux.ext.rest import CRUD
 
 
 def default_topic(bfield):
     return bfield.request.config['GENERAL_MAILING_LIST_TOPIC']
 
 
-class MailingListForm(forms.Form):
-    email = forms.EmailField(label='Your email address', required=False)
-    topic = forms.CharField(default=default_topic)
+class MailingListSchema(Schema):
+    email = fields.Email(label='Your email address')
+    topic = fields.String(default=default_topic)
 
     def clean_email(self, email):
         user = self.request.cache.user
@@ -47,19 +46,19 @@ class MailingListForm(forms.Form):
                 raise forms.ValidationError('Already subscribed')
 
 
-formreg['mailing-list'] = Layout(
-    MailingListForm,
-    Fieldset(all=True),
-    Submit('Get notified'),
+registry['mailing-list'] = html.Layout(
+    MailingListSchema,
+    html.Fieldset(all=True),
+    html.Submit('Get notified'),
     showLabels=False,
     resultHandler='replace'
 )
 
 
 class MailingListCRUD(CRUD):
-    model = RestModel(
+    model = Model(
         'mailinglist',
         form='mailing-list',
         url='mailinglist',
-        fields=[RestField('user', field='user_id', model='users')]
+        # fields=[RestField('user', field='user_id', model='users')]
     )

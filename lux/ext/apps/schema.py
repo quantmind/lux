@@ -24,8 +24,7 @@ class ApplicationSchema(Schema):
         maxlength=120,
         validator=UniqueField()
     )
-    config = fields.Nested(
-        ApplicationConfigSchema(),
+    config = fields.Dict(
         ace=json.dumps({'mode': 'json'})
     )
 

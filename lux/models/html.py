@@ -1,4 +1,5 @@
 import json
+from inspect import isclass
 
 from pulsar.apps.wsgi import Html
 from pulsar.utils.slugify import slugify
@@ -192,6 +193,8 @@ class Layout(Fieldset):
         return SerialisedForm(self, self.schema, request, **kwargs)
 
     def setup(self, schema):
+        if isclass(schema):
+            schema = schema()
         self.schema = schema
         missings = list(self.schema.fields)
         # missings.extend(self.schema.inlines)

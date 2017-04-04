@@ -1,45 +1,23 @@
 from pulsar.api import Http401, MethodNotAllowed
 
-from lux.core import route, GET_HEAD
-from lux.extensions.rest import RestRouter, RestField, user_permissions
-from lux.forms import get_form_class
-
-from . import RestModel
+from lux.core import route
+from lux.ext.rest import RestRouter, user_permissions
+from lux.models import get_form_class, fields, Schema, Model
 
 
-full_name = RestField(
-    'full_name',
-    displayName='Name',
-    field=('first_name', 'last_name', 'username', 'email')
-)
+class UserSchema(Schema):
+    full_name = fields.String(
+        field=('first_name', 'last_name', 'username', 'email'),
+        readOnly=True
+    )
+    groups = fields.List(fields.Nested('GroupSchema'))
 
 
-class UserModel(RestModel):
-    authenticated = False
+class UserModel(Model):
 
-    @classmethod
-    def create(cls, exclude=None, fields=None,
-               id_field='username',
-               repr_field='full_name',
-               authenticated=False,
-               **kw):
-        exclude = exclude or ('password',)
-        fields = list(fields or ())
-        fields.extend((
-            full_name,
-            RestField('groups', model='groups')
-        ))
-
-        model = cls(
-            'user',
-            id_field=id_field,
-            repr_field=repr_field,
-            exclude=exclude,
-            fields=fields,
-            **kw
-        )
-        model.authenticated = authenticated
-        return model
+    @property
+    def authenticated(self):
+        return self.metadata.get('authenticated', False)
 
     def create_model(self, request, instance, data, session=None):
         '''Override create model so that it calls the backend method
@@ -59,27 +37,70 @@ class UserModel(RestModel):
 
 
 class UserRest(RestRouter):
-    """Rest view for the authenticated user
-
-    Read, Updates and other update-type operations only
     """
-    model = UserModel.create(
+    ---
+    summary: Rest operations for the authenticated user
+    """
+    model = UserModel(
         url='user',
-        updateform='user-profile',
+        model_schema=UserSchema,
+        update_schema='user-profile',
         hidden=('id', 'oauth'),
         exclude=('password', 'type'),
         authenticated=True
     )
 
     def get(self, request):
-        """Get the authenticated user
+        """
+        ---
+        summary: get the authenticated user
+        tags:
+            - user
+        responses:
+            200:
+                description: the authenticated user
+                schema:
+                    $ref: '#/definitions/User'
+            401:
+                description: not authenticated
+                schema:
+                    $ref: '#/definitions/ErrorMessage'
+
         """
         user = self.model.get_instance(request)
         data = self.model.tojson(request, user)
         return self.json_response(request, data)
 
+    def head(self, request):
+        """
+        ---
+        summary: check if request has the authenticated user
+        tags:
+            - user
+        response:
+            200:
+                description: the request has authenticated user
+            401:
+                description: not authenticated
+        """
+        self.model.get_instance(request)
+        return request.response
+
     def patch(self, request):
-        """Update authenticated user and/or user profile
+        """
+        ---
+        summary: Update authenticated user and/or user profile
+        tags:
+            - user
+        responses:
+            200:
+                description: successfully updated
+                schema:
+                    $ref: '#/definitions/User'
+            401:
+                description: not authenticated
+                schema:
+                    $ref: '#/definitions/ErrorMessage'
         """
         user = self.model.get_instance(request)
         model = self.model
@@ -99,9 +120,5 @@ class UserRest(RestRouter):
         """Check permissions the authenticated user has for a
         given action.
         """
-        if request.method == 'OPTIONS':
-            request.app.fire('on_preflight', request, methods=GET_HEAD)
-            return request.response
-
         permissions = user_permissions(request)
         return self.json_response(request, permissions)

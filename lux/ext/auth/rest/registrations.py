@@ -3,11 +3,12 @@ from datetime import datetime, timedelta
 from pulsar.api import PermissionDenied, Http404
 
 from lux.core import route, http_assert
-from lux.extensions.rest import RestField
 from lux.utils.crypt import digest
-from lux.forms import Form, ValidationError
+from lux.models import Schema, fields, ValidationError
 
-from . import RestModel, ServiceCRUD, ensure_service_user
+from lux.ext.odm import Model
+
+from . import ServiceCRUD, ensure_service_user
 
 
 email_templates = {
@@ -22,7 +23,11 @@ email_templates = {
 }
 
 
-class RegistrationModel(RestModel):
+class RegistrationSchema(Schema):
+    user = fields.Nested(UserSchema)
+
+
+class RegistrationModel(Model):
 
     @classmethod
     def create(cls, form=None, url=None, type=1, **kw):
@@ -84,24 +89,49 @@ class RegistrationCRUD(ServiceCRUD):
         postform=Form
     )
 
-    @route('<id>/activate', method=('post', 'options'),
-           docs={
-               "responses": (
-                   (204, "Activation was successful"),
-                   (401, "Token missing or expired"),
-                   (400, "Bad token")
-               )
-           })
-    def activate(self, request):
-        """Activate a user from a registration ID.
-
-        Clients should POST to this endpoint once they are happy the user
-        has confirm his/her identity. This is a one time only operation.
+    def get(self, request):
         """
-        if request.method == 'OPTIONS':
-            request.app.fire('on_preflight', request, methods=('POST',))
-            return request.response
+        ---
+        summary: List registration objects
+        tags:
+            - authentication
+            - registration
+        responses:
+            200:
+                description: List of registrations matching filters
+                type: array
+                items:
+                    $ref: '#/definitions/Registration'
+        """
+        return self.model.get_list(request)
 
+    @route('<id>/activate')
+    def post_activate(self, request):
+        """
+        ---
+        summary: Activate a user from a registration ID
+        description: Clients should POST to this endpoint once they are
+            happy the user has confirm his/her identity.
+            This is a one time only operation.
+        tags:
+            - authentication
+            - registration
+        responses:
+            204:
+                description: Activation was successful
+            400:
+                description: Bad Token
+                schema:
+                    $ref: '#/definitions/ErrorMessage'
+            401:
+                description: Token missing or expired
+                schema:
+                    $ref: '#/definitions/ErrorMessage'
+            404:
+                description: Activation id not found
+                schema:
+                    $ref: '#/definitions/ErrorMessage'
+        """
         ensure_service_user(request)
         model = self.get_model(request)
 

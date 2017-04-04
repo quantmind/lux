@@ -3,14 +3,14 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship, backref
 
-import lux.extensions.oauth.models as oauth
-import lux.extensions.auth.models as auth
+import lux.ext.oauth.models as oauth
+import lux.ext.auth.models as auth
 
 from odm.types import ChoiceType
 import odm
 
 from .forms import MemberRole
-from ..applications.models import AppModelMixin
+from ..apps.models import AppModelMixin
 
 
 Model = auth.Model

@@ -24,6 +24,9 @@ def ensure_service_user(request, errorCls=None):
 
 
 class ServiceCRUD(CRUD):
+    """Make sure all post requests are authenticated
+    with service user
+    """
 
     def post(self, request):
         ensure_service_user(request, MethodNotAllowed)

@@ -1,10 +1,10 @@
-from lux.ext.rest import CRUD
+from lux.ext.rest import RestModel
 from lux.ext.odm import Model
 
 
-class GroupCRUD(CRUD):
+class GroupCRUD(RestModel):
     model = Model(
-        'group',
+        'groups',
         'create-group',
         'group',
         id_field='name'
