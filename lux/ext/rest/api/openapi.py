@@ -11,7 +11,7 @@ from pulsar.apps import wsgi
 
 
 default_plugins = ['apispec.ext.marshmallow']
-METHODS = ['head', 'get', 'post', 'put', 'patch', 'delete']
+METHODS = ['get', 'head', 'post', 'put', 'patch', 'delete', 'trace']
 
 
 class APISchema(Schema):
@@ -41,8 +41,16 @@ def api_operations(api, router):
         parameters = getattr(handle, 'parameters', None)
         if parameters:
             doc = parameters.add_to(api, doc)
-        if doc:
-            operations[method] = doc
+        if not doc and method == 'head':
+            get = operations.get('get')
+            if get:
+                doc = get.copy()
+                if 'summary' in doc:
+                    doc['summary'] = 'Same as get but does not return body'
+                    doc.pop('description', None)
+                else:
+                    doc['description'] = 'Same as get but does not return body'
+        operations[method] = doc or {}
 
     return operations
 

@@ -1,8 +1,8 @@
 from pulsar.api import Http401, Http404
 
-from lux.models import Schema, fields, html, registry
+from lux.models import Schema, fields
 from lux.ext.odm import Model
-from lux.ext.rest import CRUD
+from lux.ext.rest import RestRouter
 
 
 def default_topic(bfield):
@@ -46,19 +46,8 @@ class MailingListSchema(Schema):
                 raise forms.ValidationError('Already subscribed')
 
 
-registry['mailing-list'] = html.Layout(
-    MailingListSchema,
-    html.Fieldset(all=True),
-    html.Submit('Get notified'),
-    showLabels=False,
-    resultHandler='replace'
-)
-
-
-class MailingListCRUD(CRUD):
+class MailingListCRUD(RestRouter):
     model = Model(
-        'mailinglist',
-        form='mailing-list',
-        url='mailinglist',
-        # fields=[RestField('user', field='user_id', model='users')]
+        'mailinglists',
+        model_schema=MailingListSchema
     )

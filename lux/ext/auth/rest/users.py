@@ -10,6 +10,7 @@ class UserCRUD(RestRouter):
     """
     model = UserModel(
         "users",
+        model_schema='UserSchema'
     )
 
     def get(self, request):

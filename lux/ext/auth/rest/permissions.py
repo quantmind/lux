@@ -18,7 +18,7 @@ class PermissionSchema(Schema):
 class PermissionCRUD(RestRouter):
     model = Model(
         'permissions',
-        model_schema=PermissionSchema(),
+        model_schema=PermissionSchema,
         create_schema='create-permission',
         update_schema='permission',
         id_field='name'

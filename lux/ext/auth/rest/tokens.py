@@ -7,6 +7,9 @@ from lux.utils.auth import ensure_authenticated
 class TokenSchema(Schema):
     user = fields.Nested('UserSchema')
 
+    class Meta:
+        model = 'user'
+
 
 class NewTokenSchema(Schema):
     """Create a new Authorization ``Token`` for the authenticated ``User``.

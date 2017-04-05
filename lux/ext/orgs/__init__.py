@@ -1,14 +1,12 @@
 from pulsar.api import Http404
 
 from lux.core import Parameter, is_html
-from lux.extensions import auth
+from lux.ext import auth
 
 from .events import AuthEventsMixin
 from .rest import UserCRUD, UserRest, OrganisationCRUD
-from .views import UserSettings, UserView
+# from .views import UserSettings, UserView
 from .ownership import get_owned_model
-
-from ..applications import has_plugin, plugins, Plugin
 
 
 class Extension(auth.Extension, AuthEventsMixin):
@@ -21,31 +19,19 @@ class Extension(auth.Extension, AuthEventsMixin):
                   'Name of the group containing all authenticated users')
     ]
 
-    def on_config(self, app):
-        if not app.config.get('APP_MULTI'):
-            self.require(app, 'lux.extensions.applications')
-            plugins(app).register('users', Plugin(
-                extensions=(
-                    'lux.extensions.sessions',
-                    'lux.extensions.organisations'
-                ),
-                backend='lux.extensions.sessions:SessionBackend'
-            ))
-            plugins(app).register('organisations', Plugin(
-                require='users'
-            ))
-
-    def middleware(self, app):
-        # user and organisation plugins in Html mode
-        if is_html(app) and has_plugin(app, 'users'):
-            orgs = has_plugin(app, 'organisations')
-            yield UserSettings('/settings')
-            yield UserView(orgs)
+    #def middleware(self, app):
+    #    # user and organisation plugins in Html mode
+    #    if is_html(app) and has_plugin(app, 'users'):
+    #        orgs = has_plugin(app, 'organisations')
+    #        yield UserSettings('/settings')
+    #        yield UserView(orgs)
 
     def api_sections(self, app):
-        return (UserRest(),
-                UserCRUD(),
-                OrganisationCRUD())
+        return (
+            UserRest(),
+            UserCRUD(),
+            OrganisationCRUD()
+        )
 
     def on_query(self, app, query):
         try:

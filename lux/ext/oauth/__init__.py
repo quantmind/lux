@@ -35,7 +35,7 @@ from .views import OAuthRouter, oauth_context
 
 def _import(*names):
     for name in names:
-        import_module('lux.extensions.oauth.%s' % name)
+        import_module('lux.ext.oauth.%s' % name)
 
 
 _import('amazon', 'dropbox', 'facebook', 'github', 'google', 'linkedin',

@@ -4,6 +4,7 @@
 * SqlAlchemy models
 """
 from marshmallow import Schema, fields, ValidationError
+from marshmallow.validate import OneOf
 
 from .component import Component
 from .model import ModelContainer, Model
@@ -20,6 +21,8 @@ __all__ = [
     'fields',
     'html',
     'ValidationError',
+    #
+    'OneOf',
     #
     'registry',
     'get_form',

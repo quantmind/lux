@@ -27,6 +27,26 @@ class RegistrationSchema(Schema):
     user = fields.Nested('UserSchema')
 
 
+class PasswordSchema(Schema):
+    password = fields.Password(required=True, minLength=5, maxLength=128)
+    password_repeat = fields.Password(
+        required=True,
+        label='Confirm password',
+        data_check_repeat='password'
+    )
+
+    def clean(self):
+        password = self.cleaned_data['password']
+        password_repeat = self.cleaned_data['password_repeat']
+        if password != password_repeat:
+            raise fields.ValidationError('Passwords did not match')
+
+
+class CreateUserSchema(PasswordSchema):
+    username = fields.Slug(required=True, minLength=2, maxLength=30)
+    email = fields.Email(required=True)
+
+
 class RegistrationModel(Model):
 
     @property
@@ -78,6 +98,7 @@ class RegistrationModel(Model):
 class RegistrationCRUD(ServiceCRUD):
     model = RegistrationModel(
         "registrations",
+        model_schema=RegistrationSchema,
         create_schema='signup'
     )
 

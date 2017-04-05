@@ -10,7 +10,7 @@ from .api import (
     route, api_parameters
 )
 from .api.client import ApiClient, HttpRequestMixin
-from .token import TokenBackend, ServiceUser, CORS
+from .token import TokenBackend, ServiceUser
 from .permissions import PolicySchema, user_permissions, validate_policy
 
 
@@ -134,21 +134,3 @@ class Extension(LuxExtension):
         # Create the api client and return api routes
         app.api = app.providers['Api'](app)
         return app.apis.routes()
-
-    def on_preflight(self, app, request, methods=None):
-        '''Preflight handler
-        '''
-        headers = request.get('HTTP_ACCESS_CONTROL_REQUEST_HEADERS')
-        methods = methods or app.config['CORS_ALLOWED_METHODS']
-        response = request.response
-        origin = request.get('HTTP_ORIGIN', '*')
-
-        if origin == 'null':
-            origin = '*'
-
-        response[CORS] = origin
-        if headers:
-            response['Access-Control-Allow-Headers'] = headers
-        if not isinstance(methods, (str, list)):
-            methods = list(methods)
-        response['Access-Control-Allow-Methods'] = methods

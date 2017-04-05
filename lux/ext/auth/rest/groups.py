@@ -15,8 +15,7 @@ class GroupSchema(Schema):
 class GroupCRUD(RestRouter):
     model = Model(
         'groups',
-        'create-group',
-        'group',
+        model_schema=GroupSchema,
         id_field='name'
     )
 

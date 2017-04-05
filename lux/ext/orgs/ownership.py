@@ -5,13 +5,12 @@ from pulsar.api import Http404, PermissionDenied
 from sqlalchemy.exc import DataError
 from sqlalchemy.orm.exc import NoResultFound
 
-from lux.core import app_attribute, GET_HEAD
+from lux.core import app_attribute
 from lux.utils.auth import ensure_authenticated
-from lux.extensions import rest
-from lux.extensions.odm import RestModel
-from lux.forms import get_form_class, ValidationError
+from lux.ext import rest
+from lux.ext.odm import Model
 
-from .forms import MemberRole
+from .schema import MemberRole
 
 
 OwnedModel = namedtuple('OwnedModel', 'form filters cast')
@@ -184,51 +183,3 @@ class OwnedTarget:
             query.filter(getattr(dbmodel, name) == value)
 
         return query
-
-
-class RelationshipField(rest.RelationshipField):
-
-    def _clean(self, value, bfield):
-        bits = value.split('/') if isinstance(value, str) else None
-        if not bits or (len(bits) == 1 and not self.multiple):
-            return super()._clean(value, bfield)
-
-        request = bfield.request
-        target = get_owned_model(request, self.model)
-        if not target:
-            raise ValidationError('not found')
-        model = target.model
-
-        with model.session(request) as session:
-            query = target.query(session, *bits)
-            if self.multiple:
-                return model.get_list(request, query=query,
-                                      session=session)
-            else:
-                try:
-                    return model.get_instance(request, query=query,
-                                              session=session)
-                except Http404:
-                    raise ValidationError(
-                        self.validation_error.format(model)
-                    )
-
-
-class UniqueField(rest.UniqueField):
-
-    def __call__(self, value, bfield):
-        if not value and self.nullable:
-            return value
-        request = bfield.request
-        owner = request.cache.owner
-        if not owner:
-            raise ValidationError('no owner')
-        target = get_owned_model(request, self.model or bfield.form.model)
-        if not target:
-            raise ValidationError('not found')
-        field = self.field or bfield.name
-
-        with target.model.session(request) as session:
-            query = target.query(session, owner, **{field: value})
-            return self.test(value, bfield, target.model,
-                             query=query, session=session)

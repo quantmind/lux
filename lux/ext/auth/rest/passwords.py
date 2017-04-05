@@ -2,24 +2,10 @@
 """
 from pulsar.api import MethodNotAllowed
 
-from lux.models import Schema, fields
+from lux.models import fields
 
-from .registrations import RegistrationModel
+from .registrations import RegistrationModel, PasswordSchema
 from . import ServiceCRUD, ensure_service_user
-
-
-class PasswordSchema(Schema):
-    password = fields.Password(maxlength=128)
-    password_repeat = fields.Password(
-        label='Confirm password',
-        data_check_repeat='password'
-    )
-
-    def clean(self):
-        password = self.cleaned_data['password']
-        password_repeat = self.cleaned_data['password_repeat']
-        if password != password_repeat:
-            raise fields.ValidationError('Passwords did not match')
 
 
 class ChangePasswordSchema(PasswordSchema):

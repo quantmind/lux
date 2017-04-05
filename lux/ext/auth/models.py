@@ -31,7 +31,7 @@ groups_permissions = Model.create_table(
 
 
 class User(Model, UserMixin):
-    id = Column(Integer, primary_key=True)
+    id = Column(UUIDType(binary=False), primary_key=True)
     username = Column(String(50), unique=True)
     first_name = Column(String(30))
     last_name = Column(String(30))
@@ -68,7 +68,7 @@ class User(Model, UserMixin):
 
 
 class Group(Model):
-    id = Column(Integer, primary_key=True)
+    id = Column(UUIDType(binary=False), primary_key=True)
     name = Column(String(80), unique=True)
 
     @declared_attr
@@ -90,7 +90,7 @@ class Group(Model):
 
 
 class Permission(Model):
-    id = Column(Integer, primary_key=True)
+    id = Column(UUIDType(binary=False), primary_key=True)
     name = Column(String(60), unique=True)
     description = Column(String(120))
     policy = Column(JSONType)
@@ -124,7 +124,7 @@ class Token(Model):
 
 
 class Registration(Model):
-    id = Column(String(40), primary_key=True)
+    id = Column(UUIDType(binary=False), primary_key=True)
     expiry = Column(DateTime, nullable=False)
     type = Column(Integer)
 
@@ -140,7 +140,7 @@ class Registration(Model):
 
 
 class MailingList(Model):
-    id = Column(Integer, primary_key=True)
+    id = Column(UUIDType(binary=False), primary_key=True)
     email = Column(String(120), unique=True)
     topic = Column(String(60))
 

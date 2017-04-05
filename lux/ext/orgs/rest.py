@@ -2,21 +2,18 @@ from pulsar.api import PermissionDenied, Http404
 
 from sqlalchemy.orm.attributes import flag_modified
 
-from lux.core import route, GET_HEAD, POST_PUT, Resource
-from lux.forms import get_form_class
-from lux.extensions import auth
+from lux.core import route, Resource
+from lux.ext import auth
 
-from .forms import OrganisationModel, UserModel, MemberRole, OrgMemberForm
+from .schema import (
+    OrganisationModel, UserModel, MemberRole, UserSchema, OrganisationSchema
+)
 from .ownership import get_create_own_model
 
 
 class OrgMixin:
 
     def user_organisations(self, request):
-        if request.method == 'OPTIONS':
-            request.app.fire('on_preflight', request, methods=GET_HEAD)
-            return request.response
-
         user = self.model.get_instance(request).obj
         orgs = request.app.models['organisations']
         with self.model.session(request) as session:
@@ -29,8 +26,21 @@ class OrgMixin:
 
 class UserRest(auth.UserRest, OrgMixin):
 
-    @route('organisations', method=['get', 'head', 'options'])
+    @route('organisations')
     def get_organisations(self, request):
+        """
+        ---
+        summary: List of organisations
+        description: Return the list of organisations the authenticated user
+            belongs to
+        responses:
+            200:
+                description: list of organisations
+                schema:
+                    type: array
+                    items:
+                        $ref: '#/definitions/Organisation'
+        """
         return self.user_organisations(request)
 
     @route('config', method=['get', 'patch', 'options'])
@@ -78,15 +88,33 @@ class UserRest(auth.UserRest, OrgMixin):
 
 
 class UserCRUD(auth.UserCRUD, OrgMixin):
-    model = UserModel.create()
+    model = UserModel(
+        'users',
+        model_schema=UserSchema
+    )
 
-    @route('<id>/organisations', method=['get', 'head', 'options'])
+    @route('<id>/organisations')
     def get_organisations(self, request):
+        """
+        ---
+        summary: List of organisations
+        description: Return the list of organisations for a given user
+        responses:
+            200:
+                description: list of organisations
+                schema:
+                    type: array
+                    items:
+                        $ref: '#/definitions/Organisation'
+        """
         return self.user_organisations(request)
 
 
 class OrganisationCRUD(auth.UserCRUD):
-    model = OrganisationModel.create()
+    model = OrganisationModel(
+        'organisations',
+        model_schema=OrganisationSchema
+    )
 
     @staticmethod
     def ensure_admin(request, org_username, level='update'):
@@ -105,11 +133,21 @@ class OrganisationCRUD(auth.UserCRUD):
         if not backend.has_permission(request, permission_name, level):
             raise PermissionDenied
 
-    @route('<id>/members', method=('get', 'head', 'options'))
+    @route('<id>/members')
     def get_members(self, request):
-        if request.method == 'OPTIONS':
-            request.app.fire('on_preflight', request, methods=GET_HEAD)
-            return request.response
+        """
+        ---
+        summary: list members of the organisation
+        description: List member of the organisation which are visible
+            by the requesting user
+        responses:
+            200:
+                description: list of members
+                schema:
+                    type: array
+                    items:
+                        $ref: '#/definitions/User'
+        """
         user = request.cache.user
         model = self.get_model(request)
         data = []
@@ -126,13 +164,8 @@ class OrganisationCRUD(auth.UserCRUD):
         data = request.app.pagination(request, data)
         return self.json_response(request, data)
 
-    @route('<id>/members/<member>',
-           method=('get', 'head', 'post', 'delete', 'options'))
+    @route('<id>/members/<member>', method=('get', 'head', 'post', 'delete'))
     def member(self, request):
-        if request.method == 'OPTIONS':
-            request.app.fire('on_preflight', request)
-            return request.response
-
         model = self.get_model(request)
         member = request.urlargs['member']
         cache = request.cache

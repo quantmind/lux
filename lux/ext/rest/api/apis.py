@@ -15,6 +15,7 @@ from apispec import APISpec
 
 from .rest import RestRoot, RestRouter, Rest404
 from .openapi import rule2openapi, api_operations, api_schema, Specification
+from .exc import ErrorMessageSchema, ErrorSchema
 from .cors import cors
 
 
@@ -77,18 +78,16 @@ class Apis(models.Component):
             # Add router to an API
             self.add_child(router)
 
-        has_api = False
         for api in self:
             # router not required when api is remote
             if api.netloc:
                 continue
-            if not has_api:
-                has_api = True
-                self.app.add_events(('on_preflight', 'on_token'))
             #
             # Add API root-router to middleware
-            yield api.router
-            url = str(api.router)
+            router = api.router()
+            yield router
+
+            url = str(router)
             if url != '/':
                 # when the api is served by a path, make sure 404 is raised
                 # when no suitable routes are found
@@ -136,9 +135,9 @@ class Api:
         self.route = Route('%s/<path:path>' % name)
         self.jwt = jwt
         self.cors = cors
-        self.router = RestRoot(spec.options['basePath'])
-        if spec_path:
-            self.router.add_child(Specification(spec_path, api=self))
+        self._router = [Specification(spec_path, api=self)]
+        self.add_definition(ErrorSchema)
+        self.add_definition(ErrorMessageSchema)
 
     @classmethod
     def from_cfg(cls, app, cfg):
@@ -175,15 +174,30 @@ class Api:
         return self.route.match(path)
 
     def add_child(self, router):
-        if self.cors:
-            cors(self, router)
-        path = rule2openapi(router.route.rule)
         model = router.model
         if model:
             self.add_definition(model.model_schema)
             self.add_definition(model.create_schema)
-        self.spec.add_path(path, api_operations(self, router))
-        self.router.add_child(router)
+            self.add_definition(model.update_schema)
+        self._router.append(router)
+
+    def router(self):
+        if isinstance(self._router, list):
+            root = RestRoot(self.spec.options['basePath'])
+            for router in self._router:
+                root.add_child(self.prepare_router(router))
+            self._router = root
+        return self._router
+
+    def prepare_router(self, router):
+        path = rule2openapi(router.route.rule)
+        operations = api_operations(self, router)
+        if self.cors and operations:
+            router.options = cors([method.upper() for method in operations])
+        self.spec.add_path(path, operations)
+        for child in router.routes:
+            self.prepare_router(child)
+        return router
 
     def add_definition(self, schema):
         if not schema:
