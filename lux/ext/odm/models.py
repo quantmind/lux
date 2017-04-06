@@ -13,13 +13,14 @@ from sqlalchemy.exc import DataError, StatementError
 from sqlalchemy.orm.exc import (NoResultFound, MultipleResultsFound,
                                 ObjectDeletedError)
 
+from marshmallow_sqlalchemy import property2field
+
 from pulsar.api import Http404
 
 from odm.utils import get_columns
 
 from lux.core import app_attribute
 from lux.utils.crypt import as_hex
-from lux.ext import rest
 from lux import models
 
 
@@ -192,7 +193,24 @@ class Query(models.Query):
 class Model(models.Model):
     '''A rest model based on SqlAlchemy ORM
     '''
-    # LuxModel VIRTUAL METHODS
+    property2field = property2field
+
+    @property
+    def db_name(self):
+        name = self.metadata.get('db_name')
+        if not name:
+            name = self.uri.split('/')[-1]
+            name = models.inflect.singular_noun(name) or name
+            self.metadata['db_name'] = name
+        return name
+
+    @property
+    def db_model(self):
+        '''Database model
+        '''
+        if self.app:
+            return self.app.odm()[self.db_name]
+
     def session(self, request, session=None):
         return self.app.odm().begin(request=request, session=session)
 
@@ -326,11 +344,6 @@ class Model(models.Model):
                     data['repr'] = repr
             return data
 
-    def db_model(self):
-        '''Database model
-        '''
-        return self.app.odm()[self.name]
-
     def db_columns(self, columns=None):
         '''Return a list of columns available in the database table
         '''
@@ -353,43 +366,46 @@ class Model(models.Model):
                 return True
         return False
 
-    def _load_fields_map(self, rest):
+    def fields_map(self, include_fk=False, fields=None,
+                   exclude=None, base_fields=None, dict_cls=dict):
         '''List of column definitions
         '''
-        fields = self._fields
-        fields.db_columns = get_columns(self.db_model())._data
-        cols = fields.db_columns.copy()
+        result = dict_cls()
+        base_fields = base_fields or {}
+        db_name = self.db_name
+        fields_map = odm_fields_map(self.app)
+        db_columns = fields_map.get(db_name)
 
-        def _set_field(field):
-            if field.name in fields.hidden:
-                field.hidden = True
-            if is_rel_field(field) and field.field:
-                fields.add_exclude(field.field)
-            rest[field.name] = field
+        if db_columns is None:
+            db_columns = {}
+            fields_map[db_name] = db_columns
 
-        # process input columns first
-        for info in fields.include:
-            col = RestField.make(info)
-            if col.name not in rest:
-                dbcol = cols.pop(col.name, None)
-                # If a database column
-                if isinstance(dbcol, Column):
-                    info = column_info(col.name, dbcol)
-                    info.update(col.tojson())
-                    col = RestField.make(info)
-                _set_field(col)
+        for column in self.db_model.__mapper__.iterate_properties:
+            if _should_exclude_field(column, fields=fields, exclude=exclude):
+                continue
+            if hasattr(column, 'columns'):
+                if not include_fk:
+                    # Only skip a column if there is no overriden column
+                    # which does not have a Foreign Key.
+                    for col in column.columns:
+                        if not col.foreign_keys:
+                            break
+                    else:
+                        continue
+            field = base_fields.get(column.key) or db_columns.get(column.key)
+            if not field:
+                field = self.property2field(column)
+                if field:
+                    db_columns[column.key] = field
 
-        for name, col in cols.items():
-            if name not in rest:
-                _set_field(RestField.make(column_info(name, col)))
+            if field:
+                result[column.key] = field
+        return result
 
-        return rest
 
-    def _related_model(self, request, model, obj, in_list):
-        if isinstance(obj, list):
-            return [self._related_model(request, model, d, True) for d in obj]
-        else:
-            return model.id_repr(request, obj, in_list)
+@app_attribute
+def odm_fields_map(app):
+    return {}
 
 
 def column_info(name, col):
@@ -413,9 +429,12 @@ def column_info(name, col):
     return info
 
 
-@app_attribute
-def odm_models(app):
-    return {}
+def _should_exclude_field(column, fields=None, exclude=None):
+    if fields and column.key not in fields:
+        return True
+    if exclude and column.key in exclude:
+        return True
+    return False
 
 
 _types = {int: 'integer',

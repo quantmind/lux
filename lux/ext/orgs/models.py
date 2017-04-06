@@ -9,7 +9,7 @@ import lux.ext.auth.models as auth
 from odm.types import ChoiceType
 import odm
 
-from .forms import MemberRole
+from .schema import MemberRole
 from ..apps.models import AppModelMixin
 
 

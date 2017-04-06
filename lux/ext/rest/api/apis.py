@@ -1,5 +1,7 @@
 import logging
+import json
 from inspect import isclass
+from contextlib import contextmanager
 from collections import OrderedDict
 from urllib.parse import urlparse, urlunparse
 
@@ -125,16 +127,17 @@ class Apis(models.Component):
             parent.add_child(router)
 
 
-class Api:
+class Api(models.Component):
 
     def __init__(self, app, name, spec, spec_path, jwt=None, cors=True):
+        self.init_app(app)
         if name == '*':
             name = ''
-        self.app = app
         self.spec = spec
         self.route = Route('%s/<path:path>' % name)
         self.jwt = jwt
         self.cors = cors
+        self.registry = {}
         self._router = [Specification(spec_path, api=self)]
         self.add_definition(ErrorSchema)
         self.add_definition(ErrorMessageSchema)
@@ -162,6 +165,16 @@ class Api:
         return self.path
     __str__ = __repr__
 
+    @contextmanager
+    def ctx(self):
+        with self.app.ctx() as ctx:
+            with models.schema_registry(self.registry):
+                ctx.set('api', self)
+                try:
+                    yield ctx
+                finally:
+                    ctx.pop('api')
+
     @property
     def path(self):
         return self.route.path
@@ -187,6 +200,9 @@ class Api:
             for router in self._router:
                 root.add_child(self.prepare_router(router))
             self._router = root
+            # build the spec so that all lazy operations are done here
+            with self.ctx():
+                json.dumps(self.spec_dict())
         return self._router
 
     def prepare_router(self, router):
@@ -202,11 +218,19 @@ class Api:
     def add_definition(self, schema):
         if not schema:
             return
+        schema_cls = schema
         if not isclass(schema):
-            schema = type(schema)
-        name = schema.__name__
+            self.logger.warning('Schema should be a class, %s is an instance',
+                                schema)
+            schema_cls = type(schema)
+        name = schema_cls.__name__
+
+        if schema_cls == schema:
+            self.registry[name] = schema_cls
+            schema = schema_cls(app=self.app)
+
         if name.endswith('Schema'):
-            name= name[:-6]
+            name = name[:-6]
         try:
             self.spec.definition(name, schema=schema)
         except Exception:
@@ -221,4 +245,7 @@ class Api:
             urlp[0] = r_url.scheme
             urlp[1] = r_url.netloc
         return urlunparse(urlp)
+
+    def spec_dict(self):
+        return self.spec.to_dict()
 

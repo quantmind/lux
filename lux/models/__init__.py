@@ -3,9 +3,12 @@
 * Marshmallow Schemas
 * SqlAlchemy models
 """
-from marshmallow import Schema, fields, ValidationError
+from marshmallow import fields, ValidationError
 from marshmallow.validate import OneOf
 
+import inflect
+
+from .schema import Schema, schema_registry
 from .component import Component
 from .model import ModelContainer, Model
 from .query import Query
@@ -15,14 +18,20 @@ from .registry import registry, get_form, get_form_class, get_form_layout
 from . import html
 
 
+inflect = inflect.engine()
+
+
 __all__ = [
     'Schema',
     'Component',
     'fields',
     'html',
     'ValidationError',
+    'schema_registry',
     #
     'OneOf',
+    #
+    'inflect',
     #
     'registry',
     'get_form',
@@ -38,4 +47,3 @@ __all__ = [
 
 fields.Password = Password
 fields.Slug = Slug
-

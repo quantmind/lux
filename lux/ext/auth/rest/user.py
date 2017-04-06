@@ -6,13 +6,11 @@ from lux.ext.rest import RestRouter, user_permissions
 from lux.models import get_form_class, fields, Schema
 
 
+URI = 'users'
+
+
 class UserSchema(Schema):
     username = fields.Slug(required=True)
-    email = fields.Email()
-    first_name = fields.String()
-    last_name = fields.String()
-    superuser = fields.Boolean()
-    active = fields.Boolean()
     joined = fields.DateTime(readOnly=True)
     full_name = fields.String(
         field=('first_name', 'last_name', 'username', 'email'),
@@ -21,7 +19,8 @@ class UserSchema(Schema):
     groups = fields.Nested('GroupSchema', multi=True)
 
     class Meta:
-        exclude = ('password', 'type')
+        exclude = ('password', 'superuser')
+        # model = URI
 
 
 class UserModel(Model):

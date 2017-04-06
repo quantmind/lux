@@ -1,5 +1,5 @@
 import json
-from lux.models import Schema, fields, UniqueField, html
+from lux.models import Schema, fields, UniqueField
 
 
 class ApplicationConfigSchema(Schema):
@@ -10,8 +10,18 @@ class ApplicationConfigSchema(Schema):
     AWS_SECRET = fields.String()
 
 
+class PluginSchema(Schema):
+
+    class Meta:
+        model = 'plugins'
+
+
+class AppPluginSchema(Schema):
+    name = fields.String(required=True)
+    config = fields.Dict()
+
+
 class ApplicationSchema(Schema):
-    id = fields.String(readonly=True)
     name = fields.Slug(
         minlength=2,
         maxlength=32,
@@ -22,22 +32,17 @@ class ApplicationSchema(Schema):
     domain = fields.String(
         minlength=2,
         maxlength=120,
-        validator=UniqueField()
+        validator=UniqueField(),
+        description="Optional domain name of application"
     )
     config = fields.Dict(
+        description='application configuration document',
         ace=json.dumps({'mode': 'json'})
     )
+    plugins = fields.List(
+        fields.Nested(AppPluginSchema)
+    )
 
+    class Meta:
+        model = 'applications'
 
-# FORM REGISTRATION
-html.reg['create-application'] = html.Layout(
-    ApplicationSchema(),
-    html.Fieldset(all=True),
-    html.Submit('Add new application')
-)
-
-html.reg['application-config'] = html.Layout(
-    ApplicationConfigSchema(),
-    html.Fieldset(all=True),
-    html.Submit('Add new application')
-)

@@ -5,13 +5,9 @@ from lux.ext.odm import Model
 from lux.ext.rest import RestRouter
 
 
-def default_topic(bfield):
-    return bfield.request.config['GENERAL_MAILING_LIST_TOPIC']
-
-
 class MailingListSchema(Schema):
     email = fields.Email(label='Your email address')
-    topic = fields.String(default=default_topic)
+    topic = fields.String(description='Mailing list topic')
 
     def clean_email(self, email):
         user = self.request.cache.user

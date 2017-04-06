@@ -6,11 +6,9 @@ from pulsar.utils.string import to_string
 
 import lux.utils.token as jwt
 from lux.core import backend_action, UserMixin
+
 from .permissions import PemissionsMixin
-
-
-# Cross-Origin Resource Sharing header
-CORS = 'Access-Control-Allow-Origin'
+from .api.cors import CORS
 
 
 class ServiceUser(UserMixin):

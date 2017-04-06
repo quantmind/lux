@@ -11,6 +11,9 @@ from lux.ext.odm import Model
 from . import ServiceCRUD, ensure_service_user
 
 
+URI = 'registrations'
+
+
 email_templates = {
     "subject": {
         1: "registration/activation_email_subject.txt",
@@ -25,6 +28,9 @@ email_templates = {
 
 class RegistrationSchema(Schema):
     user = fields.Nested('UserSchema')
+
+    class Meta:
+        model = URI
 
 
 class PasswordSchema(Schema):
@@ -99,7 +105,7 @@ class RegistrationCRUD(ServiceCRUD):
     model = RegistrationModel(
         "registrations",
         model_schema=RegistrationSchema,
-        create_schema='signup'
+        create_schema=CreateUserSchema
     )
 
     def get(self, request):

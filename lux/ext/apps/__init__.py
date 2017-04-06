@@ -1,13 +1,11 @@
 """Multi application extension.
 """
 from lux.core import LuxExtension, Parameter
-from lux.utils.countries import common_timezones, country_names
 
-from .rest import ApplicationCRUD
+from .rest import ApplicationCRUD, PluginCRUD
 from .auth import AuthBackend
 from .multi import MultiBackend
 from .multiplugins import has_plugin, plugins, Plugin
-from .info import Info, api_info_routes
 
 
 __all__ = [
@@ -15,8 +13,7 @@ __all__ = [
     'MultiBackend',
     'has_plugin',
     'plugins',
-    'Plugin',
-    'api_info_routes'
+    'Plugin'
 ]
 
 
@@ -25,17 +22,15 @@ class Extension(LuxExtension):
         Parameter('MASTER_APPLICATION_ID', None,
                   "Unique ID of the Master application. The master application"
                   " is assumed by default when no header or JWT is available"),
-        Parameter('APPLICATION_ID', None,
-                  "Unique ID of application. Required for client applications"
-                  " but not by the API. Added to the JWT payload"),
-        Parameter('API_INFO_URL', 'info',
-                  "Url for information routes"),
-        Parameter('SETTINGS_DEFAULT_FILE', None,
-                  'Path to the json files containing default settings '
-                  'for multi applications')
     )
 
-    def on_config(self, app):
+    def api_sections(self, app):
+        return (
+            ApplicationCRUD(),
+            PluginCRUD()
+        )
+
+    def __on_config(self, app):
         multi = app.config.get('APP_MULTI')
         if not multi:
             # API domain
@@ -57,14 +52,6 @@ class Extension(LuxExtension):
         app_id = app.config['APPLICATION_ID']
         if app_id:
             payload['id'] = app_id
-
-    def api_sections(self, app):
-        yield ApplicationCRUD()
-        if app.config['API_INFO_URL']:
-            yield Info(app.config['API_INFO_URL'])
-            routes = api_info_routes(app)
-            routes['timezones'] = lambda r: common_timezones
-            routes['countries'] = lambda r: country_names
 
     def on_query(self, app, query):
         if query.model.field('application_id'):

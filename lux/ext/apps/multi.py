@@ -8,7 +8,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from pulsar.api import Http404
 
 from lux.core import app_attribute, extend_config, execute_from_config
-from lux.extensions.rest import ApiClient
+from lux.ext.rest import ApiClient
 from lux.utils.crypt import create_token
 
 

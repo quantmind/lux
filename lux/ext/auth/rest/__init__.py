@@ -1,6 +1,6 @@
 from pulsar.api import Http404, BadRequest, Http401, MethodNotAllowed
 
-from lux.ext.rest import CRUD
+from lux.ext.rest import RestRouter
 
 
 def auth_form(request, form):
@@ -23,7 +23,7 @@ def ensure_service_user(request, errorCls=None):
     return request.cache.token
 
 
-class ServiceCRUD(CRUD):
+class ServiceCRUD(RestRouter):
     """Make sure all post requests are authenticated
     with service user
     """

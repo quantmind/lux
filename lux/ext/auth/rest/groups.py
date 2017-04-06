@@ -3,18 +3,24 @@ from lux.ext.rest import RestRouter
 from lux.ext.odm import Model
 
 
+URI = 'groups'
+
+
 class GroupSchema(Schema):
-    model = 'groups'
     name = fields.Slug(validate=UniqueField(), required=True)
     permissions = fields.List(
         fields.Nested('PermissionSchema'),
         description='List of permissions for this group'
     )
 
+    class Meta:
+        model = URI
+        exclude = ('users',)
+
 
 class GroupCRUD(RestRouter):
     model = Model(
-        'groups',
+        URI,
         model_schema=GroupSchema,
         id_field='name'
     )

@@ -3,9 +3,12 @@ class Component:
     """Application component
     """
     app = None
+    logger = None
 
     def init_app(self, app):
         self.app = app
+        if not self.logger:
+            self.logger = app.logger
         return self
 
     @property

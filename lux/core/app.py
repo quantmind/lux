@@ -4,6 +4,7 @@ import os
 import asyncio
 import logging
 import threading
+from contextlib import contextmanager
 from asyncio import create_subprocess_shell, subprocess, new_event_loop
 
 from inspect import isclass
@@ -35,7 +36,7 @@ from .exceptions import ShellError
 from .channels import LuxChannels
 from .auth import MultiAuthBackend
 
-from ..models import ModelContainer, registry
+from ..models import ModelContainer, registry, context
 
 
 LUX_CORE = os.path.dirname(__file__)
@@ -284,6 +285,14 @@ class Application(ConsoleMixin, LuxExtension, EventMixin):
             self.config['THREAD_POOL'] = False
             from pulsar.apps.greenio import GreenPool
             return GreenPool(self.config['GREEN_POOL'])
+
+    @contextmanager
+    def ctx(self):
+        context.set('app', self)
+        try:
+            yield context
+        finally:
+            context.pop('app')
 
     def require(self, *extensions):
         return super().require(self, *extensions)

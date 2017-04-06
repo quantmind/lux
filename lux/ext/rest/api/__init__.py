@@ -1,5 +1,5 @@
 from .apis import Apis, Api
-from .rest import RestRoot, RestRouter, CRUD
+from .rest import RestRoot, RestRouter
 from .pagination import Pagination, GithubPagination
 from .openapi import route, api_parameters
 
@@ -9,7 +9,6 @@ __all__ = [
     'Api',
     'RestRoot',
     'RestRouter',
-    'CRUD',
     'Pagination',
     'GithubPagination',
     'route',

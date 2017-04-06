@@ -166,7 +166,7 @@ class Specification(JsonRouter):
     def get(self, request):
         if self.api:
             pass
-        spec = self.api.spec.to_dict()
+        spec = self.api.spec_dict()
         if 'host' not in spec:
             spec['host'] = request.get_host()
         if 'schemes' not in spec:

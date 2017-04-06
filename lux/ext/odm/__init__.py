@@ -11,17 +11,14 @@ _ ..pulsar-odm: https://github.com/quantmind/pulsar-odm
 """
 from odm import declared_attr
 
-from marshmallow_sqlalchemy import ModelSchema
-
 from lux.core import Parameter, LuxExtension
 
 from .mapper import Mapper, model_base
-from .models import Model, odm_models
+from .models import Model
 from .migrations import migrations
 
 
 __all__ = ['model_base',
-           'odm_models',
            'ModelSchema',
            'declared_attr',
            'RestModel',

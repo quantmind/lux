@@ -187,9 +187,11 @@ class Layout(Fieldset):
         if 'default_element' in attrs:
             self.default_element = attrs.pop('default_element')
         super().__init__(*children, **attrs)
-        self.setup(schema)
+        self.__schema = schema
 
     def __call__(self, request=None, **kwargs):
+        if not self.schema:
+            self.setup(self.__schema)
         return SerialisedForm(self, self.schema, request, **kwargs)
 
     def setup(self, schema):

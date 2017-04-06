@@ -6,7 +6,7 @@ from lux.core import Parameter, LuxExtension
 
 # from .models import RestModel, DictModel, RestField, is_rel_field
 from .api import (
-    Apis, RestRouter, CRUD, Pagination, GithubPagination,
+    Apis, RestRouter, Pagination, GithubPagination,
     route, api_parameters
 )
 from .api.client import ApiClient, HttpRequestMixin
@@ -22,7 +22,6 @@ __all__ = [
     #
     'RestRouter',
     'MetadataMixin',
-    'CRUD',
     'Specification',
     "ApiClient",
     "HttpRequestMixin",

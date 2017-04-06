@@ -5,7 +5,7 @@ CORS = 'Access-Control-Allow-Origin'
 class cors:
 
     def __init__(self, methods):
-        self.methods= methods
+        self.methods = methods
 
     def __call__(self, request):
         headers = request.get('HTTP_ACCESS_CONTROL_REQUEST_HEADERS')
