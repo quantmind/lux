@@ -4,8 +4,6 @@ from pulsar.api import Http404, BadRequest
 from lux.ext import auth
 from lux.ext import rest
 
-from .multi import get_application
-
 
 class ServiceUser(rest.ServiceUser):
 

@@ -4,11 +4,13 @@ from pulsar.api import PermissionDenied, Http404
 
 from lux.core import route, http_assert
 from lux.utils.crypt import digest
+from lux.utils.date import date_from_now
 from lux.models import Schema, fields, ValidationError
 
 from lux.ext.odm import Model
 
 from . import ServiceCRUD, ensure_service_user
+from ..models import RegistrationType
 
 
 URI = 'registrations'
@@ -41,16 +43,35 @@ class PasswordSchema(Schema):
         data_check_repeat='password'
     )
 
-    def clean(self):
-        password = self.cleaned_data['password']
-        password_repeat = self.cleaned_data['password_repeat']
+    def post_load(self, data):
+        password = data['password']
+        password_repeat = data['password_repeat']
         if password != password_repeat:
-            raise fields.ValidationError('Passwords did not match')
+            raise ValidationError('Passwords did not match')
 
 
 class CreateUserSchema(PasswordSchema):
     username = fields.Slug(required=True, minLength=2, maxLength=30)
     email = fields.Email(required=True)
+
+    def post_load(self, data):
+        super().post_load(data)
+        data.pop('password_repeat')
+        return self.create_model(data, self.create_user(data))
+
+    def create_model(self, data, user):
+        request = data.request
+        odm = request.app.odm()
+        reg = odm.registration(
+            id=digest(user.email),
+            expiry=date_from_now(days=data.config['ACCOUNT_ACTIVATION_DAYS']),
+            type=RegistrationType.registration,
+            user_id=user.id
+        )
+        data.session.add(reg)
+        data.session.flush()
+        send_email_confirmation(request, reg)
+        return reg
 
 
 class RegistrationModel(Model):
@@ -58,31 +79,6 @@ class RegistrationModel(Model):
     @property
     def type(self):
         return self.metadata.get('type', 1)
-
-    def create_model(self, request, instance=None, data=None,
-                     session=None, **kw):
-        auth_backend = request.cache.auth_backend
-        if self.type == 1:
-            # Create the user
-            data.pop('password_repeat', None)
-            user = auth_backend.create_user(request, **data)
-        else:
-            user = auth_backend.get_user(request, email=data['email'])
-            if not user:
-                raise ValidationError("Can't find user, sorry")
-
-        days = request.config['ACCOUNT_ACTIVATION_DAYS']
-        data = {
-            'id': digest(user.email),
-            'expiry': datetime.utcnow() + timedelta(days=days),
-            'type': self.type,
-            'user_id': user.id
-        }
-        with self.session(request, session=session) as session:
-            reg = super().create_model(request, instance, data,
-                                       session=session, **kw)
-            send_email_confirmation(request, reg.obj)
-        return reg
 
     def update_model(self, request, instance, data, session=None, **kw):
         if not instance.id:
@@ -122,7 +118,7 @@ class RegistrationCRUD(ServiceCRUD):
                 items:
                     $ref: '#/definitions/Registration'
         """
-        return self.model.get_list(request)
+        return self.model.get_list_response(request)
 
     def post(self, request):
         """

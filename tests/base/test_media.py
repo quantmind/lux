@@ -3,7 +3,7 @@ from lux.utils import test
 
 class CommandTests(test.TestCase):
     config_params = {
-        'EXTENSIONS': ['lux.extensions.base']
+        'EXTENSIONS': ['lux.ext.base']
     }
 
     def test_absolute_media(self):

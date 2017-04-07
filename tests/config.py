@@ -1,5 +1,5 @@
 '''Default config file for testing'''
-EXTENSIONS = ['lux.extensions.base',
+EXTENSIONS = ['lux.ext.base',
               'tests']
 
 MEDIA_URL = '/static/'

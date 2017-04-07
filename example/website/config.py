@@ -1,10 +1,10 @@
 from example.cfg import *   # noqa
 
-EXTENSIONS += ('lux.extensions.sessions',)      # noqa
+EXTENSIONS += ('lux.ext.sessions',)      # noqa
 DEFAULT_CONTENT_TYPE = 'text/html'
 API_URL = 'http://webapi.com'
 AUTHENTICATION_BACKENDS = [
-    'lux.extensions.sessions:SessionBackend'
+    'lux.ext.sessions:SessionBackend'
 ]
 
 CLEAN_URL = True

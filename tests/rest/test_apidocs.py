@@ -8,11 +8,11 @@ class TestDictModel(test.TestCase):
     config_params = dict(
         API_URL='/',
         EXTENSIONS=[
-            'lux.extensions.rest',
-            'lux.extensions.odm',
-            'lux.extensions.auth',
-            'lux.extensions.applications',
-            'lux.extensions.organisations'
+            'lux.ext.rest',
+            'lux.ext.odm',
+            'lux.ext.auth',
+            'lux.ext.apps',
+            'lux.ext.orgs'
         ]
     )
 

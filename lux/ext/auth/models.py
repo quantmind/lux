@@ -2,9 +2,10 @@
 SQLAlchemy models for Authentications
 '''
 from datetime import datetime
+from enum import Enum
 
 from sqlalchemy.orm import relationship, backref
-from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, DateTime
+import sqlalchemy as db
 
 from odm import declared_attr
 from odm.types import IPAddressType, UUIDType, JSONType
@@ -13,33 +14,38 @@ from lux.ext import odm
 from lux.core import UserMixin
 
 
-Model = odm.model_base('auth')
+dbModel = odm.model_base('auth')
 
 
-users_groups = Model.create_table(
+class RegistrationType(Enum):
+    registration = 1
+    password = 1
+
+
+users_groups = dbModel.create_table(
     'users_groups',
-    Column('user_id', Integer, ForeignKey('user.id')),
-    Column('group_id', Integer, ForeignKey('group.id')),
+    db.Column('user_id', UUIDType, db.ForeignKey('user.id')),
+    db.Column('group_id', UUIDType, db.ForeignKey('group.id')),
 )
 
 
-groups_permissions = Model.create_table(
+groups_permissions = dbModel.create_table(
     'groups_permissions',
-    Column('group_id', Integer, ForeignKey('group.id')),
-    Column('permission_id', Integer, ForeignKey('permission.id'))
+    db.Column('group_id', UUIDType, db.ForeignKey('group.id')),
+    db.Column('permission_id', UUIDType, db.ForeignKey('permission.id'))
 )
 
 
-class User(Model, UserMixin):
-    id = Column(UUIDType(binary=False), primary_key=True)
-    username = Column(String(50), unique=True)
-    first_name = Column(String(30))
-    last_name = Column(String(30))
-    email = Column(String(120), unique=True)
-    password = Column(String(120))
-    active = Column(Boolean)
-    superuser = Column(Boolean)
-    joined = Column(DateTime, default=datetime.utcnow)
+class User(dbModel, UserMixin):
+    id = db.Column(UUIDType(binary=False), primary_key=True)
+    username = db.Column(db.String(50), unique=True)
+    first_name = db.Column(db.String(30))
+    last_name = db.Column(db.String(30))
+    email = db.Column(db.String(120), unique=True)
+    password = db.Column(db.String(120))
+    active = db.Column(db.Boolean)
+    superuser = db.Column(db.Boolean)
+    joined = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
         return self.username or self.email
@@ -67,9 +73,9 @@ class User(Model, UserMixin):
         return name
 
 
-class Group(Model):
-    id = Column(UUIDType(binary=False), primary_key=True)
-    name = Column(String(80), unique=True)
+class Group(dbModel):
+    id = db.Column(UUIDType(binary=False), primary_key=True)
+    name = db.Column(db.String(80), unique=True)
 
     @declared_attr
     def users(cls):
@@ -89,29 +95,31 @@ class Group(Model):
     __str__ = __repr__
 
 
-class Permission(Model):
-    id = Column(UUIDType(binary=False), primary_key=True)
-    name = Column(String(60), unique=True)
-    description = Column(String(120))
-    policy = Column(JSONType)
+class Permission(dbModel):
+    id = db.Column(UUIDType(binary=False), primary_key=True)
+    name = db.Column(db.String(60), unique=True)
+    description = db.Column(db.String(120))
+    policy = db.Column(JSONType)
 
 
-class Token(Model):
+class Token(dbModel):
     """A model for an Authentication Token
     """
-    id = Column(UUIDType(binary=False), primary_key=True)
-    created = Column(DateTime, default=datetime.utcnow)
-    expiry = Column(DateTime)
-    ip_address = Column(IPAddressType)
-    user_agent = Column(String(80))
-    last_access = Column(DateTime, default=datetime.utcnow)
+    id = db.Column(UUIDType(binary=False), primary_key=True)
+    created = db.Column(db.DateTime, default=datetime.utcnow)
+    expiry = db.Column(db.DateTime)
+    ip_address = db.Column(IPAddressType)
+    last_access = db.Column(db.DateTime, default=datetime.utcnow)
     # when true, this is a session token, otherwise it is a personal token
-    session = Column(Boolean, default=True)
-    description = Column(String(256))
+    session = db.Column(db.Boolean, default=False)
+    description = db.Column(db.String(256))
 
     @declared_attr
     def user_id(cls):
-        return Column(Integer, ForeignKey('user.id', ondelete='CASCADE'))
+        return db.Column(
+            UUIDType,
+            db.ForeignKey('user.id', ondelete='CASCADE')
+        )
 
     @declared_attr
     def user(cls):
@@ -123,30 +131,37 @@ class Token(Model):
         return self.id.hex
 
 
-class Registration(Model):
-    id = Column(UUIDType(binary=False), primary_key=True)
-    expiry = Column(DateTime, nullable=False)
-    type = Column(Integer)
+class Registration(dbModel):
+    id = db.Column(UUIDType(binary=False), primary_key=True)
+    expiry = db.Column(db.DateTime, nullable=False)
+    type = db.Column(db.Enum(RegistrationType))
 
     @declared_attr
     def user_id(cls):
-        return Column(Integer, ForeignKey('user.id', ondelete='CASCADE'))
+        return db.Column(
+            UUIDType,
+            db.ForeignKey('user.id', ondelete='CASCADE')
+        )
 
     @declared_attr
     def user(cls):
         return relationship(
             'User',
-            backref=backref("registrations", cascade="all, delete-orphan"))
+            backref=backref("registrations", cascade="all, delete-orphan")
+        )
 
 
-class MailingList(Model):
-    id = Column(UUIDType(binary=False), primary_key=True)
-    email = Column(String(120), unique=True)
-    topic = Column(String(60))
+class MailingList(dbModel):
+    id = db.Column(UUIDType(binary=False), primary_key=True)
+    email = db.Column(db.String(120), unique=True)
+    topic = db.Column(db.String(60))
 
     @declared_attr
     def user_id(cls):
-        return Column(Integer, ForeignKey('user.id', ondelete='CASCADE'))
+        return db.Column(
+            UUIDType,
+            db.ForeignKey('user.id', ondelete='CASCADE')
+        )
 
     @declared_attr
     def user(cls):

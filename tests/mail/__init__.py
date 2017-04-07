@@ -1,7 +1,7 @@
 from lux.core import LuxExtension
-from lux.extensions import smtp
+from lux.ext import smtp
 
-EXTENSIONS = ['lux.extensions.smtp']
+EXTENSIONS = ['lux.ext.smtp']
 
 DEFAULT_CONTENT_TYPE = 'text/html'
 EMAIL_BACKEND = 'tests.mail.EmailBackend'

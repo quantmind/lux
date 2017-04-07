@@ -1,19 +1,19 @@
 from lux import forms
 from lux.core import LuxExtension
 
-from lux.extensions.admin import register, CRUDAdmin
-from lux.extensions.rest import CRUD
-from lux.extensions.odm import RestModel
+from lux.ext.admin import register, CRUDAdmin
+from lux.ext.rest import RestRouter
+from lux.ext.odm import RestModel
 
 
 from tests.config import *  # noqa
 
 
 EXTENSIONS = [
-    'lux.extensions.base',
-    'lux.extensions.rest',
-    'lux.extensions.odm',
-    'lux.extensions.admin'
+    'lux.ext.base',
+    'lux.ext.rest',
+    'lux.ext.odm',
+    'lux.ext.admin'
 ]
 
 API_URL = 'http://api.com'
@@ -33,7 +33,7 @@ DEFAULT_POLICY = [
 class Extension(LuxExtension):
 
     def api_sections(self, app):
-        return [CRUD(RestModel('blog', 'blog', 'blog', url='blog'))]
+        return [RestRouter(RestModel('blog', 'blog', 'blog', url='blog'))]
 
     def on_loaded(self, app):
         app.forms['blog'] = forms.Layout(BlogForm)

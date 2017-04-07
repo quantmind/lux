@@ -1,11 +1,11 @@
 from unittest import mock
 
 from lux.utils import test
-from lux.extensions.oauth import request_oauths
+from lux.ext.oauth import request_oauths
 
 from example.webalone.config import *  # noqa
 
-EXTENSIONS += ('lux.extensions.oauth',)     # noqa
+EXTENSIONS += ('lux.ext.oauth',)     # noqa
 SESSION_COOKIE_NAME = 'test-oauth'
 
 # Just some dummy values for testing

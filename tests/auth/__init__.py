@@ -2,22 +2,21 @@ from datetime import datetime
 
 from sqlalchemy import Column, Integer, String, Boolean, DateTime
 
-from lux import forms
 from lux.core import LuxExtension
-from lux.extensions.rest import CRUD, RestField
-from lux.extensions.auth.rest import users
-from lux.extensions import odm
+from lux.models import Schema, fields
+from lux.ext.rest import RestRouter
+from lux.ext.odm import Model, model_base
 
 from tests.config import *  # noqa
 
-EXTENSIONS = ['lux.extensions.base',
-              'lux.extensions.rest',
-              'lux.extensions.odm',
-              'lux.extensions.auth']
+EXTENSIONS = ['lux.ext.base',
+              'lux.ext.rest',
+              'lux.ext.odm',
+              'lux.ext.auth']
 
 API_URL = ''
 DEFAULT_CONTENT_TYPE = 'application/json'
-AUTHENTICATION_BACKENDS = ['lux.extensions.auth.TokenBackend']
+AUTHENTICATION_BACKENDS = ['lux.ext.auth.TokenBackend']
 COMING_SOON_URL = 'coming-soon'
 DATASTORE = 'postgresql+green://lux:luxtest@127.0.0.1:5432/luxtests'
 DEFAULT_POLICY = [
@@ -40,14 +39,13 @@ DEFAULT_POLICY = [
     }
 ]
 
-Model = odm.model_base('odmtest')
+dbModel = model_base('odmtest')
 
 
 class Extension(LuxExtension):
 
     def api_sections(self, app):
-        return [UserCRUD(),
-                ObjectiveCRUD(),
+        return [ObjectiveCRUD(),
                 SecretCRUD()]
 
 
@@ -66,28 +64,26 @@ class Secret(Model):
     created = Column(DateTime, default=datetime.utcnow)
 
 
-class ObjectiveForm(forms.Form):
-    subject = forms.CharField(required=False)
-    deadline = forms.CharField(required=False)
-    outcome = forms.CharField(required=False)
-    done = forms.BooleanField(default=False)
+class ObjectiveSchema(Schema):
+    subject = fields.String()
+    deadline = fields.String()
+    outcome = fields.String()
+    done = fields.Boolean(default=False)
 
 
-class SecretForm(forms.Form):
-    value = forms.CharField(required=False)
+class SecretSchema(Schema):
+    value = fields.String(required=False)
 
 
-class ObjectiveCRUD(CRUD):
-    model = odm.RestModel('objective', ObjectiveForm, ObjectiveForm)
+class ObjectiveCRUD(RestRouter):
+    model = Model(
+        'objective',
+        model_schema=ObjectiveSchema
+    )
 
 
-class SecretCRUD(CRUD):
-    model = odm.RestModel('secret', SecretForm, SecretForm)
-
-
-class UserCRUD(users.UserCRUD):
-    """Override user CRUD for testing"""
-    model = users.UserModel.create(
-        updateform='user',
-        fields=[RestField('email', type='email')]
+class SecretCRUD(RestRouter):
+    model = Model(
+        'secrets',
+        model_schema=SecretSchema
     )

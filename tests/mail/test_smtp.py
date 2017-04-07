@@ -1,5 +1,5 @@
 from lux.utils import test
-from lux.extensions.smtp import EmailBackend
+from lux.ext.smtp import EmailBackend
 
 
 class SmtpTest(test.AppTestCase):

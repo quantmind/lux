@@ -6,6 +6,7 @@ from sqlalchemy.exc import DataError
 from sqlalchemy.orm.exc import NoResultFound
 
 from lux.core import app_attribute
+from lux import models
 from lux.utils.auth import ensure_authenticated
 from lux.ext import rest
 from lux.ext.odm import Model
@@ -14,7 +15,7 @@ from .schema import MemberRole
 
 
 OwnedModel = namedtuple('OwnedModel', 'form filters cast')
-
+UniqueField = models.UniqueField
 
 @app_attribute
 def owner_model_targets(app):
@@ -62,11 +63,6 @@ def get_owned_model(request, identifier):
 def get_create_own_model(self, request):
     app = request.app
     target = get_owned_model(request, request.urlargs['model'])
-
-    if request.method == 'OPTIONS':
-        request.app.fire('on_preflight', request,
-                         methods=('GET', 'HEAD', 'POST'))
-        return request.response
 
     odm = app.odm()
     model = self.get_model(request)

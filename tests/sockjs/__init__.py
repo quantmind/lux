@@ -2,16 +2,16 @@ from lux.core import LuxExtension
 
 from tests.config import *  # noqa
 
-EXTENSIONS = ['lux.extensions.base',
-              'lux.extensions.rest',
-              'lux.extensions.odm',
-              'lux.extensions.auth',
-              'lux.extensions.sockjs',
+EXTENSIONS = ['lux.ext.base',
+              'lux.ext.rest',
+              'lux.ext.odm',
+              'lux.ext.auth',
+              'lux.ext.sockjs',
               'tests.odm']
 
 WS_URL = '/testws'
 API_URL = ''
-AUTHENTICATION_BACKENDS = ['lux.extensions.auth.TokenBackend']
+AUTHENTICATION_BACKENDS = ['lux.ext.auth:TokenBackend']
 DATASTORE = 'postgresql+green://lux:luxtest@127.0.0.1:5432/luxtests'
 PUBSUB_STORE = redis_cache_server   # noqa
 DEFAULT_POLICY = [

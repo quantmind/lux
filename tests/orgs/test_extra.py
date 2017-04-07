@@ -2,7 +2,7 @@ from pulsar.api import Http404
 
 from lux.core import CommandError
 from lux.utils import test
-from lux.extensions.organisations.ownership import get_owned_model
+from lux.ext.orgs.ownership import get_owned_model
 
 
 class OrganisationTest(test.TestCase):

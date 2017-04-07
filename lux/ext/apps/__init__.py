@@ -4,8 +4,6 @@ from lux.core import LuxExtension, Parameter
 
 from .rest import ApplicationCRUD, PluginCRUD
 from .auth import AuthBackend
-from .multi import MultiBackend
-from .multiplugins import has_plugin, plugins, Plugin
 
 
 __all__ = [
@@ -22,6 +20,9 @@ class Extension(LuxExtension):
         Parameter('MASTER_APPLICATION_ID', None,
                   "Unique ID of the Master application. The master application"
                   " is assumed by default when no header or JWT is available"),
+        Parameter('APPLICATION_ID_HEADER', 'HTTP_X_APPLICATION_ID',
+                  'Header which stores the application ID'
+                  )
     )
 
     def api_sections(self, app):
@@ -29,24 +30,6 @@ class Extension(LuxExtension):
             ApplicationCRUD(),
             PluginCRUD()
         )
-
-    def __on_config(self, app):
-        multi = app.config.get('APP_MULTI')
-        if not multi:
-            # API domain
-            self.require(app, 'lux.extensions.auth')
-            app.add_events(('on_multi_app',))
-            plugins(app).register(
-                'admin',
-                Plugin(extensions='lux.extensions.admin')
-            )
-        else:
-            app.providers['Api'] = multi.api_client
-
-    def on_multi_app(self, app, config):
-        for plugin in plugins(app):
-            if has_plugin(app, plugin, config):
-                plugin.on_config(config)
 
     def on_jwt(self, app, request, payload):
         app_id = app.config['APPLICATION_ID']

@@ -1,6 +1,6 @@
 from urllib.parse import urlsplit
 
-from lux.extensions.content.github import github_signature
+from lux.ext.content.github import github_signature
 
 from tests import content
 

@@ -3,7 +3,7 @@ from urllib.parse import urlsplit
 from pulsar.api import ImproperlyConfigured
 
 from lux.utils import test
-from lux.extensions.rest import DictModel
+from lux.ext.rest import DictModel
 
 from tests.odm.utils import OdmUtils
 

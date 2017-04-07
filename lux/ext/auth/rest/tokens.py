@@ -1,14 +1,13 @@
 from lux.models import Schema, fields
 from lux.ext.rest import RestRouter
 from lux.ext.odm import Model
-from lux.utils.auth import ensure_authenticated
 
 
 class TokenSchema(Schema):
     user = fields.Nested('UserSchema')
 
     class Meta:
-        model = 'user'
+        model = 'tokens'
 
 
 class NewTokenSchema(Schema):
@@ -18,19 +17,39 @@ class NewTokenSchema(Schema):
                                 html_type='textarea')
 
 
-class TokenModel(Model):
-    """REST model for tokens
-    """
-    def create_model(self, request, instance, data, session=None):
-        user = ensure_authenticated(request)
-        auth = request.cache.auth_backend
-        data['session'] = False
-        return auth.create_token(request, user, **data)
-
-
 class TokenCRUD(RestRouter):
-    model = TokenModel(
+    model = Model(
         'tokens',
         model_schema=TokenSchema,
         create_schema=NewTokenSchema
     )
+
+    def get(self, request):
+        """
+        ---
+        summary: List users
+        tags:
+            - user
+        responses:
+            200:
+                description: List of users matching filters
+                type: array
+                items:
+                    $ref: '#/definitions/User'
+        """
+        return self.model.get_list_response(request)
+
+    def post(self, request):
+        """
+        ---
+        summary: Create a new token
+        tags:
+            - user
+            - token
+        responses:
+            201:
+                description: A new token was succesfully created
+                items:
+                    $ref: '#/definitions/Token'
+        """
+        return self.model.create_response(request)

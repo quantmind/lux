@@ -3,7 +3,7 @@ from urllib.parse import urlparse
 from pulsar.apps.wsgi.utils import query_dict
 
 from lux.utils import test
-from lux.extensions.rest import Pagination
+from lux.ext.rest import Pagination
 
 
 class TestUtils(test.TestCase):

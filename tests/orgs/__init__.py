@@ -2,13 +2,12 @@ from datetime import datetime
 
 from sqlalchemy import Column, Integer, String, DateTime, cast
 
-from lux import forms
 from lux.core import LuxExtension
+from lux.models import Schema, fields
 from lux.utils import test
-from lux.extensions import odm
-from lux.extensions.rest import CRUD
-from lux.extensions.organisations import ownership
-from lux.extensions.applications.info import api_info_routes, python_packages
+from lux.ext import odm
+from lux.ext.rest import RestRouter
+from lux.ext.orgs import ownership
 
 
 class Extension(LuxExtension):
@@ -17,12 +16,6 @@ class Extension(LuxExtension):
         yield ownership.owned_model(
             app, ProjectCrud(), 'name', cast_id=cast_int
         )
-        routes = api_info_routes(app)
-        routes['version'] = self.get_version
-        routes['python'] = python_packages
-
-    def get_version(self, request):
-        return {'version': '0.1.0'}
 
 
 Model = odm.model_base('orgtest')
@@ -37,21 +30,21 @@ class Project(Model):
     created = Column(DateTime, default=datetime.utcnow)
 
 
-class CreateProject(forms.Form):
-    name = forms.SlugField(min_length=2, max_length=32,
-                           validator=ownership.UniqueField('projects'))
-    subject = forms.CharField(max_length=250, required=False)
-    private = forms.BooleanField()
+class CreateProjectSchema(Schema):
+    name = fields.Slug(minLength=2, maxLength=32, required=True,
+                       validate=ownership.UniqueField('projects'))
+    subject = fields.String(maxLength=250)
+    private = fields.Boolean()
 
 
 def cast_int(value):
     return cast(value, Integer)
 
 
-class ProjectCrud(CRUD):
-    model = odm.RestModel(
+class ProjectCrud(RestRouter):
+    model = odm.Model(
         'project',
-        CreateProject
+        create_schema=CreateProjectSchema
     )
 
 

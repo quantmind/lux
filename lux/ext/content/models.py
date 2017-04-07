@@ -1,24 +1,24 @@
 import os
 
-from pulsar.api import Http404
+from pulsar.api import Http404, ImproperlyConfigured
 
 from lux.core import cached
-from lux.extensions.rest import DictModel, RestField, Query
+from lux.models import Schema, fields
+from lux.ext.rest.query import DictModel, Query
 from lux.utils.files import skipfile
 from lux.utils.data import as_tuple
 
 from .contents import get_reader
 
 
-FIELDS = [
-    RestField('priority', sortable=True, type='int'),
-    RestField('order', sortable=True, type='int'),
-    RestField('slug', sortable=True),
-    RestField('group', sortable=True),
-    RestField('title'),
-    RestField('description'),
-    RestField('body')
-]
+class ContentSchema(Schema):
+    priority = fields.Int(sortable=True)
+    order = fields.Int(sortable=True)
+    slug = fields.Slug(required=True, sortable=True)
+    group = fields.String(required=True, sortable=True)
+    title = fields.String(required=True, sortable=True)
+    description = fields.String(sortable=True)
+    body = fields.String(sortable=True)
 
 
 class ContentModel(DictModel):
@@ -26,14 +26,22 @@ class ContentModel(DictModel):
 
     This model provide read-only operations
     '''
-    def __init__(self, location, name='content', fields=None, ext='md', **kw):
+    @property
+    def directory(self):
+        return self.metadata.get('location')
+
+    @property
+    def ext(self):
+        return self.metadata.get('ext', 'md')
+
+    def init_app(self, app):
+        super().init_app(app)
+        location = self.directory
+        if not location:
+            raise ImproperlyConfigured('Content model requires location')
         if not os.path.isdir(location):
             os.makedirs(location)
-        self.directory = location
-        self.ext = ext
-        fields = fields or FIELDS[:]
-        kw['id_field'] = 'slug'
-        super().__init__(name, fields=fields, **kw)
+        return self
 
     def get_query(self, session):
         return ContentQuery(self, session)

@@ -7,10 +7,11 @@ import jwt
 from lux.core import Parameter, LuxExtension, is_html
 
 from .browser import SessionBackend
-from .views import Login, Logout, SignUp, ForgotPassword, Token
+from .views import Login, Logout, SignUp, ForgotPassword, Token, ActionsRouter
 
 
-__all__ = ['SessionBackend']
+__all__ = ['SessionBackend',
+           'ActionsRouter']
 
 
 CSRF_SET = frozenset(('GET', 'HEAD', 'OPTIONS'))

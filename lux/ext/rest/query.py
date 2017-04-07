@@ -1,6 +1,6 @@
 from pulsar.api import Http404
 
-from lux.core import Query as BaseQuery
+from lux import models
 
 
 OPERATORS = {
@@ -11,6 +11,13 @@ OPERATORS = {
     'lt': lambda x, y: x < y,
     'le': lambda x, y: x <= y
 }
+
+
+class DictModel(models.Model):
+
+    def session(self, request):
+        return Query(self, request)
+
 
 
 class RestSession:
@@ -35,7 +42,7 @@ class RestSession:
         pass
 
 
-class Query(BaseQuery):
+class Query(models.Query):
     _data = None
     _limit = None
     _offset = None

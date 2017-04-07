@@ -1,5 +1,7 @@
+from collections import MutableMapping
+
 import marshmallow as ma
-from marshmallow import class_registry
+from marshmallow import class_registry, post_load
 from marshmallow.exceptions import RegistryError
 
 from . import context
@@ -13,6 +15,40 @@ __all__ = [
 
 class ModelSchemaError(Exception):
     pass
+
+
+class SessionData(MutableMapping):
+    __slots__ = ('data', 'session')
+
+    def __init__(self, data, session):
+        self.data = data
+        self.session = session
+
+    def __repr__(self):
+        return repr(self.data)
+
+    def __getitem__(self, key):
+        return self.data[key]
+
+    def __delitem__(self, key):
+        del self.data[key]
+
+    def __setitem__(self, key, value):
+        self.data[key] = value
+
+    def __len__(self):
+        return len(self.data)
+
+    def __iter__(self):
+        return self.data.__iter__()
+
+    @property
+    def request(self):
+        return self.session.request
+
+    @property
+    def config(self):
+        return self.session.request.config
 
 
 class SchemaOpts(ma.SchemaOpts):
@@ -31,6 +67,16 @@ class Schema(ma.Schema):
         if self.opts.model:
             self._declared_fields = get_model_fields(type(self), app)
         super().__init__(*args, **kwargs)
+
+    def load(self, data, session, *args, **kwargs):
+        return super().load(SessionData(data, session), *args, **kwargs)
+
+    @post_load
+    def _(self, data):
+        self.post_load(data)
+
+    def post_load(self, data):
+        pass
 
 
 class schema_registry:

@@ -1,7 +1,7 @@
 from pulsar.utils.structures import AttributeDictionary
 from pulsar.api import Http404
 
-from lux.extensions.sitemap import Sitemap, SitemapIndex
+from lux.ext.sitemap import Sitemap, SitemapIndex
 from lux.core import cached, Template
 from lux import core
 

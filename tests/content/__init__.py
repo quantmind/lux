@@ -12,8 +12,8 @@ CONTENT_REPO = os.path.join(os.path.dirname(__file__), 'test_repo')
 
 GITHUB_HOOK_KEY = 'test12345'
 
-EXTENSIONS = ['lux.extensions.rest',
-              'lux.extensions.content']
+EXTENSIONS = ['lux.ext.rest',
+              'lux.ext.content']
 AUTHENTICATION_BACKENDS = ['lux.core:SimpleBackend']
 CONTENT_GROUPS = {
     "blog": {

@@ -1,12 +1,5 @@
-import logging
-
-from pulsar.apps.wsgi import route
-
-from lux.core import GET_HEAD, Resource
-from lux.extensions.rest import CRUD
-
-
-logger = logging.getLogger('lux.extensions.content')
+from lux.core import Resource
+from lux.ext.rest import RestRouter, route
 
 
 def check_permission_dict(group, action):
@@ -16,19 +9,11 @@ def check_permission_dict(group, action):
     }
 
 
-class ContentCRUD(CRUD):
+class ContentCRUD(RestRouter):
     """REST API view for content
     """
-    @route('<path:slug>',
-           method=('get', 'post', 'put', 'delete', 'head', 'options'))
-    def read_update_delete(self, request):
-        return super().read_update_delete(request)
-
-    @route('_links', method=('get', 'head', 'options'))
-    def _links(self, request):
-        if request.method == 'OPTIONS':
-            request.app.fire('on_preflight', request, methods=GET_HEAD)
-            return request.response
+    @route('links')
+    def get_links(self, request):
         data = self.get_list(
             request,
             load_only=('title', 'description', 'slug', 'url'),
@@ -39,3 +24,8 @@ class ContentCRUD(CRUD):
             **{'order:gt': 0, 'priority:gt': 0}
         )
         return self.json_response(request, data)
+
+    @route('<path:slug>',
+           method=('get', 'post', 'put', 'delete', 'head', 'options'))
+    def read_update_delete(self, request):
+        return super().read_update_delete(request)

@@ -1,16 +1,6 @@
-from pulsar.api import Http404, BadRequest, Http401, MethodNotAllowed
+from pulsar.api import BadRequest, Http401, MethodNotAllowed
 
 from lux.ext.rest import RestRouter
-
-
-def auth_form(request, form):
-    form = get_form_class(request, form)
-    if not form:
-        raise Http404
-
-    request.set_response_content_type(['application/json'])
-
-    return form(request, data=request.body_data())
 
 
 def ensure_service_user(request, errorCls=None):

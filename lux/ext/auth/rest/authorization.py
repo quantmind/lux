@@ -1,18 +1,16 @@
 from pulsar.api import Http401, BadRequest
 
-from lux.core import AuthenticationError
-from lux.models import Schema, fields, validators
+from lux.models import Schema, fields, validators, ValidationError
 from lux.utils.date import date_from_now
 from lux.ext.rest import RestRouter
-from lux.ext.odm import Model
+from lux.ext.odm import Model, object_session
 
-from . import auth_form, ensure_service_user
+from . import ensure_service_user
 
 
 class LoginSchema(Schema):
     """The Standard login schema
     """
-    error_message = 'Incorrect username or password'
     username = fields.Slug(
         required=True,
         minLength=2,
@@ -32,49 +30,66 @@ class AuthorizeSchema(LoginSchema):
     user_agent = fields.String()
     ip_address = fields.String()
 
+    def post_load(self, token):
+        """Perform authentication if possible
+        """
+        session = object_session(token)
+        token.user = self.authenticate(token)
+        maxexp = date_from_now(session.config['MAX_TOKEN_SESSION_EXPIRY'])
+        token.session = True
+        token.expiry = min(token.expiry or maxexp, maxexp)
+
+    def authenticate(self, token):
+        raise ValidationError('Invalid username or password')
+
+    class Meta:
+        model = 'token'
+
 
 class Authorization(RestRouter):
     """Authentication views for Restful APIs
     """
     model = Model(
         'authorizations',
-        post_form=AuthorizeSchema,
-        url='authorizations',
-        exclude=('user_id',)
+        create_schema=AuthorizeSchema
     )
 
     def head(self, request):
         """
+        ---
         summary: Check token validity
         description: Check validity of the token in the
             Authorization header. It works for both user and
             application tokens.
-
+        tags:
+            - auth
         responses:
             200:
-                Token is valid
+                description: Token is valid
             400:
-                Bad Token
+                description: Bad Token
             401:
-                Token is expired or not available
+                description: Token is expired or not available
         """
-        if not request.cache.token:
+        if not request.cache.get('token'):
             raise Http401
         return request.response
 
     def post(self, request):
         """
+        ---
         summary: Perform a login operation
         description: The headers must contain a valid token
             signed by the application sending the request
-
+        tags:
+            - auth
         responses:
             201:
                 description: Successful response
                 schema:
                     $ref: '#/definitions/Token'
             400:
-                description: Bad Application Token
+                description: Bad Application Token or payload not valid JSON
                 schema:
                     $ref: '#/definitions/ErrorMessage'
             401:
@@ -91,40 +106,16 @@ class Authorization(RestRouter):
                     $ref: '#/definitions/ErrorMessage'
         """
         ensure_service_user(request)
-        model = self.get_model(request)
-        form = auth_form(request, model.form)
-
-        if form.is_valid():
-            model = self.get_model(request)
-            auth_backend = request.cache.auth_backend
-            data = form.cleaned_data
-            maxexp = date_from_now(request.config['MAX_TOKEN_SESSION_EXPIRY'])
-            expiry = min(data.pop('expiry', maxexp), maxexp)
-            user_agent = data.pop('user_agent', None)
-            ip_address = data.pop('ip_address', None)
-            try:
-                user = auth_backend.authenticate(request, **data)
-                token = auth_backend.create_token(request, user,
-                                                  expiry=expiry,
-                                                  description=user_agent,
-                                                  ip_address=ip_address,
-                                                  session=True)
-            except AuthenticationError as exc:
-                form.add_error_message(str(exc))
-                data = form.tojson()
-            else:
-                request.response.status_code = 201
-                data = model.tojson(request, token)
-        else:
-            data = form.tojson()
-        return self.json_response(request, data)
+        return self.create_response(request)
 
     def delete(self, request):
         """
+        ---
         summary: Delete the token used by the authenticated User
         description: A valid bearer token must be available in the
             Authorization header
-
+        tags:
+            - auth
         responses:
             204:
                 description: Token was successfully deleted
@@ -137,11 +128,9 @@ class Authorization(RestRouter):
                 schema:
                     $ref: '#/definitions/ErrorMessage'
         """
+        token = request.cache.get('token')
         if not request.cache.user.is_authenticated():
-            if not request.cache.token:
-                raise Http401('Token')
+            if not token:
+                raise Http401
             raise BadRequest
-        model = request.app.models['tokens']
-        model.delete_model(request, request.cache.token)
-        request.response.status_code = 204
-        return request.response
+        return self.delete_one_response(request, token)

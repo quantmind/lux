@@ -1,5 +1,3 @@
-"""Database modles for storuing lightstream metadata
-"""
 from sqlalchemy import Column, String, ForeignKey
 from sqlalchemy.orm import relationship
 
@@ -45,9 +43,6 @@ class AppPlugin(Model):
     @declared_attr
     def app(cls):
         return relationship("AppDomain", backref='plugins')
-
-    def __str__(self):
-        return self.name
 
 
 class AppDomain(Model):

@@ -10,6 +10,7 @@ built on top of sqlalchemy, pulsar and greenlet.
 _ ..pulsar-odm: https://github.com/quantmind/pulsar-odm
 """
 from odm import declared_attr
+from odm.mapper import object_session
 
 from lux.core import Parameter, LuxExtension
 
@@ -21,9 +22,9 @@ from .migrations import migrations
 __all__ = ['model_base',
            'ModelSchema',
            'declared_attr',
-           'RestModel',
-           'RestField',
-           'migrations']
+           'Model',
+           'migrations',
+           'object_session']
 
 
 sql_delete = 'delete'

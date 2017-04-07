@@ -40,7 +40,8 @@ class ApplicationSchema(Schema):
         ace=json.dumps({'mode': 'json'})
     )
     plugins = fields.List(
-        fields.Nested(AppPluginSchema)
+        fields.Nested(AppPluginSchema),
+        description='List of enabled plugins with configuration'
     )
 
     class Meta:

@@ -7,7 +7,11 @@ from pulsar.api import (
 )
 from pulsar.apps.wsgi import route
 
-from lux.core import JsonRouter, WebFormRouter
+from lux.core import JsonRouter, WebFormRouter, HtmlRouter
+
+
+class ActionsRouter(HtmlRouter):
+    pass
 
 
 class Login(WebFormRouter):

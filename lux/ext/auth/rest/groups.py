@@ -1,5 +1,5 @@
-from lux.models import Schema, fields, UniqueField, registry, html
-from lux.ext.rest import RestRouter
+from lux.models import Schema, fields, UniqueField
+from lux.ext.rest import RestRouter, route
 from lux.ext.odm import Model
 
 
@@ -42,18 +42,24 @@ class GroupCRUD(RestRouter):
                 schema:
                     $ref: '#/definitions/ErrorMessage'
         """
-        return self.model.get_list(request)
+        return self.model.get_list_response(request)
 
-
-registry['create-group'] = html.Layout(
-    GroupSchema,
-    html.Fieldset(all=True),
-    html.Submit('Create new group')
-)
-
-
-registry['group'] = html.Layout(
-    GroupSchema,
-    html.Fieldset(all=True),
-    html.Submit('Update group')
-)
+    @route('<id>')
+    def get_one(self, request):
+        """
+        ---
+        summary: get a group by its id or name
+        tags:
+            - user
+            - group
+        responses:
+            200:
+                description: a list of groups
+                schema:
+                    $ref: '#/definitions/User'
+            401:
+                description: not authenticated
+                schema:
+                    $ref: '#/definitions/ErrorMessage'
+        """
+        return self.model.get_one_response(request)

@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from copy import copy
+from inspect import isclass
 
 from pulsar.api import UnprocessableEntity
 
@@ -87,10 +88,23 @@ class Model(ABC, Component):
         * ``delete(model)`: delete a model
         """
 
+    def get_schema(self, schema):
+        if isclass(schema):
+            schema = schema()
+        return schema
+
     def get_query(self, session):
         """Create a new :class:`.Query` from a session
         """
         return session
+
+    def get_one_response(self, request, instance=None, schema=None):
+        with self.session(request) as session:
+            if instance is None:
+                instance = self.get_one(session)
+            schema = self.get_schema(schema or self.model_schema)
+            data = schema.dump(instance).data
+        return request.json_response(data)
 
     def create_response(self, request, schema=None):
         """Create a new instance and return a response
@@ -101,9 +115,25 @@ class Model(ABC, Component):
             model, errors = schema.load(data, session=session)
             if errors:
                 raise UnprocessableEntity(errors)
+            session.add(model)
             session.flush()
-            data, _ = schema.dumps(model)
-            return request.json_response(data, 201)
+            data = schema.dumps(model).data
+        return request.json_response(data, 201)
+
+    def get_list_response(self, request):
+        pass
+
+    def delete_one_response(self, request, instance=None):
+        with self.session(request) as session:
+            if instance is None:
+                instance = self.get_one(session)
+            session.delete(instance)
+        request.response.status_code = 204
+        return request.response
+
+    def get_one(self, session, *filters, **kwargs):
+        query = self.query(session, *filters, **kwargs)
+        return query.one()
 
     def instance(self, o=None, fields=None):
         """Return a :class:`.ModelInstance`
@@ -225,55 +255,3 @@ class Model(ABC, Component):
         """Validate fields values
         """
         pass
-
-
-class ModelInstance:
-    __slots__ = ('model', 'obj', 'fields')
-
-    def __init__(self, model, obj, fields=None):
-        self.model = model
-        self.obj = obj
-        self.fields = fields
-        try:
-            obj._model_instance = self
-        except Exception:
-            pass
-
-    @property
-    def id(self):
-        return self.get(self.model.id_field)
-
-    def __repr__(self):
-        return repr(self.obj)
-
-    def __str__(self):
-        return str(self.obj)
-
-    def __eq__(self, other):
-        return isinstance(other, self.__class__) and self.id == other.id
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    def __getattr__(self, name):
-        return self.model.get_instance_value(self, name)
-
-    @classmethod
-    def create(cls, model, obj, fields=None):
-        if hasattr(obj, '_model_instance'):
-            return obj._model_instance
-        return cls(model, obj, fields)
-
-    @classmethod
-    def get_model(cls, obj):
-        if hasattr(obj, '_model_instance'):
-            return obj._model_instance.model
-
-    def has(self, field):
-        return self.fields is None or field in self.fields
-
-    def set(self, name, value):
-        self.model.set_instance_value(self, name, value)
-
-    def get(self, name):
-        return self.model.get_instance_value(self, name)

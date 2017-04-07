@@ -1,7 +1,7 @@
 from unittest import mock
 
 from lux.utils import test
-from lux.extensions.admin import Admin
+from lux.ext.admin import Admin
 
 
 class AdminTest(test.AppTestCase):
@@ -16,7 +16,7 @@ class AdminTest(test.AppTestCase):
 
     async def test_app(self):
         request = await self.client.get('/admin')
-        admin = request.app.extensions['lux.extensions.admin'].admin
+        admin = request.app.extensions['lux.ext.admin'].admin
         self.assertIsInstance(admin, Admin)
         sitemap = admin.sitemap(request)
         self.assertTrue(sitemap)

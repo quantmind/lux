@@ -3,12 +3,12 @@ import os
 from tests.config import redis_cache_server
 
 EXTENSIONS = (
-    'lux.extensions.base',
-    'lux.extensions.rest',
-    'lux.extensions.content',
-    'lux.extensions.admin',
-    'lux.extensions.auth',
-    'lux.extensions.odm'
+    'lux.ext.base',
+    'lux.ext.rest',
+    'lux.ext.content',
+    'lux.ext.admin',
+    'lux.ext.auth',
+    'lux.ext.odm'
 )
 
 

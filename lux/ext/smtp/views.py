@@ -1,26 +1,17 @@
 from pulsar.api import MethodNotAllowed, as_coroutine
 
-from lux import forms
-from lux.forms import WebFormRouter, Layout, Fieldset, Submit, formreg
+from lux.core import WebFormRouter
+from lux.models import Schema, fields
 
 
-class ContactForm(forms.Form):
+class ContactSchema(Schema):
     """
     The base contact form class from which all contact form classes
     should inherit.
     """
-    name = forms.CharField(max_length=100, label='Your name')
-    email = forms.EmailField(max_length=200, label='Your email address')
-    body = forms.TextField(label='Your message', rows=10)
-
-
-formreg['contact'] = Layout(
-    ContactForm,
-    Fieldset(all=True, showLabels=False),
-    Submit('Send', disabled="form.$invalid"),
-    labelSrOnly=True,
-    resultHandler='replace'
-)
+    name = fields.String(maxLength=100, label='Your name')
+    email = fields.Email(label='Your email address')
+    body = fields.String(label='Your message', rows=10)
 
 
 class ContactRouter(WebFormRouter):

@@ -2,10 +2,24 @@
 """
 from pulsar.api import MethodNotAllowed
 
-from lux.models import fields
+from lux.models import Schema, fields, ValidationError
 
-from .registrations import RegistrationModel, PasswordSchema
+from .registrations import (
+    RegistrationModel, PasswordSchema, RegistrationSchema
+)
 from . import ServiceCRUD, ensure_service_user
+from ..models import RegistrationType
+
+
+class ChangePasswordRequestSchema(Schema):
+    email = fields.Email(required=True)
+
+    def post_load(self, data):
+        user = self.get_user(data.request, data['email'])
+        return self.create_model(data.session, user, RegistrationType.password)
+
+    def get_user(self, request, email):
+        raise ValidationError("Can't find user, sorry")
 
 
 class ChangePasswordSchema(PasswordSchema):
@@ -47,7 +61,7 @@ class PasswordsCRUD(ServiceCRUD):
     """
     model = PasswordResetModel(
         'passwords',
-        form='password-recovery',
+        model_schema=RegistrationSchema,
         postform='reset-password',
         type=2
     )

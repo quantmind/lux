@@ -5,7 +5,7 @@ from functools import partial
 
 import pytz
 
-from sqlalchemy import Column, desc, String
+from sqlalchemy import desc, String
 from sqlalchemy.orm import class_mapper, load_only
 from sqlalchemy.orm.base import instance_state
 from sqlalchemy.sql.expression import func, cast
@@ -16,8 +16,6 @@ from sqlalchemy.orm.exc import (NoResultFound, MultipleResultsFound,
 from marshmallow_sqlalchemy import property2field
 
 from pulsar.api import Http404
-
-from odm.utils import get_columns
 
 from lux.core import app_attribute
 from lux.utils.crypt import as_hex

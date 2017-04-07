@@ -19,7 +19,8 @@ from pulsar.apps.http import HttpWsgiClient
 from pulsar.utils.system import json as _json
 from pulsar.apps.test import test_timeout, sequential, test_wsgi_request
 
-from lux.core import App, AppComponent
+from lux.core import App
+from lux.models import Component
 from lux.core.commands.generate_secret_key import generate_secret
 
 from .token import app_token
@@ -184,12 +185,12 @@ async def load_fixtures(app, path=None, api_url=None, testuser=None,
     logger.info('Created %s objects', total)
 
 
-class TestClient(HttpWsgiClient, AppComponent):
+class TestClient(HttpWsgiClient, Component):
     """An utility for simulating lux clients
     """
     def __init__(self, app):
         super().__init__(app)
-        AppComponent.__init__(self, app)
+        self.init_app(app)
 
     def run_command(self, command, argv=None, **kwargs):
         """Run a lux command"""
