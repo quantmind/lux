@@ -7,12 +7,6 @@ from marshmallow.exceptions import RegistryError
 from . import context
 
 
-__all__ = [
-    'Schema',
-    'schema_registry'
-]
-
-
 class ModelSchemaError(Exception):
     pass
 
@@ -50,6 +44,10 @@ class SessionData(MutableMapping):
     def config(self):
         return self.session.request.config
 
+    @classmethod
+    def object_session(cls, obj):
+        return obj.session
+
 
 class SchemaOpts(ma.SchemaOpts):
 
@@ -62,18 +60,28 @@ class SchemaOpts(ma.SchemaOpts):
 
 class Schema(ma.Schema):
     OPTIONS_CLASS = SchemaOpts
+    model = SessionData
+    session = None
+    TYPE_MAPPING = ma.Schema.TYPE_MAPPING.copy()
 
     def __init__(self, *args, app=None, **kwargs):
         if self.opts.model:
-            self._declared_fields = get_model_fields(type(self), app)
+            self._declared_fields = get_model_fields(self, app)
+        self.app = app
         super().__init__(*args, **kwargs)
 
-    def load(self, data, session, *args, **kwargs):
-        return super().load(SessionData(data, session), *args, **kwargs)
+    def load(self, data, *, session=None, **kwargs):
+        if session:
+            self.session = session
+            return super().load(data, **kwargs)
+        else:
+            return data, None
 
     @post_load
     def _(self, data):
-        self.post_load(data)
+        data = self.model(data, self.session)
+        self.session = None
+        return self.post_load(data) or data
 
     def post_load(self, data):
         pass
@@ -99,17 +107,20 @@ class schema_registry:
                                 % classname) from None
 
 
-def get_model_fields(schema_cls, app):
+def get_model_fields(schema, app):
     app = app or context.get('app')
     if not app:
         raise ModelSchemaError('missing application')
+    schema_cls = type(schema)
     opts = schema_cls.opts
     model = app.models.get(opts.model)
     if not model:
-        raise ModelSchemaError('application has no model %s. Available %s'
+        raise ModelSchemaError('application has no model "%s". Available: %s'
                                % (opts.model, ', '.join(app.models)))
+    schema.model = model
     base_fields = schema_cls._declared_fields.copy()
     return model.fields_map(
         include_fk=opts.include_fk, fields=opts.fields, exclude=opts.exclude,
         base_fields=base_fields
     )
+

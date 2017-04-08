@@ -23,7 +23,9 @@ def digest(value, salt_size=8):
     return sha1(salt+value.encode('utf-8')).hexdigest()
 
 
-def create_uuid():
+def create_uuid(id=None):
+    if isinstance(id, uuid.UUID):
+        return id
     return uuid.uuid4()
 
 

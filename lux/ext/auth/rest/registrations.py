@@ -5,11 +5,12 @@ from pulsar.api import PermissionDenied, Http404
 from lux.core import route, http_assert
 from lux.utils.crypt import digest
 from lux.utils.date import date_from_now
+from lux.ext.rest import RestRouter
 from lux.models import Schema, fields, ValidationError
 
 from lux.ext.odm import Model
 
-from . import ServiceCRUD, ensure_service_user
+from . import ensure_service_user
 from ..models import RegistrationType
 
 
@@ -97,7 +98,7 @@ class RegistrationModel(Model):
             session.delete(reg)
 
 
-class RegistrationCRUD(ServiceCRUD):
+class RegistrationCRUD(RestRouter):
     model = RegistrationModel(
         "registrations",
         model_schema=RegistrationSchema,
@@ -133,6 +134,7 @@ class RegistrationCRUD(ServiceCRUD):
                 schema:
                     $ref: '#/definitions/Registration'
         """
+        ensure_service_user(request)
         return self.model.create_response(request)
 
     @route('<id>/activate')

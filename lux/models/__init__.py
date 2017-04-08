@@ -3,7 +3,7 @@
 * Marshmallow Schemas
 * SqlAlchemy models
 """
-from marshmallow import fields, ValidationError
+from marshmallow import ValidationError
 from marshmallow.validate import OneOf
 
 import inflect
@@ -11,12 +11,10 @@ import inflect
 from .schema import Schema, schema_registry
 from .component import Component
 from .model import ModelContainer, Model
-from .query import Query
-from .extra import Slug, Password
+from .query import Query, Session
 from .unique import UniqueField
 from .registry import registry, get_form, get_form_class, get_form_layout
 from . import html
-
 
 inflect = inflect.engine()
 
@@ -24,7 +22,6 @@ inflect = inflect.engine()
 __all__ = [
     'Schema',
     'Component',
-    'fields',
     'html',
     'ValidationError',
     'schema_registry',
@@ -40,10 +37,7 @@ __all__ = [
     #
     'ModelContainer',
     'Model',
+    'Session',
     'Query',
     'UniqueField'
 ]
-
-
-fields.Password = Password
-fields.Slug = Slug

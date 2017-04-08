@@ -1,6 +1,9 @@
+from datetime import datetime
+
 from lux.models import Schema, fields
 from lux.ext.rest import RestRouter
-from lux.ext.odm import Model
+
+from . import Model
 
 
 class TokenSchema(Schema):
@@ -10,15 +13,26 @@ class TokenSchema(Schema):
         model = 'tokens'
 
 
-class NewTokenSchema(Schema):
+class NewTokenSchema(TokenSchema):
     """Create a new Authorization ``Token`` for the authenticated ``User``.
     """
     description = fields.String(required=True, minLength=2, maxLength=256,
                                 html_type='textarea')
 
 
+
+class TokenModel(Model):
+
+    def get_one(self, session, *filters, **kwargs):
+        query = self.query(session, *filters, **kwargs)
+        token = query.one()
+        query.update({'last_access': datetime.utcnow()},
+                     synchronize_session=False)
+        return token
+
+
 class TokenCRUD(RestRouter):
-    model = Model(
+    model = TokenModel(
         'tokens',
         model_schema=TokenSchema,
         create_schema=NewTokenSchema

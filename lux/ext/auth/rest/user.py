@@ -1,12 +1,24 @@
 from pulsar.api import Http401
+from pulsar.utils.importer import module_attribute
 
 from lux.core import route
-from lux.ext.odm import Model
 from lux.ext.rest import RestRouter, user_permissions
 from lux.models import fields, Schema
 
+from . import Model
+
 
 URI = 'users'
+
+
+def validate_username(session, username):
+    module_attribute(session.config['CHECK_USERNAME'])(session, username)
+
+
+class FullUserSchema(Schema):
+
+    class Meta:
+        model = URI
 
 
 class UserSchema(Schema):
@@ -20,7 +32,14 @@ class UserSchema(Schema):
 
     class Meta:
         exclude = ('password', 'superuser')
-        # model = URI
+        model = URI
+
+
+class UserQuerySchema(Schema):
+
+    class Meta:
+        exclude = ('password', 'groups')
+        model = URI
 
 
 class UserModel(Model):
@@ -33,12 +52,17 @@ class UserModel(Model):
         """When authenticated is True return the current user or
         raise Http401
         """
-        if self.authenticated:
+        if self.authenticated and not (args or kwargs):
             user = session.request.cache.get('user')
             if not user.is_authenticated():
-                raise Http401
+                raise Http401('token')
             return user
-        return super().get_instance(session, *args, **kwargs)
+        return super().get_one(session, *args, **kwargs)
+
+    def create_one(self, session, data, schema=None):
+        validate_username(session, data.get('username'))
+        data['password'] = session.auth.password(data.get('password'))
+        return super().create_one(session, data, schema)
 
 
 class UserRest(RestRouter):
@@ -50,6 +74,7 @@ class UserRest(RestRouter):
         'user',
         model_schema=UserSchema,
         update_schema=UserSchema,
+        query_schema=UserQuerySchema,
         authenticated=True
     )
 

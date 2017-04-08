@@ -1,21 +1,19 @@
-import json
 from datetime import date, datetime
-from enum import Enum
 from functools import partial
-
-import pytz
 
 from sqlalchemy import desc, String
 from sqlalchemy.orm import class_mapper, load_only
-from sqlalchemy.orm.base import instance_state
 from sqlalchemy.sql.expression import func, cast
 from sqlalchemy.exc import DataError, StatementError
 from sqlalchemy.orm.exc import (NoResultFound, MultipleResultsFound,
                                 ObjectDeletedError)
 
-from marshmallow_sqlalchemy import property2field
+from marshmallow_sqlalchemy import ModelConverter
 
 from pulsar.api import Http404
+from pulsar.utils.log import lazyproperty
+
+from odm.mapper import object_session
 
 from lux.core import app_attribute
 from lux.utils.crypt import as_hex
@@ -23,6 +21,9 @@ from lux import models
 
 
 MissingObjectError = (DataError, NoResultFound, StatementError)
+default_converter = ModelConverter(models.Schema)
+property2field = default_converter.property2field
+column2field = default_converter.column2field
 
 
 class Query(models.Query):
@@ -30,14 +31,9 @@ class Query(models.Query):
 
     def __init__(self, model, session):
         super().__init__(model, session)
-        self.request = session.request
-        self.sql_query = session.query(model.db_model())
+        self.sql_query = session.query(model.db_model)
         self.joins = set()
         self.app.fire('on_query', self)
-
-    @property
-    def logger(self):
-        return self.request.logger
 
     def count(self):
         return self._query().count()
@@ -45,15 +41,14 @@ class Query(models.Query):
     def one(self):
         query = self._query()
         try:
-            one = query.one()
+            return query.one()
         except MissingObjectError:
             raise Http404
         except MultipleResultsFound:
             self.logger.error('%s - Multiple result found for model %s. '
                               'Returning the first' %
                               (self.request.first_line, self.name))
-            one = query.first()
-        return self.model.instance(one, self.fields)
+            return query.first()
 
     def all(self):
         model = self.model
@@ -106,10 +101,12 @@ class Query(models.Query):
         :return:
         """
         app = self.app
-        odm = app.odm()
         query = self.sql_query
+        model = field.parent.model
+        db_model = model.db_model
+        field = getattr(db_model, field.name, None)
 
-        if field.model:
+        if not field and False:
             field_model = self.app.models.get(field.model)
             if not field_model:
                 return
@@ -122,13 +119,6 @@ class Query(models.Query):
             if field_model.identifier not in self.joins:
                 self.joins.add(field_model.identifier)
                 query = query.join(db_model)
-        elif isinstance(field.field, str):
-            field = getattr(self.model.db_model(), field.name, None)
-        else:
-            field = None
-
-        if not field:
-            return
 
         multiple = isinstance(value, (list, tuple))
 
@@ -150,6 +140,7 @@ class Query(models.Query):
             elif op == 'ne':
                 query = query.filter(field != value)
             elif op == 'search':
+                odm = app.odm()
                 dialect_name = odm.binds[odm[self.name].__table__].dialect.name
                 if dialect_name == 'postgresql':
                     ts_config = field.info.get(
@@ -192,9 +183,13 @@ class Model(models.Model):
     '''A rest model based on SqlAlchemy ORM
     '''
     property2field = property2field
+    object_session = object_session
+    primary_keys = None
 
     @property
     def db_name(self):
+        """name of the database model
+        """
         name = self.metadata.get('db_name')
         if not name:
             name = self.uri.split('/')[-1]
@@ -204,79 +199,42 @@ class Model(models.Model):
 
     @property
     def db_model(self):
-        '''Database model
-        '''
+        """Database model class
+        """
         if self.app:
             return self.app.odm()[self.db_name]
 
-    def session(self, request, session=None):
-        return self.app.odm().begin(request=request, session=session)
+    @lazyproperty
+    def primary_keys(self):
+        mapper = self.db_model.__mapper__
+        return tuple((
+            mapper.get_property_by_column(column)
+            for column in mapper.primary_key
+        ))
+
+    def __call__(self, data, session):
+        db_model = self.db_model
+        pks = self.primary_keys
+        filters = {pk.key: data.get(pk.key) for pk in pks}
+        instance = None
+        if None not in filters.values():
+            try:
+                instance = self.get_one(session, **filters)
+            except Http404:
+                pass
+        if instance is not None:
+            for key, value in data.items():
+                setattr(instance, key, value)
+        else:
+            instance = db_model(**data)
+        session.add(instance)
+        return instance
+
+    def session(self, request=None):
+        return self.app.odm().begin(request=request)
 
     def get_query(self, session):
         return Query(self, session)
-
-    def create_instance(self):
-        """Return an instance of the Sql model"""
-        return self.db_model()()
-
-    def tojson(self, request, instance, in_list=False, exclude=None,
-               exclude_related=None, safe=False, **kw):
-        instance = self.instance(instance)
-        obj = instance.obj
-        if instance_state(obj).detached:
-            with self.session(request) as session:
-                session.add(obj)
-                return self.tojson(request, instance, in_list=in_list,
-                                   exclude_related=exclude_related, safe=safe,
-                                   exclude=exclude, **kw)
-        info = self._fields
-        exclude = info.exclude(exclude, exclude_urls=True)
-        load_only = instance.fields
-
-        fields = {}
-        for field in self.fields().values():
-            name = field.name
-            if name in exclude or (load_only and name not in load_only):
-                continue
-            try:
-                data = self.get_instance_value(instance, name)
-                if isinstance(data, date):
-                    if isinstance(data, datetime) and not data.tzinfo:
-                        data = pytz.utc.localize(data)
-                    data = data.isoformat()
-                elif isinstance(data, Enum):
-                    data = data.name
-                elif is_rel_field(field):
-                    if exclude_related:
-                        continue
-                    model = request.app.models.get(field.model)
-                    if model:
-                        data = self._related_model(request, model, data,
-                                                   in_list)
-                    else:
-                        data = None
-                        request.logger.error(
-                            'Could not find model %s', field.model)
-                else:  # Test Json
-                    json.dumps(data)
-            except TypeError:
-                try:
-                    data = str(data)
-                except Exception:
-                    continue
-            except ObjectDeletedError:
-                raise ModelNotAvailable from None
-            except Exception:
-                if not safe:
-                    request.logger.exception(
-                        'Exception while converting attribute "%s" in model '
-                        '%s to JSON', name, self)
-                continue
-            if data is not None:
-                if isinstance(data, list):
-                    name = '%s[]' % name
-                fields[name] = data
-        return self.instance_urls(request, instance, fields)
 
     def get_instance_value(self, instance, name):
         try:
@@ -383,7 +341,7 @@ class Model(models.Model):
                 continue
             if hasattr(column, 'columns'):
                 if not include_fk:
-                    # Only skip a column if there is no overriden column
+                    # Only skip a column if there is no overridden column
                     # which does not have a Foreign Key.
                     for col in column.columns:
                         if not col.foreign_keys:

@@ -6,6 +6,8 @@ import odm
 
 from pulsar.api import ImproperlyConfigured
 
+from lux import models
+
 __all__ = ['Mapper', 'model_base']
 
 
@@ -34,20 +36,16 @@ class Mapper(odm.Mapper):
     def copy(self, binds):
         return self.__class__(self.app, binds)
 
-    def session(self, **options):
+    def session(self, request=None, **options):
         options['binds'] = self.binds
-        return LuxSession(self, **options)
+        return LuxSession(self, request, **options)
 
 
-class LuxSession(odm.OdmSession):
+class LuxSession(odm.OdmSession, models.Session):
 
     def __init__(self, mapper, request=None, **options):
         super().__init__(mapper, **options)
-        self.request = request
-
-    @property
-    def app(self):
-        return self.mapper.app
+        models.Session.__init__(self, mapper.app, request=request)
 
     def changes(self):
         for targets, operation in ((self.new, 'create'),

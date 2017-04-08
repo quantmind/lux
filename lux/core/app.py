@@ -20,6 +20,7 @@ from pulsar.utils.log import lazyproperty
 from pulsar.utils.importer import module_attribute
 from pulsar.apps.greenio import GreenWSGI, GreenHttp
 from pulsar.apps.http import HttpClient
+from pulsar.apps.test import test_wsgi_request
 from pulsar.utils.string import to_bytes
 from pulsar.utils.slugify import slugify
 
@@ -224,7 +225,7 @@ class Application(ConsoleMixin, LuxExtension, EventMixin):
         self.models = ModelContainer().init_app(self)
         self.extensions = OrderedDict()
         self.config = _build_config(self)
-        self.auth_backend = MultiAuthBackend.from_app(self)
+        self.auth = MultiAuthBackend.from_app(self)
         self.fire('on_config')
 
     def __call__(self, environ, start_response):
@@ -239,8 +240,18 @@ class Application(ConsoleMixin, LuxExtension, EventMixin):
         return self._handler
 
     def environ(self, environ, start_response):
-        config = self.config
         request = wsgi_request(environ)
+        self.on_request(request)
+        self.auth.request(request)
+
+    def wsgi_request(self, **kw):
+        request = self.green_pool.wait(test_wsgi_request(**kw))
+        self.on_request(request)
+        return request
+
+    def on_request(self, request):
+        config = self.config
+        environ = request.environ
         environ['error.handler'] = module_attribute(config['ERROR_HANDLER'])
         environ['default.content_type'] = config['DEFAULT_CONTENT_TYPE']
         request.cache.app = self
@@ -713,8 +724,8 @@ def _build_handler(self):
         self.cms = CMS(self)
 
     extensions = list(self.extensions.values())
-    middleware = [self.environ, self.auth_backend.request]
-    rmiddleware = [self.auth_backend.response]
+    middleware = [self.environ]
+    rmiddleware = [self.auth.response]
     for extension in extensions:
         middle = extension.middleware(self)
         if middle:

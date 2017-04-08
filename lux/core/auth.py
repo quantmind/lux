@@ -8,6 +8,7 @@ from pulsar.apps.wsgi import wsgi_request
 from pulsar.utils.string import to_bytes
 
 from lux.utils.data import as_tuple
+from lux.models import Component
 
 from .user import Anonymous
 
@@ -43,6 +44,10 @@ class AuthBase:
         pass
 
     @backend_action
+    def create_user(self, session, **kwargs):
+        pass
+
+    @backend_action
     def has_permission(self, request, resource, action):
         '''Check if the given request has permission over ``resource``
         element with permission ``action``
@@ -66,7 +71,7 @@ class SimpleBackend(AuthBase):
         return dict(((r, perm.copy()) for r in as_tuple(resources)))
 
 
-class MultiAuthBackend:
+class MultiAuthBackend(Component):
     '''Aggregate several Authentication backends
     '''
     def __init__(self):
@@ -83,16 +88,13 @@ class MultiAuthBackend:
             backend = backend()
             auth.append(backend)
             app.bind_events(backend)
-        return auth
+        return auth.init_app(app)
 
     def append(self, backend):
         self.backends.append(backend)
 
-    def request(self, environ, start_response=None):
-        # Inject self as the authentication backend
-        request = wsgi_request(environ)
+    def request(self, request):
         cache = request.cache
-        cache.auth_backend = self
         cache.user = self.anonymous(request)
         return self._execute_backend_method('request', request)
 
@@ -122,17 +124,17 @@ class MultiAuthBackend:
             raise AttributeError("'%s' object has no attribute '%s'" %
                                  (type(self).__name__, method))
 
-    def _execute_backend_method(self, method, request, *args, **kwargs):
+    def _execute_backend_method(self, method, *args, **kwargs):
         for backend in self:
             backend_method = getattr(backend, method, None)
             if backend_method:
-                wait = request.app.green_pool.wait
-                result = wait(backend_method(request, *args, **kwargs))
+                wait = self.app.green_pool.wait
+                result = wait(backend_method(*args, **kwargs))
                 if result is not None:
                     return result
         default = getattr(self, 'default_%s' % method, None)
         if hasattr(default, '__call__'):
-            return default(request, *args, **kwargs)
+            return default(*args, **kwargs)
 
 
 class PasswordMixin:
@@ -175,8 +177,8 @@ class PasswordMixin:
         return p.decode(self.encoding)
 
     @backend_action
-    def password(self, request, raw_password=None):
-        '''Return an encrypted password
+    def password(self, raw_password=None):
+        '''Return an encrypted password or unusable password
         '''
         if raw_password:
             return self.encrypt(raw_password)
@@ -233,7 +235,7 @@ class Resource:
 
         Return a tuple of fields names or False
         """
-        get = request.cache.auth_backend.get_permissions
+        get = request.app.auth.get_permissions
         resources = [self.resource]
         for name in self.fields or ():
             resources.append('%s:%s' % (self.resource, name))

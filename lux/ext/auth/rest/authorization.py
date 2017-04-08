@@ -3,8 +3,9 @@ from pulsar.api import Http401, BadRequest
 from lux.models import Schema, fields, validators, ValidationError
 from lux.utils.date import date_from_now
 from lux.ext.rest import RestRouter
-from lux.ext.odm import Model, object_session
+from lux.ext.odm import Model
 
+from .tokens import TokenSchema
 from . import ensure_service_user
 
 
@@ -30,20 +31,21 @@ class AuthorizeSchema(LoginSchema):
     user_agent = fields.String()
     ip_address = fields.String()
 
-    def post_load(self, token):
-        """Perform authentication if possible
+    def post_load(self, data):
+        """Perform authentication by creating a session token if possible
         """
-        session = object_session(token)
-        token.user = self.authenticate(token)
+        session = self.model.object_session(data)
         maxexp = date_from_now(session.config['MAX_TOKEN_SESSION_EXPIRY'])
-        token.session = True
-        token.expiry = min(token.expiry or maxexp, maxexp)
-
-    def authenticate(self, token):
-        raise ValidationError('Invalid username or password')
-
-    class Meta:
-        model = 'token'
+        data['user'] = session.auth.authenticate(session, **data)
+        if not data['user']:
+            raise ValidationError('Invalid username or password')
+        data.pop('username')
+        data.pop('password')
+        data['session'] = True
+        data['expiry'] = min(data.get('expiry') or maxexp, maxexp)
+        # create the db token
+        tokens = session.models['tokens']
+        return tokens.create_one(session, data, tokens.model_schema)
 
 
 class Authorization(RestRouter):
@@ -51,6 +53,7 @@ class Authorization(RestRouter):
     """
     model = Model(
         'authorizations',
+        model_schema=TokenSchema,
         create_schema=AuthorizeSchema
     )
 
@@ -106,7 +109,7 @@ class Authorization(RestRouter):
                     $ref: '#/definitions/ErrorMessage'
         """
         ensure_service_user(request)
-        return self.create_response(request)
+        return self.model.create_response(request)
 
     def delete(self, request):
         """
@@ -133,4 +136,4 @@ class Authorization(RestRouter):
             if not token:
                 raise Http401
             raise BadRequest
-        return self.delete_one_response(request, token)
+        return self.model.delete_one_response(request, token)

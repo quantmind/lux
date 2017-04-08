@@ -34,18 +34,6 @@ class TokenBackend(PemissionsMixin):
     """
     service_user = ServiceUser
 
-    @backend_action
-    def login(self, request, user):
-        """Handle a request for a token to be used on a web browser
-        """
-        seconds = request.config['MAX_TOKEN_SESSION_EXPIRY']
-        expiry = datetime.now() + timedelta(seconds=seconds)
-        token = self.create_token(request, user, expiry=expiry)
-        token = to_string(token.encoded)
-        request.response.status_code = 201
-        return {'success': True,
-                'token': token}
-
     def request(self, request):
         '''Check for ``HTTP_AUTHORIZATION`` header and if it is available
         and the authentication type if ``bearer`` try to perform

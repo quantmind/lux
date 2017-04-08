@@ -110,10 +110,10 @@ class SessionBackend:
             try:
                 user = request.api.user.get(token=session.token).json()
             except NotAuthorised:
-                request.cache.auth_backend.logout(request)
+                request.app.auth.logout(request)
                 raise HttpRedirect(request.config['LOGIN_URL']) from None
             except Exception:
-                request.cache.auth_backend.logout(request)
+                request.app.auth.logout(request)
                 raise
             request.cache.user = User(user)
 
@@ -169,7 +169,7 @@ def handle_401(request, user=None):
     """
     user = user or request.session.user
     if user.is_authenticated():
-        request.cache.auth_backend.logout(request)
+        request.app.auth.logout(request)
         raise HttpRedirect(request.config['LOGIN_URL'])
     else:
         raise Http404

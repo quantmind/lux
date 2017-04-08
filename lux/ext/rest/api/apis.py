@@ -24,12 +24,9 @@ from .cors import cors
 LOCAL_API_LOGGER = logging.getLogger('lux.local.api')
 
 
-class Apis(models.Component):
+class Apis(list, models.Component):
     """Handle one or more server-side or client-side Api
     """
-    def __init__(self):
-        self._apis = []
-
     @classmethod
     def create(cls, app):
         urls = app.config['API_URL']
@@ -43,15 +40,6 @@ class Apis(models.Component):
                 }
             ]
         return cls().init_app(app).extend(urls)
-
-    def __repr__(self):
-        return repr(self._apis)
-
-    def __iter__(self):
-        return iter(self._apis)
-
-    def __len__(self):
-        return len(self._apis)
 
     def routes(self):
         #
@@ -102,7 +90,7 @@ class Apis(models.Component):
                 continue
             api = Api.from_cfg(self.app, cfg)
             if api:
-                self._apis.append(api)
+                self.append(api)
         return self
 
     def get(self, path=None):
@@ -116,7 +104,7 @@ class Apis(models.Component):
         if path and path.startswith('/'):
             path = path[1:]
         path = path or ''
-        for api in self._apis:
+        for api in self:
             if api.match(path):
                 return api
         raise Http404
@@ -168,12 +156,11 @@ class Api(models.Component):
     @contextmanager
     def ctx(self):
         with self.app.ctx() as ctx:
-            with models.schema_registry(self.registry):
-                ctx.set('api', self)
-                try:
-                    yield ctx
-                finally:
-                    ctx.pop('api')
+            ctx.set('api', self)
+            try:
+                yield ctx
+            finally:
+                ctx.pop('api')
 
     @property
     def path(self):
@@ -189,9 +176,8 @@ class Api(models.Component):
     def add_child(self, router):
         model = router.model
         if model:
-            self.add_definition(model.model_schema)
-            self.add_definition(model.create_schema)
-            self.add_definition(model.update_schema)
+            for schema in model.all_schemas():
+                self.add_definition(schema)
         self._router.append(router)
 
     def router(self):
@@ -218,17 +204,7 @@ class Api(models.Component):
     def add_definition(self, schema):
         if not schema:
             return
-        schema_cls = schema
-        if not isclass(schema):
-            self.logger.warning('Schema should be a class, %s is an instance',
-                                schema)
-            schema_cls = type(schema)
-        name = schema_cls.__name__
-
-        if schema_cls == schema:
-            self.registry[name] = schema_cls
-            schema = schema_cls(app=self.app)
-
+        name = type(schema).__name__
         if name.endswith('Schema'):
             name = name[:-6]
         try:

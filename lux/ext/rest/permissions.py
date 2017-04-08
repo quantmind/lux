@@ -92,10 +92,10 @@ def user_permissions(request):
 
     :request: a WSGI request with url data ``resource`` and ``action``.
     """
-    backend = request.cache.auth_backend
+    auth = request.app.auth
     resources = request.url_data.get('resource', ())
     actions = request.url_data.get('action')
-    return backend.get_permissions(request, resources, actions=actions)
+    return auth.get_permissions(request, resources, actions=actions)
 
 
 def has_permission(request, policies, resource, action):

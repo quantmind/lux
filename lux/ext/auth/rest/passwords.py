@@ -3,11 +3,12 @@
 from pulsar.api import MethodNotAllowed
 
 from lux.models import Schema, fields, ValidationError
+from lux.ext.rest import RestRouter, route
 
 from .registrations import (
     RegistrationModel, PasswordSchema, RegistrationSchema
 )
-from . import ServiceCRUD, ensure_service_user
+from . import ensure_service_user
 from ..models import RegistrationType
 
 
@@ -56,12 +57,56 @@ class PasswordResetModel(RegistrationModel):
         return {'success': True}
 
 
-class PasswordsCRUD(ServiceCRUD):
+class PasswordsCRUD(RestRouter):
     """Endpoints for password recovery
     """
     model = PasswordResetModel(
         'passwords',
         model_schema=RegistrationSchema,
-        postform='reset-password',
+        create_schema=ChangePasswordRequestSchema,
         type=2
     )
+
+    def post(self, request):
+        """
+        ---
+        summary: Create a new password reset registration
+        tags:
+            - authentication
+            - password
+        responses:
+            201:
+                description: A new password-reset registration was
+                    successfully created
+                schema:
+                    $ref: '#/definitions/Registration'
+        """
+        ensure_service_user(request)
+        return self.model.create_response(request)
+
+    @route('<id>/change')
+    def post_change(self, request):
+        """
+        ---
+        summary: Change a password
+        description: Change password for a user
+        tags:
+            - authentication
+            - password
+        responses:
+            204:
+                description: Password change was successful
+            400:
+                description: Bad Token
+                schema:
+                    $ref: '#/definitions/ErrorMessage'
+            401:
+                description: Token missing or expired
+                schema:
+                    $ref: '#/definitions/ErrorMessage'
+            404:
+                description: Activation id not found
+                schema:
+                    $ref: '#/definitions/ErrorMessage'
+        """
+        return self.model.confirm_response(request)

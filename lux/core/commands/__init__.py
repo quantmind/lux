@@ -143,9 +143,12 @@ class LuxCommand(ConsoleParser, metaclass=CmdType):
         app = self.pulsar_app(argv)
         app.cfg.daemon = False
         app()
+        self.execute(self.run, app.cfg, **params)
+
+    def execute(self, method, *args, **params):
         # Make sure the wsgi handler is created
         assert self.app.wsgi_handler()
-        result = maybe_green(self.app, self.run, app.cfg, **params)
+        result = maybe_green(self.app, method, *args, **params)
         if isawaitable(result) and not self.app._loop.is_running():
             result = self.app._loop.run_until_complete(result)
         return result
@@ -337,9 +340,12 @@ class option:
             kwargs['desc'] = help
         self.setting = Setting(name, oflags, nargs=nargs, **kwargs)
 
+    def __repr__(self):
+        return repr(self.setting)
+
     def __call__(self, method):
         settings = getattr(method, 'settings', [])
-        settings.append(self.setting)
+        settings.insert(0, self.setting)
         method.settings = settings
         return method
 

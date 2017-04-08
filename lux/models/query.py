@@ -1,11 +1,44 @@
 from abc import ABC, abstractmethod
 
+from .component import Component
+
+
+class Session(ABC, Component):
+
+    def __init__(self, app, request=None):
+        self.request = request
+        self.init_app(app)
+
+    @property
+    def models(self):
+        return self.app.models
+
+    @property
+    def auth(self):
+        return self.app.auth
+
+    @property
+    def config(self):
+        return self.app.config
+
+    @abstractmethod
+    def add(self, obj):
+        pass
+
+    @abstractmethod
+    def delete(self, obj):
+        pass
+
+    @abstractmethod
+    def flush(self):
+        pass
+
 
 class Query(ABC):
     """Interface for a Query
     """
 
-    def __init__(self, model, session=None):
+    def __init__(self, model, session):
         self.model = model
         self.session = session
         self.fields = None
@@ -18,6 +51,14 @@ class Query(ABC):
     @property
     def app(self):
         return self.model.app
+
+    @property
+    def request(self):
+        return self.session.request
+
+    @property
+    def logger(self):
+        return self.request.logger
 
     @abstractmethod
     def one(self):
@@ -38,6 +79,13 @@ class Query(ABC):
     @abstractmethod
     def delete(self):
         """Delete all elements in this query"""
+
+    @property
+    def query_fields(self):
+        schema = self.model.get_schema(
+            self.model.query_schema or self.model.model_schema
+        )
+        return schema.fields if schema else ()
 
     def limit(self, limit):
         raise NotImplementedError
@@ -68,7 +116,7 @@ class Query(ABC):
         if filters:
             self.filter_args(*filters)
 
-        fields = self.model.fields()
+        fields = self.query_fields
 
         for key, value in params.items():
             bits = key.split(':')

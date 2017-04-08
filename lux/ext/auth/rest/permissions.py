@@ -7,21 +7,23 @@ from lux.models import Schema, fields
 
 class PermissionSchema(Schema):
     model = 'permissions'
-    name = fields.String(required=True)
+    name = fields.String(maxLength=60, required=True)
     description = fields.String(rows=2, html_type='textarea')
     policy = fields.List(
         fields.Nested(PolicySchema),
         ace=json.dumps({'mode': 'json'})
     )
 
+    class Meta:
+        model = 'permissions'
+
 
 class PermissionCRUD(RestRouter):
     model = Model(
         'permissions',
         model_schema=PermissionSchema,
-        create_schema='create-permission',
-        update_schema='permission',
-        id_field='name'
+        create_schema=PermissionSchema,
+        update_schema=PermissionSchema
     )
 
     def get(self, request):

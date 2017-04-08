@@ -8,7 +8,9 @@ class TestOpenApi(test.TestCase):
         API_TITLE='test api'
     )
 
-    def test_extension(self):
+    def test_api_spec(self):
         app = self.application()
-        self.assertTrue(app.api_spec)
-        self.assertEqual(app.api_spec.app, app)
+        self.assertTrue(app.apis)
+        api = app.apis[0]
+        self.assertTrue(api.spec)
+        self.assertEqual(api.app, app)

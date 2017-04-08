@@ -1,6 +1,6 @@
 from lux.ext.rest import RestRouter, route
 
-from .user import UserModel
+from .user import UserModel, UserSchema
 
 
 class UserCRUD(RestRouter):
@@ -10,7 +10,7 @@ class UserCRUD(RestRouter):
     """
     model = UserModel(
         "users",
-        model_schema='UserSchema'
+        model_schema=UserSchema
     )
 
     def get(self, request):

@@ -8,9 +8,9 @@ class Command(LuxCommand):
     def command_init(self):
         """Initialise alembic migration directory
         """
-        migrations(self.app).init()
+        return self.execute(migrations(self.app).init)
 
-    @option('-m', '--message', help='Revision message')
+    @option('-m', '--message', help='Revision message', required=True)
     @option('--branch-label',
             help='Specify a branch label to apply to the new revision')
     def command_migrate(self, message, branch_label):
@@ -18,8 +18,12 @@ class Command(LuxCommand):
 
         alias for 'revision --autogenerate'
         """
-        migrations(self.app).upgrade(message, autogenerate=True,
-                                     branch_label=branch_label)
+        return self.execute(
+            migrations(self.app).revision,
+            message,
+            autogenerate=True,
+            branch_label=branch_label
+        )
 
     @option('--autogenerate', action='store_true', default=False,
             help=('Populate revision script with candidate migration '
@@ -30,25 +34,29 @@ class Command(LuxCommand):
     def command_revision(self, autogenerate, message, branch_label):
         """Create a new revision file
         """
-        migrations(self.app).revision(message, autogenerate=autogenerate,
-                                      branch_label=branch_label)
+        return self.execute(
+            migrations(self.app).revision,
+            message[0],
+            autogenerate=autogenerate,
+            branch_label=branch_label
+        )
 
     @option('revision', default='heads')
-    def command_upgrade(self, target):
+    def command_upgrade(self, revision):
         """Run upgrade migrations
         """
-        migrations(self.app).upgrade(target)
+        return self.execute(migrations(self.app).upgrade, revision)
 
     @option('revision', default='1')
-    def command_downgrade(self, target):
+    def command_downgrade(self, revision):
         """Run upgrade migrations
         """
-        migrations(self.app).downgrade(target)
+        return self.execute(migrations(self.app).downgrade, revision)
 
     @option('revision', default='heads', help='revision to show')
     def command_show(self, revision):
         """Show the given revision"""
-        migrations(self.app).show(revision)
+        return self.execute(migrations(self.app).show, revision)
 
     @option('revision', default='heads', help='revision to stamp')
     def command_stamp(self, revision):
@@ -56,9 +64,9 @@ class Command(LuxCommand):
 
         don't run any migrations
         """
-        migrations(self.app).stamp(revision)
+        return self.execute(migrations(self.app).stamp, revision)
 
-    @option('-m', '--message', help='Merge revision message')
+    @option('-m', '--message', help='Merge revision message', required=True)
     @option('--branch-label',
             help='Specify a branch label to apply to the new revision')
     @option('--rev-id',
@@ -68,5 +76,10 @@ class Command(LuxCommand):
     def command_merge(self, message, branch_label, rev_id, revisions):
         """Merge two revisions together, creating a new revision file
         """
-        migrations(self.app).merge(message, branch_label=branch_label,
-                                   rev_id=rev_id, revisions=revisions)
+        return self.execute(
+            migrations(self.app).mere,
+            message,
+            branch_label=branch_label,
+            rev_id=rev_id,
+            revisions=revisions
+        )

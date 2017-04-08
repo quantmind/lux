@@ -13,9 +13,7 @@ class Command(LuxCommand):
     help = 'Show the admin application'
 
     def run(self, options):
-        auth_backend = self.app.auth_backend
         request = self.app.wsgi_request(urlargs={}, app_handler=True)
-        request.cache.auth_backend = auth_backend
 
         form_class = get_form_class(request, 'create-application')
         if not form_class:

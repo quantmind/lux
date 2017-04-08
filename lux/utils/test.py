@@ -18,6 +18,7 @@ from pulsar.apps.wsgi import WsgiResponse, wsgi_request
 from pulsar.apps.http import HttpWsgiClient
 from pulsar.utils.system import json as _json
 from pulsar.apps.test import test_timeout, sequential, test_wsgi_request
+from pulsar.apps.greenio import wait
 
 from lux.core import App
 from lux.models import Component
@@ -47,6 +48,12 @@ def randomname(prefix=None, len=8):
     name = random_string(min_len=len, max_len=len,
                          characters=string.ascii_letters)
     return ('%s%s' % (prefix, name)).lower()
+
+
+def wsgi_request_from_app(app, **kw):
+    request = wait(test_wsgi_request(**kw))
+    app.on_request(request)
+    return request
 
 
 def green(test_fun):
@@ -94,6 +101,7 @@ def test_app(test, config_file=None, config_params=True, argv=None, **params):
         app.config['SECRET_KEY'] = generate_secret()
     app.stdout = StringIO()
     app.stderr = StringIO()
+    assert app.wsgi_handler()
     return app
 
 
@@ -107,16 +115,15 @@ def create_users(app, items, testuser, index=None):
             "active": True
         })
     logger.debug('Creating %d users', len(items))
-    request = test_wsgi_request()
-    app.environ(request.environ, None)
-    auth = app.auth_backend
+    request = wsgi_request_from_app(app)
     processed = set()
-    for params in items:
-        if params.get('username') in processed:
-            continue
-        user = auth.create_user(request, **params)
-        if user:
-            processed.add(user.username)
+    with app.models['users'].session(request) as session:
+        for params in items:
+            if params.get('username') in processed:
+                continue
+            user = session.auth.create_user(session, **params)
+            if user:
+                processed.add(user.username)
     return len(processed)
 
 
@@ -126,9 +133,6 @@ async def load_fixtures(app, path=None, api_url=None, testuser=None,
 
     This function requires an authentication backend supporting user creation
     """
-    if not hasattr(app.auth_backend, 'create_user'):
-        return
-
     testuser = testuser or 'testuser'
     fpath = path if path else os.path.join(app.meta.path, 'fixtures')
     total = 0

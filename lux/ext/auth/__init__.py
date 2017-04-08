@@ -52,7 +52,7 @@ class Extension(LuxExtension):
                   None,
                   'A string or bytes used for encrypting data. Must be unique '
                   'to the application and long and random enough'),
-        Parameter('CHECK_USERNAME', 'lux.extensions.auth:check_username',
+        Parameter('CHECK_USERNAME', 'lux.ext.auth:check_username',
                   'Dotted path to username validation function')
     ]
 
@@ -68,15 +68,15 @@ class Extension(LuxExtension):
             token['name'] = user.full_name
 
     def api_sections(self, app):
-        return (Authorization(),
-                UserRest(),
-                UserCRUD(),
+        return (UserCRUD(),
+                TokenCRUD(),
+                Authorization(),
                 GroupCRUD(),
                 PermissionCRUD(),
                 RegistrationCRUD(),
                 PasswordsCRUD(),
                 MailingListCRUD(),
-                TokenCRUD())
+                UserRest())
 
 
 def check_username(request, username):

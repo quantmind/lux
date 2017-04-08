@@ -1,5 +1,7 @@
 """Multi application extension.
 """
+from pulsar.api import Http404, BadRequest
+
 from lux.core import LuxExtension, Parameter
 
 from .rest import ApplicationCRUD, PluginCRUD
@@ -21,9 +23,31 @@ class Extension(LuxExtension):
                   "Unique ID of the Master application. The master application"
                   " is assumed by default when no header or JWT is available"),
         Parameter('APPLICATION_ID_HEADER', 'HTTP_X_APPLICATION_ID',
-                  'Header which stores the application ID'
-                  )
+                  'Header which stores the application ID')
     )
+
+    def on_request(self, app, request):
+        user = request.cache.user
+        if user.is_anonymous():
+            try:
+                admin_id = app.config['MASTER_APPLICATION_ID']
+                app_id = app.get(app.config['APPLICATION_ID_HEADER'], admin_id)
+                if not app_id:
+                    raise Http404
+                model = app.models.get('applications')
+                with model.session(request) as session:
+                    app = model.get_one(session, id=app_id)
+                request.cache.application = app
+                request.cache.user = self.service_user(request)
+            except Http404:
+                request.cache.application = None
+                if request.method != 'OPTIONS':
+                    raise BadRequest(
+                        'Missing or invalid "%s" header' %
+                        app.config['APPLICATION_ID_HEADER']
+                    ) from None
+        else:
+            request.cache.application = user.application
 
     def api_sections(self, app):
         return (

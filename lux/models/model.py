@@ -1,3 +1,5 @@
+import uuid
+
 from abc import ABC, abstractmethod
 from copy import copy
 from inspect import isclass
@@ -6,7 +8,7 @@ from pulsar.api import UnprocessableEntity
 
 from lux.utils.crypt import as_hex
 
-from .component import Component
+from .component import Component, app_cache
 
 
 GET_HEAD = frozenset(('GET', 'HEAD'))
@@ -77,9 +79,13 @@ class Model(ABC, Component):
         return self.uri
     __str__ = __repr__
 
+    @abstractmethod
+    def __call__(self, data, session):
+        pass
+
     # ABSTRACT METHODS
     @abstractmethod
-    def session(self, request, session=None):
+    def session(self, request=None):
         """Return a session for aggregating a query.
 
         This method must return a context manager with the following methods:
@@ -90,8 +96,22 @@ class Model(ABC, Component):
 
     def get_schema(self, schema):
         if isclass(schema):
-            schema = schema()
+            schemas = app_schemas(self.app)
+            name = schema.__name__
+            if name not in schemas:
+                schemas[name] = schema(app=self.app)
+            schema = schemas[name]
         return schema
+
+    def all_schemas(self):
+        if self.model_schema:
+            yield self.get_schema(self.model_schema)
+        if self.create_schema:
+            yield self.get_schema(self.create_schema)
+        if self.update_schema:
+            yield self.get_schema(self.update_schema)
+        if self.query_schema:
+            yield self.get_schema(self.query_schema)
 
     def get_query(self, session):
         """Create a new :class:`.Query` from a session
@@ -109,15 +129,19 @@ class Model(ABC, Component):
     def create_response(self, request, schema=None):
         """Create a new instance and return a response
         """
-        schema = self.get_schema(schema or self.create_schema)
         data, files = request.data_and_files()
         with self.session(request) as session:
-            model, errors = schema.load(data, session=session)
-            if errors:
-                raise UnprocessableEntity(errors)
-            session.add(model)
-            session.flush()
-            data = schema.dumps(model).data
+            model = self.create_one(session, data, schema)
+            schema = self.get_schema(self.model_schema)
+            data = schema.dump(model).data
+        return request.json_response(data, 201)
+
+    def update_one_response(self, request, schema=None):
+        data, files = request.data_and_files()
+        with self.session(request) as session:
+            model = self.update_one(session, data, schema)
+            schema = self.get_schema(self.model_schema)
+            data = schema.dump(model).data
         return request.json_response(data, 201)
 
     def get_list_response(self, request):
@@ -135,21 +159,29 @@ class Model(ABC, Component):
         query = self.query(session, *filters, **kwargs)
         return query.one()
 
-    def instance(self, o=None, fields=None):
-        """Return a :class:`.ModelInstance`
+    def create_one(self, session, data, schema=None):
+        schema = self.get_schema(schema or self.create_schema)
+        model, errors = schema.load(data, session=session)
+        if errors:
+            raise UnprocessableEntity(errors)
+        session.flush()
+        return model
 
-        :param o: None, a raw instance or a :class:`.ModelInstance
-        :param fields: optional list of fields to include in the instance
-        """
-        if isinstance(o, ModelInstance):
-            return o
-        if o is None:
-            o = self.create_instance()
-        return ModelInstance.create(self, o, fields)
+    def update_one(self, session, data, schema=None):
+        schema = self.get_schema(schema or self.update_schema)
+        model, errors = schema.load(data, session=session)
+        if errors:
+            raise UnprocessableEntity(errors)
+        return model
+
+    def create_uuid(self, id=None):
+        if isinstance(id, uuid.UUID):
+            return id
+        return uuid.uuid4()
 
     # QUERY API
-    def query(self, request, session, *filters, check_permission=None,
-              load_only=None, query=None, **params):
+    def query(self, session, *filters, check_permission=None, load_only=None,
+              query=None, **params):
         """Get a :class:`.Query` object
 
         :param request: WsgiRequest object
@@ -255,3 +287,8 @@ class Model(ABC, Component):
         """Validate fields values
         """
         pass
+
+
+@app_cache
+def app_schemas(app):
+    return {}

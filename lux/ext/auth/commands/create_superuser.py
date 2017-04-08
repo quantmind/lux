@@ -9,7 +9,7 @@ from lux.utils.auth import normalise_email
 RE_VALID_USERNAME = re.compile('[\w.@+-]+$')
 
 
-def get_def_username(request, auth):
+def get_def_username(session):
     # Try to determine the current system user's username to use as a default.
     try:
         def_username = getpass.getuser().replace(' ', '').lower()
@@ -21,7 +21,7 @@ def get_def_username(request, auth):
     # Determine whether the default username is taken, so we don't display
     # it as an option.
     if def_username:
-        user = auth.get_user(request, username=def_username)
+        user = session.auth.get_user(session, username=def_username)
         if user:
             def_username = ''
     return def_username

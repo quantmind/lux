@@ -72,14 +72,6 @@ class Extension(LuxExtension):
         Parameter('DEFAULT_POLICY', (),
                   'List/tuple of default policy documents'),
         #
-        # OPEN API SPEC SETTINGS
-        Parameter('API_TITLE', None,
-                  'Open API title, if not set the openapi spec wont be '
-                  'created'),
-        Parameter('API_SPEC_PLUGINS', ['apispec.ext.marshmallow',
-                                       'lux.extensions.rest.openapi'],
-                  'Open API spec extensions'),
-        #
         # REST API SETTINGS
         Parameter('API_URL', None, 'List of API specifications', True),
         Parameter('API_SEARCH_KEY', 'q',

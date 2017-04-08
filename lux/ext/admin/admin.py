@@ -103,7 +103,7 @@ class Admin(AdminRouter):
                 resources.append(resource)
                 infos.append((resource, section, info))
 
-        backend = request.cache.auth_backend
+        backend = request.app.auth
         sections = {}
         sitemap = []
         permissions = backend.get_permissions(request, resources, 'read')

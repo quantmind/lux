@@ -97,7 +97,9 @@ class Group(dbModel):
 
 class Permission(dbModel):
     id = db.Column(UUIDType(binary=False), primary_key=True)
-    name = db.Column(db.String(60), unique=True)
+    name = db.Column(db.String(60),
+                     nullable=False,
+                     doc='Permission name')
     description = db.Column(db.String(120))
     policy = db.Column(JSONType)
 
