@@ -228,34 +228,6 @@ class Application(ConsoleMixin, LuxExtension, EventMixin):
         self.auth = MultiAuthBackend.from_app(self)
         self.fire('on_config')
 
-    def __call__(self, environ, start_response):
-        """The WSGI thing."""
-        return self.wsgi_handler()(environ, start_response)
-
-    def wsgi_handler(self):
-        if not self._handler:
-            self.forms = registry.copy()
-            self._handler = _build_handler(self)
-            self.fire('on_loaded')
-        return self._handler
-
-    def environ(self, environ, start_response):
-        request = wsgi_request(environ)
-        self.on_request(request)
-        self.auth.request(request)
-
-    def wsgi_request(self, **kw):
-        request = self.green_pool.wait(test_wsgi_request(**kw))
-        self.on_request(request)
-        return request
-
-    def on_request(self, request):
-        config = self.config
-        environ = request.environ
-        environ['error.handler'] = module_attribute(config['ERROR_HANDLER'])
-        environ['default.content_type'] = config['DEFAULT_CONTENT_TYPE']
-        request.cache.app = self
-
     @property
     def app(self):
         return self
@@ -296,6 +268,37 @@ class Application(ConsoleMixin, LuxExtension, EventMixin):
             self.config['THREAD_POOL'] = False
             from pulsar.apps.greenio import GreenPool
             return GreenPool(self.config['GREEN_POOL'])
+
+    def __call__(self, environ, start_response):
+        """The WSGI thing."""
+        return self.wsgi_handler()(environ, start_response)
+
+    def wsgi_handler(self):
+        if not self._handler:
+            self.forms = registry.copy()
+            self._handler = _build_handler(self)
+            self.fire('on_loaded')
+        return self._handler
+
+    def environ(self, environ, start_response):
+        request = wsgi_request(environ)
+        self.on_request(request)
+        self.auth.request(request)
+
+    def wsgi_request(self, **kw):
+        request = self.green_pool.wait(test_wsgi_request(**kw))
+        self.on_request(request)
+        return request
+
+    def on_request(self, request):
+        config = self.config
+        environ = request.environ
+        environ['error.handler'] = module_attribute(config['ERROR_HANDLER'])
+        environ['default.content_type'] = config['DEFAULT_CONTENT_TYPE']
+        request.cache.app = self
+
+    def session(self, request=None):
+        return self.models.session(request)
 
     @contextmanager
     def ctx(self):

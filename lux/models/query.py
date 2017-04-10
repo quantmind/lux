@@ -43,6 +43,7 @@ class Query(ABC):
         self.session = session
         self.fields = None
         self.filters = {}
+        self.app.fire('on_query', self)
 
     @property
     def name(self):

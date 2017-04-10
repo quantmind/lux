@@ -4,8 +4,7 @@ from pulsar.utils.importer import module_attribute
 from lux.core import route
 from lux.ext.rest import RestRouter, user_permissions
 from lux.models import fields, Schema
-
-from . import Model
+from lux.ext.odm import Model
 
 
 URI = 'users'
@@ -24,6 +23,7 @@ class FullUserSchema(Schema):
 class UserSchema(Schema):
     username = fields.Slug(required=True, readOnly=True)
     joined = fields.DateTime(readOnly=True)
+    email = fields.Email()
     full_name = fields.String(
         field=('first_name', 'last_name', 'username', 'email'),
         readOnly=True

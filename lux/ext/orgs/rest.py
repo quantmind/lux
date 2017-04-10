@@ -25,6 +25,10 @@ class OrgMixin:
 
 
 class UserRest(auth.UserRest, OrgMixin):
+    model = UserModel(
+        'user',
+        model_schema=UserSchema
+    )
 
     @route('organisations')
     def get_organisations(self, request):

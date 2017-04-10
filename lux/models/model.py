@@ -22,6 +22,8 @@ class ModelNotAvailable(Exception):
 class ModelContainer(dict, Component):
     """Mapping of model identifiers to :class:`.LuxModel` objects
     """
+    default_key = None
+
     def register(self, model, clone=True):
         '''Register a new Lux Model to the application
         '''
@@ -40,6 +42,7 @@ class ModelContainer(dict, Component):
         model.init_app(self.app)
         if model.uri:
             self[model.uri] = model
+            self.default_key = model.uri
 
         return model
 
@@ -47,6 +50,9 @@ class ModelContainer(dict, Component):
         if isinstance(name, Model):
             name = name.uri
         return super().get(name, default)
+
+    def session(self, request=None):
+        return self[self.default_key].session(request)
 
 
 class Model(ABC, Component):
@@ -113,15 +119,20 @@ class Model(ABC, Component):
         if self.query_schema:
             yield self.get_schema(self.query_schema)
 
+    def field(self, name, schema=None):
+        schema = self.get_schema(schema or self.model_schema)
+        return schema.fields.get(name) if schema else None
+
     def get_query(self, session):
         """Create a new :class:`.Query` from a session
         """
         return session
 
+    # Model CRUD Responses
     def get_one_response(self, request, instance=None, schema=None):
         with self.session(request) as session:
             if instance is None:
-                instance = self.get_one(session)
+                instance = self.get_one(session, **request.urlargs)
             schema = self.get_schema(schema or self.model_schema)
             data = schema.dump(instance).data
         return request.json_response(data)
@@ -155,6 +166,7 @@ class Model(ABC, Component):
         request.response.status_code = 204
         return request.response
 
+    # Model CRUD Operations
     def get_one(self, session, *filters, **kwargs):
         query = self.query(session, *filters, **kwargs)
         return query.one()
@@ -202,13 +214,6 @@ class Model(ABC, Component):
         elif load_only:
             query = query.load_only(*load_only)
         return query.filter(*filters, **params)
-
-    def get_instance(self, request, *filters, session=None, **kwargs):
-        """Get a single instance from positional and keyed-valued filters
-        """
-        with self.session(request, session=session) as session:
-            query = self.query(request, session, *filters, **kwargs)
-            return query.one()
 
     def get_list(self, request, *filters, session=None, **kwargs):
         """Get a list of instances from positional and keyed-valued filters

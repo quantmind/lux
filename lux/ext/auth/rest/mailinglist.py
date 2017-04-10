@@ -1,18 +1,18 @@
 from pulsar.api import Http401, Http404
 
-from lux.models import Schema, fields
-from lux.ext.odm import Model
+from lux.models import Schema, fields, ValidationError
 from lux.ext.rest import RestRouter
+from lux.ext.odm import Model
 
 
 class MailingListSchema(Schema):
     email = fields.Email(label='Your email address')
     topic = fields.String(description='Mailing list topic')
 
-    def clean_email(self, email):
+    def post_load(self, email):
         user = self.request.cache.user
         if not email or user.email:
-            raise forms.ValidationError('required')
+            raise ValidationError('required')
         return email
 
     def clean(self):

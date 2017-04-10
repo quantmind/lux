@@ -62,8 +62,11 @@ class AppModelMixin:
     # application that owns this worker
     @odm.declared_attr
     def application_id(cls):
-        return Column(ForeignKey('appdomain.id', ondelete='CASCADE'),
-                      nullable=False)
+        return Column(
+            UUIDType,
+            ForeignKey('appdomain.id', ondelete='CASCADE'),
+            nullable=False
+        )
 
     @odm.declared_attr
     def application(cls):

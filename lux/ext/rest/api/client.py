@@ -45,10 +45,10 @@ class ApiClient:
     def __call__(self, request):
         return ApiClientRequest(request, self)
 
-    def request(self, request, method, api, path,
+    def request(self, request, method, url,
                 token=None, jwt=False, headers=None, auth_error=None, **kw):
+        api = self.app.apis.get(url)
         http = self.http(request, api.netloc)
-        url = api.url(request, path)
         req_headers = []
         req_headers.extend(headers or ())
         agent = request.get('HTTP_USER_AGENT', request.config['APP_NAME'])
@@ -114,11 +114,11 @@ class HttpRequestMixin:
 
 
 class ApiClientRequest(HttpRequestMixin):
-    __slots__ = ('_request', '_api', '_path')
+    __slots__ = ('_request', '_client', '_path')
 
-    def __init__(self, request, api, path=None):
+    def __init__(self, request, client, path=None):
         self._request = request
-        self._api = api
+        self._client = client
         self._path = path
 
     def __getattr__(self, name):
@@ -129,21 +129,23 @@ class ApiClientRequest(HttpRequestMixin):
 
     @property
     def app(self):
-        return self._request.app
+        return self._client.app
 
     def __repr__(self):
-        return 'api(%s)' % self.url
+        return self._path or ''
     __str__ = __repr__
 
     def request(self, method, path=None, **kw):
         if path:
             return self._get(path).request(method, **kw)
-        api = self.app.apis.get(self._path)
-        return self._api.request(self._request, method, api, self._path, **kw)
+        return self._client.request(self._request, method, self._path, **kw)
 
     def _get(self, name):
-        path = "%s/%s" % (self._path, name) if self._path else name
-        return self.__class__(self._request, self._api, path)
+        path = name
+        if self._path:
+            s = '' if name.startswith('/') else '/'
+            path = "%s%s%s" % (self._path, s, name)
+        return self.__class__(self._request, self._client, path)
 
 
 @app_attribute

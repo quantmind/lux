@@ -34,6 +34,7 @@ class ApplicationCRUD(RestRouter):
     model = ApplicationModel(
         'applications',
         model_schema=ApplicationSchema,
+        create_schema=ApplicationSchema,
         db_name='appdomain'
     )
 
@@ -86,7 +87,7 @@ class ApplicationCRUD(RestRouter):
                 schema:
                     $ref: '#/definitions/Application'
         """
-        return self.model.get_response(request)
+        return self.model.get_one_response(request)
 
     @route('<id>/token', method=('post',))
     def token(self, request):

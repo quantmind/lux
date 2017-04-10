@@ -1,6 +1,5 @@
 import logging
 import json
-from inspect import isclass
 from contextlib import contextmanager
 from collections import OrderedDict
 from urllib.parse import urlparse, urlunparse
@@ -170,6 +169,12 @@ class Api(models.Component):
     def netloc(self):
         return self.spec.options['host']
 
+    @property
+    def scheme(self):
+        schemes = self.spec.options['schemes']
+        if schemes:
+            return schemes[-1]
+
     def match(self, path):
         return self.route.match(path)
 
@@ -211,16 +216,6 @@ class Api(models.Component):
             self.spec.definition(name, schema=schema)
         except Exception:
             self.app.logger.exception('Could not add spec definition')
-
-    def url(self, request, path=None):
-        urlp = list(self.urlp)
-        if path:
-            urlp[2] = remove_double_slash('%s/%s' % (urlp[2], str(path)))
-        if not urlp[1]:
-            r_url = urlparse(request.absolute_uri('/'))
-            urlp[0] = r_url.scheme
-            urlp[1] = r_url.netloc
-        return urlunparse(urlp)
 
     def spec_dict(self):
         return self.spec.to_dict()

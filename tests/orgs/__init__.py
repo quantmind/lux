@@ -12,16 +12,16 @@ from lux.ext.orgs import ownership
 
 class Extension(LuxExtension):
 
-    def api_sections(self, app):
+    def _api_sections(self, app):
         yield ownership.owned_model(
             app, ProjectCrud(), 'name', cast_id=cast_int
         )
 
 
-Model = odm.model_base('orgtest')
+dbModel = odm.model_base('orgtest')
 
 
-class Project(Model):
+class Project(dbModel):
     id = Column(Integer, primary_key=True)
     name = Column(String(32), nullable=False)
     subject = Column(String(250))

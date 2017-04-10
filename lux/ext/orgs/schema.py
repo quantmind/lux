@@ -17,17 +17,27 @@ class MemberRole(Enum):
 #            request, '%s/timezones' % request.config['API_INFO_URL']
 #        )
 
-class EntityMixin(Schema):
-    timezone = fields.String(validate=OneOf(common_timezones))
-    link = fields.Url(label='Home page')
-
 
 class UserSchema(user.UserSchema):
-    organisations = fields.Nested(
-        'OrganisationSchema',
-        description='Owner of these organisations',
-        multi=True
+    link = fields.Url(label='Home page')
+    memberships = fields.List(
+        fields.Nested(
+            'MembershipSchema',
+            description='Member of these organisations'
+        )
     )
+
+    class Meta:
+        model = 'users'
+        exclude = (
+            'password', 'application', 'groups', 'access_tokens',
+            'registrations', 'tokens', 'own_objects', 'type'
+        )
+
+
+class EntityMixin(Schema):
+    # timezone = fields.String(validate=OneOf(common_timezones))
+    link = fields.Url(label='Home page')
 
 
 class ProfileSchema(EntityMixin):
@@ -48,6 +58,11 @@ class UpdateOrganisationSchema(EntityMixin):
         label='Billing email',
         description='Receipts will be sent here'
     )
+
+
+class MembershipSchema(Schema):
+    username = fields.Slug(label='Organisation screen name')
+    role = fields.String()
 
 
 class OrganisationSchema(UpdateOrganisationSchema):

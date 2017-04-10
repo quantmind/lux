@@ -30,10 +30,9 @@ class Query(models.Query):
     """ODM based query"""
 
     def __init__(self, model, session):
-        super().__init__(model, session)
         self.sql_query = session.query(model.db_model)
         self.joins = set()
-        self.app.fire('on_query', self)
+        super().__init__(model, session)
 
     def count(self):
         return self._query().count()
@@ -247,43 +246,6 @@ class Model(models.Model):
         if hasattr(value, '__call__'):
             value = value()
         return as_hex(value)
-
-    def set_instance_value(self, instance, name, value):
-        '''Set the the attribute ``name`` to ``value`` in a model ``instance``
-        '''
-        obj = instance.obj
-        current_value = getattr(obj, name, None)
-        col = self.field(name)
-        if is_rel_field(col):
-            try:
-                rel_model = self.app.models.get(col.model)
-                if isinstance(current_value, (list, set)):
-                    value = tuple((rel_model.instance(v) for v in value))
-                    all_ids = tuple((item.id for item in value))
-                    avail = set()
-                    for item in tuple(current_value):
-                        item = rel_model.instance(item)
-                        if item.id not in all_ids:
-                            current_value.remove(item.obj)
-                        else:
-                            avail.add(item.id)
-                    for item in value:
-                        if item.id not in avail:
-                            current_value.append(item.obj)
-                else:
-                    if value is not None:
-                        value = rel_model.instance(value).obj
-                        if current_value is not None:
-                            current_value = rel_model.instance(current_value)
-                            if self.same_instance(value, current_value):
-                                return
-                    setattr(obj, name, value)
-            except Exception as exc:    # pragma    nocover
-                self.app.logger.error(
-                    'Could not replace related field %s in model '
-                    '%s: %s', col.name, self, exc)
-        else:
-            setattr(obj, name, value)
 
     # ADDITIONAL PUBLIC METHODS
     def id_repr(self, request, obj, in_list=True):

@@ -88,5 +88,5 @@ class Extension(LuxExtension):
 
     def _app_id(self, request):
         if request:
-            user = request.cache.user
+            user = request.cache.get('user')
             return user.application_id if user else None

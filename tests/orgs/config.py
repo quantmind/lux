@@ -10,7 +10,7 @@ EXTENSIONS = [
 ]
 
 AUTHENTICATION_BACKENDS = [
-    'lux.ext.applications:AuthBackend'
+    'lux.ext.apps:AuthBackend'
 ]
 
 MASTER_APPLICATION_ID = 'cb1dc2bac69d47a1965f4c2c6fc43163'

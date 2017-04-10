@@ -35,15 +35,15 @@ class Extension(auth.Extension, AuthEventsMixin):
 
     def on_query(self, app, query):
         try:
-            target = get_owned_model(app, query.model.identifier)
+            target = get_owned_model(app, query.model.uri)
             query.filters['owner'] = target.filter
         except Http404:
             pass
 
     def on_html_document(self, app, request, doc):
-        '''Add adminuser entry to the javascript context
+        '''Add admin user entry to the javascript context
         '''
-        if request.cache.session:
+        if request.cache.get('session'):
             backend = request.cache.auth_backend
             user = request.cache.user
             if user and user.is_authenticated():

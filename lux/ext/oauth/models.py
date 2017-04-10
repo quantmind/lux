@@ -1,13 +1,13 @@
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
 
-from odm.types import JSONType
+from odm.types import JSONType, UUIDType
 from odm import declared_attr
 
-import lux.extensions.auth.models as auth
+import lux.ext.auth.models as auth
 
 
-Model = auth.Model
+dbModel = auth.dbModel
 
 
 class User(auth.User):
@@ -16,7 +16,7 @@ class User(auth.User):
     oauth = Column(JSONType)
 
 
-class AccessToken(Model):
+class AccessToken(dbModel):
     """
     An AccessToken instance represents the actual access token to
     access user's resources, as in :rfc:`5`.
@@ -36,7 +36,7 @@ class AccessToken(Model):
 
     @declared_attr
     def user_id(cls):
-        return Column(Integer, ForeignKey('user.id', ondelete='CASCADE'))
+        return Column(UUIDType, ForeignKey('user.id', ondelete='CASCADE'))
 
     @declared_attr
     def user(cls):

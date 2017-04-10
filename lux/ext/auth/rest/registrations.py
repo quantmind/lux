@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from pulsar.api import PermissionDenied, Http404
 
@@ -7,7 +7,6 @@ from lux.utils.crypt import digest
 from lux.utils.date import date_from_now
 from lux.ext.rest import RestRouter
 from lux.models import Schema, fields, ValidationError
-
 from lux.ext.odm import Model
 
 from . import ensure_service_user
@@ -37,6 +36,8 @@ class RegistrationSchema(Schema):
 
 
 class PasswordSchema(Schema):
+    """Schema for checking a password is input correctly
+    """
     password = fields.Password(required=True, minLength=5, maxLength=128)
     password_repeat = fields.Password(
         required=True,
@@ -46,7 +47,7 @@ class PasswordSchema(Schema):
 
     def post_load(self, data):
         password = data['password']
-        password_repeat = data['password_repeat']
+        password_repeat = data.pop('password_repeat')
         if password != password_repeat:
             raise ValidationError('Passwords did not match')
 
@@ -57,22 +58,10 @@ class CreateUserSchema(PasswordSchema):
 
     def post_load(self, data):
         super().post_load(data)
-        data.pop('password_repeat')
-        return self.create_model(data, self.create_user(data))
-
-    def create_model(self, data, user):
-        request = data.request
-        odm = request.app.odm()
-        reg = odm.registration(
-            id=digest(user.email),
-            expiry=date_from_now(days=data.config['ACCOUNT_ACTIVATION_DAYS']),
-            type=RegistrationType.registration,
-            user_id=user.id
-        )
-        data.session.add(reg)
-        data.session.flush()
-        send_email_confirmation(request, reg)
-        return reg
+        session = self.model.object_session(data)
+        user = session.models['users'].create_one(session, data)
+        # send_email_confirmation(request, reg)
+        return user
 
 
 class RegistrationModel(Model):

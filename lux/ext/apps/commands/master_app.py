@@ -2,46 +2,40 @@
 """
 import json
 
-from pulsar import Http404
+from pulsar.api import Http404, Setting
 from pulsar.utils.slugify import slugify
 
 from lux.core import LuxCommand, CommandError
-from lux.forms import get_form_class
 
 
 class Command(LuxCommand):
     help = 'Show the admin application'
+    option_list = (
+        Setting('app_name',
+                desc='Application name'),
+    )
 
     def run(self, options):
-        request = self.app.wsgi_request(urlargs={}, app_handler=True)
-
-        form_class = get_form_class(request, 'create-application')
-        if not form_class:
-            raise CommandError('Cannot create application')
-
-        model = self.app.models['applications']
-        ID = request.config['MASTER_APPLICATION_ID']
-        if not ID:
-            raise CommandError(
-                'MASTER_APPLICATION_ID not available in config.\n'
-                'Create a UUID with the create_uuid command'
-            )
-        try:
-            app_domain = model.get_instance(request, id=ID)
-        except Http404:
-            form = form_class(request, data=dict(
-                id=ID,
-                name=slugify(request.config['APP_NAME']),
-            ), model='applications')
-            if form.is_valid():
-                app_domain = model.create_model(
-                    request,
-                    data=form.cleaned_data
+        with self.app.session() as session:
+            model = self.app.models['applications']
+            ID = session.config['MASTER_APPLICATION_ID']
+            if not ID:
+                raise CommandError(
+                    'MASTER_APPLICATION_ID not available in config.\n'
+                    'Create a UUID with the create_uuid command'
                 )
-            else:
-                raise CommandError(form.message())
-            self.write('Successfully created admin application')
-        data = model.tojson(request, app_domain)
-        jwt = model.jwt(request, app_domain)
-        self.write(json.dumps(data, indent=4))
-        return jwt
+            try:
+                app = model.get_one(session, id=ID)
+            except Http404:
+                app_name = slugify(options.app_name or '')
+                if not app_name:
+                    raise CommandError('app_name is required') from None
+                app = model.create_one(session, dict(
+                    id=ID,
+                    name=app_name,
+                ))
+                self.write('Successfully created master app application')
+            data = model.model_schema.dump(app)
+            jwt = model.jwt(app)
+            self.write(json.dumps(data, indent=4))
+            return jwt

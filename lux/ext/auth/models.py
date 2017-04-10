@@ -12,6 +12,7 @@ from odm.types import IPAddressType, UUIDType, JSONType
 
 from lux.ext import odm
 from lux.core import UserMixin
+from lux.utils.crypt import create_uuid
 
 
 dbModel = odm.model_base('auth')
@@ -37,7 +38,8 @@ groups_permissions = dbModel.create_table(
 
 
 class User(dbModel, UserMixin):
-    id = db.Column(UUIDType(binary=False), primary_key=True)
+    id = db.Column(UUIDType(binary=False), primary_key=True,
+                   default=create_uuid)
     username = db.Column(db.String(50), unique=True)
     first_name = db.Column(db.String(30))
     last_name = db.Column(db.String(30))
@@ -74,7 +76,8 @@ class User(dbModel, UserMixin):
 
 
 class Group(dbModel):
-    id = db.Column(UUIDType(binary=False), primary_key=True)
+    id = db.Column(UUIDType(binary=False), primary_key=True,
+                   default=create_uuid)
     name = db.Column(db.String(80), unique=True)
 
     @declared_attr
@@ -96,7 +99,8 @@ class Group(dbModel):
 
 
 class Permission(dbModel):
-    id = db.Column(UUIDType(binary=False), primary_key=True)
+    id = db.Column(UUIDType(binary=False), primary_key=True,
+                   default=create_uuid)
     name = db.Column(db.String(60),
                      nullable=False,
                      doc='Permission name')
@@ -107,7 +111,8 @@ class Permission(dbModel):
 class Token(dbModel):
     """A model for an Authentication Token
     """
-    id = db.Column(UUIDType(binary=False), primary_key=True)
+    id = db.Column(UUIDType(binary=False), primary_key=True,
+                   default=create_uuid)
     created = db.Column(db.DateTime, default=datetime.utcnow)
     expiry = db.Column(db.DateTime)
     ip_address = db.Column(IPAddressType)
@@ -134,7 +139,8 @@ class Token(dbModel):
 
 
 class Registration(dbModel):
-    id = db.Column(UUIDType(binary=False), primary_key=True)
+    id = db.Column(UUIDType(binary=False), primary_key=True,
+                   default=create_uuid)
     expiry = db.Column(db.DateTime, nullable=False)
     type = db.Column(db.Enum(RegistrationType))
 
@@ -154,7 +160,8 @@ class Registration(dbModel):
 
 
 class MailingList(dbModel):
-    id = db.Column(UUIDType(binary=False), primary_key=True)
+    id = db.Column(UUIDType(binary=False), primary_key=True,
+                   default=create_uuid)
     email = db.Column(db.String(120), unique=True)
     topic = db.Column(db.String(60))
 

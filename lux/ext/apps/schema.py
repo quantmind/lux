@@ -46,4 +46,5 @@ class ApplicationSchema(Schema):
 
     class Meta:
         model = 'applications'
+        exclude = ('entities', 'groups', 'permissions', 'mailinglists')
 

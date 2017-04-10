@@ -1,4 +1,5 @@
 from lux.utils import test
+from lux.models import fields
 
 from tests.auth.utils import AuthUtils
 
@@ -11,34 +12,39 @@ class TestBackend(test.AppTestCase, AuthUtils):
         pass
 
     def test_backend(self):
-        backend = self.app.auth_backend
-        self.assertTrue(backend)
-        self.assertTrue(backend.backends)
+        self.assertTrue(self.app.auth)
+        self.assertTrue(self.app.auth.backends)
 
     @test.green
     def test_get_user_none(self):
-        backend = self.app.auth_backend
-        request = self.app.wsgi_request()
-        user = backend.get_user(request, user_id=18098098)
-        self.assertEqual(user, None)
-        user = backend.get_user(request, email='ksdcks.sdvddvf@djdjhdfc.com')
-        self.assertEqual(user, None)
-        user = backend.get_user(request, username='dhvfvhsdfgvhfd')
-        self.assertEqual(user, None)
+        auth = self.app.auth
+        with self.app.session() as session:
+            self.assertEqual(
+                auth.get_user(session, id=18098098),
+                None
+            )
+            self.assertEqual(
+                auth.get_user(session, email='ksdcks.sdvddvf@djdjhdfc.com'),
+                None
+            )
+            self.assertEqual(
+                auth.get_user(session, username='dhvfvhsdfgvhfd'),
+                None
+            )
 
     def test_create_user(self):
         return self._new_credentials()
 
     @test.green
     def test_create_superuser(self):
-        backend = self.app.auth_backend
-        request = self.app.wsgi_request()
-
-        user = backend.create_superuser(request,
-                                        username='foo',
-                                        email='foo@pippo.com',
-                                        password='pluto',
-                                        first_name='Foo')
+        with self.app.session() as session:
+            user = self.app.auth.create_superuser(
+                session,
+                username='foo',
+                email='foo@pippo.com',
+                password='pluto',
+                first_name='Foo'
+            )
         self.assertTrue(user.id)
         self.assertEqual(user.first_name, 'Foo')
         self.assertTrue(user.is_superuser())
@@ -74,4 +80,5 @@ class TestBackend(test.AppTestCase, AuthUtils):
     def test_rest_user(self):
         """Check that the RestField was overwritten properly"""
         model = self.app.models['users']
-        self.assertEqual(model.field('email').type, 'email')
+        schema = model.get_schema(model.model_schema)
+        self.assertIsInstance(schema.fields['email'], fields.Email)

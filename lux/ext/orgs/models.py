@@ -1,27 +1,24 @@
-from sqlalchemy import (
-    Column, String, ForeignKey, Boolean, Integer, UniqueConstraint
-)
+import sqlalchemy as db
 from sqlalchemy.orm import relationship, backref
 
 import lux.ext.oauth.models as oauth
 import lux.ext.auth.models as auth
 
-from odm.types import ChoiceType
 import odm
 
 from .schema import MemberRole
 from ..apps.models import AppModelMixin
 
 
-Model = auth.Model
+dbModel = auth.dbModel
 
 
 class Entity(oauth.User, AppModelMixin):
-    username = Column(String(50))
-    email = Column(String(120))
-    link = Column(String(128))
-    timezone = Column(String(64))
-    type = Column(String(12))
+    username = db.Column(db.String(50))
+    email = db.Column(db.String(120))
+    link = db.Column(db.String(128))
+    timezone = db.Column(db.String(64))
+    type = db.Column(db.String(12))
 
     @odm.declared_attr
     def __table_args__(cls):
@@ -29,12 +26,12 @@ class Entity(oauth.User, AppModelMixin):
         if name == 'entity':
             return odm.table_args(
                 oauth.User,
-                UniqueConstraint(
+                db.UniqueConstraint(
                     'application_id',
                     'username',
                     name='_entity_app_username'
                 ),
-                UniqueConstraint(
+                db.UniqueConstraint(
                     'application_id',
                     'email',
                     name='_entity_app_email'
@@ -57,57 +54,61 @@ class Entity(oauth.User, AppModelMixin):
             }
 
 
-class EntityOwnership(Model):
+class EntityOwnership(dbModel):
     """Create an ownership link between an object and an entity
 
     The object-entityownership is a one-to-one relationship in the sense that
     an object can be owned by one entity only.
     """
-    object_id = Column(String(60), primary_key=True, nullable=False)
-    type = Column(String(60), primary_key=True, nullable=False)
-    private = Column(Boolean)
+    object_id = db.Column(db.String(60), primary_key=True, nullable=False)
+    type = db.Column(db.String(60), primary_key=True, nullable=False)
+    private = db.Column(db.Boolean)
 
     @odm.declared_attr
     def entity_id(cls):
-        return Column(ForeignKey('entity.id'), nullable=False)
+        return db.Column(db.ForeignKey('entity.id'), nullable=False)
 
     @odm.declared_attr
     def entity(cls):
         return relationship("Entity", backref="own_objects")
 
 
-class User(Model):
+class User(dbModel):
     __inherit_from__ = 'entity'
 
     @odm.declared_attr
     def id(cls):
-        return Column(ForeignKey('entity.id'), primary_key=True)
+        return db.Column(db.ForeignKey('entity.id'), primary_key=True)
 
 
-class Organisation(Model):
+class Organisation(dbModel):
     __inherit_from__ = 'entity'
-    billing_email_address = Column(String(120))
+    billing_email_address = db.Column(db.String(120))
 
     @odm.declared_attr
     def id(cls):
-        return Column(ForeignKey('entity.id'), primary_key=True)
+        return db.Column(db.ForeignKey('entity.id'), primary_key=True)
 
 
-class OrgMember(Model):
+class OrgMember(dbModel):
     """Organisation Membership
     """
-    private = Column(Boolean)
-    role = Column(ChoiceType(MemberRole, impl=Integer), nullable=False)
+    private = db.Column(db.Boolean)
+    role = db.Column(db.Enum(MemberRole), nullable=False)
 
     @odm.declared_attr
     def user_id(cls):
-        return Column(ForeignKey('user.id', ondelete='CASCADE'),
-                      primary_key=True)
+        return db.Column(
+            db.ForeignKey('user.id', ondelete='CASCADE'),
+            primary_key=True
+        )
 
     @odm.declared_attr
     def organisation_id(cls):
-        return Column(ForeignKey('organisation.id', ondelete='CASCADE'),
-                      primary_key=True)
+        return db.Column(
+            db.ForeignKey('organisation.id', ondelete='CASCADE'),
+            primary_key=True
+        )
 
     @odm.declared_attr
     def organisation(cls):
@@ -118,7 +119,7 @@ class OrgMember(Model):
         return relationship("User", backref="memberships")
 
 
-class OrganisationApp(Model):
+class OrganisationApp(dbModel):
     """Table which holds the one-to-many relationship between
     organisation and applications.
 
@@ -127,8 +128,10 @@ class OrganisationApp(Model):
     """
     @odm.declared_attr
     def organisation_id(cls):
-        return Column(ForeignKey('organisation.id', ondelete='CASCADE'),
-                      nullable=False, primary_key=True)
+        return db.Column(
+            db.ForeignKey('organisation.id', ondelete='CASCADE'),
+            nullable=False, primary_key=True
+        )
 
     @odm.declared_attr
     def organisation(cls):
@@ -139,8 +142,9 @@ class OrganisationApp(Model):
 
     @odm.declared_attr
     def application_id(cls):
-        return Column(ForeignKey('appdomain.id', ondelete='CASCADE'),
-                      nullable=False, primary_key=True)
+        return db.Column(
+            db.ForeignKey('appdomain.id', ondelete='CASCADE'),
+            nullable=False, primary_key=True)
 
     @odm.declared_attr
     def application(cls):
@@ -153,11 +157,11 @@ class OrganisationApp(Model):
 class Group(auth.Group, AppModelMixin):
     """Groups belong to applications and, optionally, to organisations
     """
-    name = Column(String(80))
+    name = db.Column(db.String(80))
 
     @odm.declared_attr
     def organisation_id(cls):
-        return Column(ForeignKey('organisation.id'))
+        return db.Column(db.ForeignKey('organisation.id'))
 
     @odm.declared_attr
     def organisation(cls):
@@ -166,7 +170,7 @@ class Group(auth.Group, AppModelMixin):
     @odm.declared_attr
     def __table_args__(cls):
         return (
-            UniqueConstraint(
+            db.UniqueConstraint(
                 'application_id',
                 'name',
                 'organisation_id',
@@ -176,12 +180,12 @@ class Group(auth.Group, AppModelMixin):
 
 
 class Permission(auth.Permission, AppModelMixin):
-    name = Column(String(60))
+    name = db.Column(db.String(60))
 
     @odm.declared_attr
     def __table_args__(cls):
         return (
-            UniqueConstraint(
+            db.UniqueConstraint(
                 'application_id',
                 'name',
                 name='_perm_app_name'
@@ -190,12 +194,12 @@ class Permission(auth.Permission, AppModelMixin):
 
 
 class MailingList(auth.MailingList, AppModelMixin):
-    email = Column(String(120))
+    email = db.Column(db.String(120))
 
     @odm.declared_attr
     def __table_args__(cls):
         return (
-            UniqueConstraint(
+            db.UniqueConstraint(
                 'application_id',
                 'email',
                 'topic',

@@ -2,8 +2,7 @@ from datetime import datetime
 
 from lux.models import Schema, fields
 from lux.ext.rest import RestRouter
-
-from . import Model
+from lux.ext.odm import Model
 
 
 class TokenSchema(Schema):
@@ -18,7 +17,6 @@ class NewTokenSchema(TokenSchema):
     """
     description = fields.String(required=True, minLength=2, maxLength=256,
                                 html_type='textarea')
-
 
 
 class TokenModel(Model):
@@ -62,8 +60,8 @@ class TokenCRUD(RestRouter):
             - token
         responses:
             201:
-                description: A new token was succesfully created
-                items:
+                description: A new token was successfully created
+                schema:
                     $ref: '#/definitions/Token'
         """
         return self.model.create_response(request)

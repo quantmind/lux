@@ -46,15 +46,6 @@ class AuthBackend(auth.TokenBackend):
             request.cache.application = app
             request.cache.user = self.service_user(request)
 
-    def create_user(self, request, application_id=False, **kw):
-        if 'application_id' not in kw:
-            user = request.cache.user
-            if user:
-                kw['application_id'] = user.application_id
-            else:
-                kw['application_id'] = request.config['MASTER_APPLICATION_ID']
-        return super().create_user(request, **kw)
-
     def secret_from_jwt_payload(self, request, payload):
         app_id = payload.get("id")
         if not app_id:
