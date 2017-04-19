@@ -4,15 +4,18 @@ from sqlalchemy.orm import relationship
 from odm import declared_attr
 from lux.ext import odm
 from lux.utils.text import engine
+from lux.utils.crypt import create_uuid
 
 from odm.types import JSONType, UUIDType
 
 
-Model = odm.model_base('applications')
+dbModel = odm.model_base('applications')
 
 
-class Plugin(Model):
-    id = Column(UUIDType(binary=False), primary_key=True,
+class Plugin(dbModel):
+    id = Column(UUIDType(binary=False),
+                primary_key=True,
+                default=create_uuid,
                 doc='plugin unique id')
     name = Column(String(32), doc='plugin unique name',
                   unique=True, nullable=False)
@@ -21,7 +24,7 @@ class Plugin(Model):
         return self.name
 
 
-class AppPlugin(Model):
+class AppPlugin(dbModel):
     config = Column(JSONType)
 
     @declared_attr
@@ -45,7 +48,7 @@ class AppPlugin(Model):
         return relationship("AppDomain", backref='plugins')
 
 
-class AppDomain(Model):
+class AppDomain(dbModel):
     id = Column(UUIDType(binary=False),
                 primary_key=True,
                 doc='application unique id')

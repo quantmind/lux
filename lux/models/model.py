@@ -156,7 +156,11 @@ class Model(ABC, Component):
         return request.json_response(data, 201)
 
     def get_list_response(self, request):
-        pass
+        with self.session(request) as session:
+            models = self.get_list(session)
+            schema = self.get_schema(self.model_schema)
+            data = schema.dump(models, many=True).data
+        return request.json_response(data)
 
     def delete_one_response(self, request, instance=None):
         with self.session(request) as session:
@@ -186,6 +190,12 @@ class Model(ABC, Component):
             raise UnprocessableEntity(errors)
         return model
 
+    def get_list(self, session, *filters, **kwargs):
+        """Get a list of instances from positional and keyed-valued filters
+        """
+        query = self.query(session, *filters, **kwargs)
+        return query.all()
+
     def create_uuid(self, id=None):
         if isinstance(id, uuid.UUID):
             return id
@@ -214,13 +224,6 @@ class Model(ABC, Component):
         elif load_only:
             query = query.load_only(*load_only)
         return query.filter(*filters, **params)
-
-    def get_list(self, request, *filters, session=None, **kwargs):
-        """Get a list of instances from positional and keyed-valued filters
-        """
-        with self.session(request, session=session) as session:
-            query = self.query(request, session, *filters, **kwargs)
-            return query.all()
 
     # CRUD API
     def create_model(self, request, instance=None, data=None, session=None):
