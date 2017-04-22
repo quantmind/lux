@@ -1,9 +1,9 @@
 import json
 from collections import Mapping
 
+from pulsar.api import HttpException
 from pulsar.apps import wsgi
 from pulsar.apps.wsgi import wsgi_cached, render_error_debug
-from pulsar.apps.wsgi.utils import error_messages
 from pulsar.utils.httpurl import JSON_CONTENT_TYPES
 from pulsar.utils.structures import mapping_iterator
 
@@ -12,6 +12,9 @@ from ..utils.messages import error_message
 
 
 TEXT_CONTENT_TYPES = unique_tuple(('text/html', 'text/plain'))
+ERROR_MESSAGES = {
+    422: 'Validation Error'
+}
 
 
 class LuxContext(dict):
@@ -146,14 +149,13 @@ class HeadMeta:
                 yield c
 
 
-def json_message(request, message, error=False, **obj):
+def json_message(request, message, errors=None, **obj):
     """Create a JSON message to return to clients
     """
-    if error:
-        return error_message(message, **obj)
-    else:
-        obj['message'] = message
-        return obj
+    obj['message'] = message
+    if errors:
+        obj['errors'] = errors
+    return obj
 
 
 def error_handler(request, exc):
@@ -168,33 +170,31 @@ def error_handler(request, exc):
             response.content_type = request.content_types.best_match(
                 content_type)
     content_type = None
+
     if response.content_type:
         content_type = response.content_type.split(';')[0]
-    is_html = content_type == 'text/html'
 
-    msg = (str(exc) or error_messages.get(response.status_code) or
+    msg = (app.config['ERROR_MESSAGES'].get(response.status_code) or
            response.status)
-    trace = None
-    if response.status_code >= 500:
-        if app.debug:
-            trace = render_error_debug(request, exc, is_html)
-        else:
-            msg = error_messages.get(response.status_code, 'Internal error')
 
-    if is_html:
-        context = {'status_code': response.status_code,
-                   'status_message': trace or msg}
-        return app.html_response(request,
-                                 ['%s.html' % response.status_code,
-                                  'error.html'],
-                                 context,
-                                 title=response.status)
-    #
     if content_type in JSON_CONTENT_TYPES:
-        return json.dumps(json_message(request, msg,
-                                       error=response.status_code,
-                                       trace=trace))
-    elif trace:
-        return '\n'.join(trace)
+        errors = exc.args[0] if isinstance(exc, HttpException) else None
+        return json.dumps(json_message(request, msg, errors=errors))
     else:
-        return msg
+        is_html = (content_type == 'text/html')
+        trace = None
+        if response.status_code == 500 and app.debug:
+            trace = render_error_debug(request, exc, is_html)
+
+        if is_html:
+            context = {'status_code': response.status_code,
+                       'status_message': trace or msg}
+            return app.html_response(request,
+                                     ['%s.html' % response.status_code,
+                                      'error.html'],
+                                     context,
+                                     title=response.status)
+        elif trace:
+            return '\n'.join(trace)
+        else:
+            return msg

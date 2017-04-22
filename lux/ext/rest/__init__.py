@@ -9,7 +9,6 @@ from .api import (
     route, api_parameters
 )
 from .api.client import ApiClient, HttpRequestMixin
-from .token import TokenBackend, ServiceUser
 from .permissions import PolicySchema, user_permissions, validate_policy
 from .query import DictModel
 
@@ -36,9 +35,6 @@ __all__ = [
     'PolicySchema',
     'validate_policy',
     'user_permissions',
-    #
-    'TokenBackend',
-    'ServiceUser',
     #
     # OpenAPI
     'route',
@@ -90,12 +86,7 @@ class Extension(LuxExtension):
         Parameter('PAGINATION', 'lux.ext.rest.Pagination',
                   'Pagination class'),
         Parameter('MAX_TOKEN_SESSION_EXPIRY', 7 * 24 * 60 * 60,
-                  'Maximum expiry for a token used by a web site in seconds.'),
-        #
-        Parameter('CORS_ALLOWED_METHODS', 'GET, PUT, POST, DELETE, HEAD',
-                  'Access-Control-Allow-Methods for CORS'),
-        # TOKENS
-        Parameter('JWT_ALGORITHM', 'HS512', 'Signing algorithm')
+                  'Maximum expiry for a token used by a web site in seconds.')
     ]
 
     def on_config(self, app):

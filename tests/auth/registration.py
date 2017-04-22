@@ -9,7 +9,7 @@ class RegistrationMixin:
         request = await self.client.post('/registrations', json={})
         self.assertEqual(request.response.status_code, 401)
 
-    async def test_post_registrations_200(self):
+    async def test_post_registrations_201(self):
         """Register a new user"""
         request = await self.client.post(
             '/registrations',

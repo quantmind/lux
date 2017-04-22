@@ -33,7 +33,7 @@ class Extension(LuxExtension):
     ]
 
     def on_config(self, app):
-        self.require(app, 'lux.extensions.rest')
+        self.require(app, 'lux.ext.rest')
 
     def middleware(self, app):
         url = app.config['HTML_TEMPLATES_URL']

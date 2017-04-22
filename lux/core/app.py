@@ -29,7 +29,7 @@ from lux.utils.token import encode_json
 
 from .commands import ConfigError, ConsoleMixin
 from .extension import LuxExtension, Parameter, EventMixin, app_attribute
-from .wrappers import HeadMeta, LuxContext
+from .wrappers import HeadMeta, LuxContext, ERROR_MESSAGES
 from .templates import render_data, template_engine, Template
 from .cms import CMS
 from .cache import create_cache
@@ -37,6 +37,7 @@ from .exceptions import ShellError
 from .channels import LuxChannels
 from .auth import MultiAuthBackend
 
+from .user import Anonymous
 from ..models import ModelContainer, registry, context
 
 
@@ -104,6 +105,8 @@ class Application(ConsoleMixin, LuxExtension, EventMixin):
                   'Default encoding for text.'),
         Parameter('ERROR_HANDLER', 'lux.core.wrappers:error_handler',
                   'Dotted path to handler of Http exceptions'),
+        Parameter('ERROR_MESSAGES', None,
+                  'Override default rror messages'),
         Parameter('MEDIA_URL', '/media/',
                   'the base url for static files', True),
         Parameter('MINIFIED_MEDIA', True,
@@ -225,7 +228,6 @@ class Application(ConsoleMixin, LuxExtension, EventMixin):
         self.models = ModelContainer().init_app(self)
         self.extensions = OrderedDict()
         self.config = _build_config(self)
-        self.auth = MultiAuthBackend.from_app(self)
         self.fire('on_config')
 
     @property
@@ -263,6 +265,12 @@ class Application(ConsoleMixin, LuxExtension, EventMixin):
         return create_cache(self, self.config['CACHE_SERVER'])
 
     @lazyproperty
+    def auth(self):
+        """Return the Cache handler
+        """
+        return MultiAuthBackend.from_app(self)
+
+    @lazyproperty
     def green_pool(self):
         if self.config['GREEN_POOL']:
             self.config['THREAD_POOL'] = False
@@ -283,9 +291,9 @@ class Application(ConsoleMixin, LuxExtension, EventMixin):
     def environ(self, environ, start_response):
         request = wsgi_request(environ)
         self.on_request(request)
-        self.auth.request(request)
 
     def wsgi_request(self, **kw):
+        """Used for testing"""
         request = self.green_pool.wait(test_wsgi_request(**kw))
         self.on_request(request)
         return request
@@ -295,7 +303,10 @@ class Application(ConsoleMixin, LuxExtension, EventMixin):
         environ = request.environ
         environ['error.handler'] = module_attribute(config['ERROR_HANDLER'])
         environ['default.content_type'] = config['DEFAULT_CONTENT_TYPE']
-        request.cache.app = self
+        cache = request.cache
+        cache.app = self
+        cache.user = Anonymous()
+        self.fire('on_request', request)
 
     def session(self, request=None):
         return self.models.session(request)
@@ -713,6 +724,9 @@ def _build_config(self):
 
     config.update(((k, v) for k, v in self.params.items() if k == k.upper()))
     config['EXTENSIONS'] = tuple(apps)
+    error_messages = ERROR_MESSAGES.copy()
+    error_messages.update(config.get('ERROR_MESSAGES') or ())
+    config['ERROR_MESSAGES'] = error_messages
     return config
 
 

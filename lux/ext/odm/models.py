@@ -50,9 +50,7 @@ class Query(models.Query):
             return query.first()
 
     def all(self):
-        model = self.model
-        fields = self.fields
-        return [model.instance(o, fields) for o in self._query().all()]
+        return self._query().all()
 
     def delete(self):
         return self._query().delete()

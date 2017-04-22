@@ -32,7 +32,7 @@ class ApiClient:
         self._threads = threading.local()
         self._headers = [('content-type', 'application/json')]
 
-    def http(self, request, netloc=None):
+    def http(self, netloc=None):
         app = self.local_apps.get(netloc) if netloc else self.app
         if app:
             return http_local(app)
@@ -42,32 +42,36 @@ class ApiClient:
                 self._threads.http = http = self.app.http()
             return http
 
-    def __call__(self, request):
+    def __call__(self, request=None):
         return ApiClientRequest(request, self)
 
     def request(self, request, method, url,
                 token=None, jwt=False, headers=None, auth_error=None, **kw):
         api = self.app.apis.get(url)
-        http = self.http(request, api.netloc)
+        http = self.http(api.netloc)
         req_headers = []
         req_headers.extend(headers or ())
-        agent = request.get('HTTP_USER_AGENT', request.config['APP_NAME'])
+        agent = self.app.config['APP_NAME']
+        if request:
+            agent = request.get('HTTP_USER_AGENT', agent)
         req_headers.append(('user-agent', agent))
 
         if jwt:
             jwt = app_token(request)
             req_headers.append(('Authorization', 'JWT %s' % jwt))
         else:
-            if not token and request.cache.get('session'):
+            if not token and request and request.cache.get('session'):
                 token = request.cache.session.token
             if token:
                 req_headers.append(('Authorization', 'Bearer %s' % token))
 
+        if not url.startswith('http'):
+            url = 'http://local%s' % url
         response = http.request(method, url, headers=req_headers, **kw)
         try:
             raise_http_error(response, method, url)
         except (Http401, PermissionDenied) as exc:
-            request.logger.error(str(exc))
+            (request or self.app).logger.error(str(exc))
             if auth_error:
                 raise auth_error from None
             raise

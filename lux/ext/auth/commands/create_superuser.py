@@ -1,15 +1,13 @@
 """Management utility to create superusers."""
 import getpass
-import re
+import json
 
-from lux.core import LuxCommand, Setting
-from lux.utils.auth import normalise_email
+from pulsar.api import UnprocessableEntity
 
-
-RE_VALID_USERNAME = re.compile('[\w.@+-]+$')
+from lux.core import LuxCommand, Setting, CommandError
 
 
-def get_def_username(session):
+def get_def_username():
     # Try to determine the current system user's username to use as a default.
     try:
         def_username = getpass.getuser().replace(' ', '').lower()
@@ -20,10 +18,6 @@ def get_def_username(session):
         def_username = ''
     # Determine whether the default username is taken, so we don't display
     # it as an option.
-    if def_username:
-        user = session.auth.get_user(session, username=def_username)
-        if user:
-            def_username = ''
     return def_username
 
 
@@ -36,81 +30,54 @@ class Command(LuxCommand):
     )
 
     def run(self, options, interactive=False):
+        api = self.app.api()
         username = options.username
         password = options.password
         email = options.email
         if not username or not password or not email:
             interactive = True
-        request = self.app.wsgi_request()
-        auth_backend = self.app.auth_backend
-        auth_backend.request(request.environ)
-
-        if interactive:  # pragma    nocover
-            def_username = get_def_username(request, auth_backend)
-            input_msg = 'Username'
-            if def_username:
-                input_msg += ' (Leave blank to use %s)' % def_username
-            username = None
-            email = None
-            password = None
+        while True:
+            if interactive:
+                try:
+                    username, email, password, password2 = self.get_user()
+                except KeyboardInterrupt:
+                    self.write_err('\nOperation cancelled.')
+                    return
+            else:
+                password2 = password
             try:
-                # Get a username
-                while not username:
-                    username = input(input_msg + ': ')
-                    if def_username and username == '':
-                        username = def_username
-                    if not RE_VALID_USERNAME.match(username):
-                        self.write_err('Error: That username is invalid. Use '
-                                       'only letters, digits and underscores.')
-                        username = None
-                    else:
-                        user = auth_backend.get_user(request,
-                                                     username=username)
-                        if user is not None:
-                            self.write_err(
-                                "Error: That username is already taken.\n")
-                            username = None
+                reg = api.post('/registrations', json=dict(
+                    username=username,
+                    email=email,
+                    password=password,
+                    password_repeat=password2
+                ))
+            except UnprocessableEntity as exc:
+                message = json.loads(exc.args[0])['errors']
+                if not interactive:
+                    raise CommandError(message)
+                self.write_err(json.dumps(message, indent=4))
 
-                while not email:
-                    email = input('Email: ')
-                    try:
-                        email = normalise_email(email)
-                    except Exception:
-                        self.write_err('Error: That email is invalid.')
-                        email = None
-                    else:
-                        user = auth_backend.get_user(request, email=email)
-                        if user is not None:
-                            self.write_err(
-                                "Error: That email is already taken.")
-                            email = None
+    def get_user(self):    # pragma    nocover
+        def_username = get_def_username()
+        input_msg = 'Username'
+        if def_username:
+            input_msg += ' (Leave blank to use %s)' % def_username
+        username = None
+        email = None
+        password = None
 
-                # Get a password
-                while 1:
-                    if not password:
-                        password = getpass.getpass()
-                        password2 = getpass.getpass('Password (again): ')
-                        if password != password2:
-                            self.write_err(
-                                "Error: Your passwords didn't match.")
-                            password = None
-                            continue
-                    if password.strip() == '':
-                        self.write_err(
-                            "Error: Blank passwords aren't allowed.")
-                        password = None
-                        continue
-                    break
-            except KeyboardInterrupt:
-                self.write_err('\nOperation cancelled.')
-                return
-        user = auth_backend.create_superuser(request,
-                                             username=username,
-                                             email=normalise_email(email),
-                                             password=password)
-        if user:
-            self.write("Superuser %s created successfully.\n" % user.username)
-        else:
-            self.write_err("ERROR: could not create superuser")
+        while not username:
+            username = input(input_msg + ': ')
+            if def_username and username == '':
+                username = def_username
 
-        return user
+        while not email:
+            email = input('Email: ')
+
+        # Get a password
+        while not password:
+            password = getpass.getpass()
+            password2 = getpass.getpass('Password (again): ')
+
+        return username, email, password, password2

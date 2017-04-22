@@ -51,6 +51,7 @@ class Password(String):
     def __init__(self, *args, **kw):
         super().__init__(*args, **kw)
         self.metadata['html_type'] = 'hidden'
+        self.validators.append(password_validate)
 
 
 class Slug(String):
@@ -70,6 +71,11 @@ class DateTime(MaDateTime):
         if isinstance(value, datetime):
             return value
         return super()._deserialize(value, attr, data)
+
+
+def password_validate(value):
+    if value != value.strip():
+        return False
 
 
 def slug_validator(separator, value):
