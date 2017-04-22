@@ -170,6 +170,12 @@ class Model(ABC, Component):
         request.response.status_code = 204
         return request.response
 
+    def get_list(self, session, *filters, **kwargs):
+        """Get a list of instances from positional and keyed-valued filters
+        """
+        query = self.query(session, *filters, **kwargs)
+        return query.all()
+
     # Model CRUD Operations
     def get_one(self, session, *filters, **kwargs):
         query = self.query(session, *filters, **kwargs)
@@ -189,12 +195,6 @@ class Model(ABC, Component):
         if errors:
             raise UnprocessableEntity(errors)
         return model
-
-    def get_list(self, session, *filters, **kwargs):
-        """Get a list of instances from positional and keyed-valued filters
-        """
-        query = self.query(session, *filters, **kwargs)
-        return query.all()
 
     def create_uuid(self, id=None):
         if isinstance(id, uuid.UUID):
