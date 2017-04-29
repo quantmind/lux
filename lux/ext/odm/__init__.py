@@ -16,6 +16,7 @@ from lux.core import Parameter, LuxExtension
 
 from .mapper import Mapper, model_base
 from .models import Model
+from .fields import Related
 from .migrations import migrations
 
 
@@ -23,6 +24,7 @@ __all__ = ['model_base',
            'ModelSchema',
            'declared_attr',
            'Model',
+           'Related',
            'migrations',
            'object_session']
 

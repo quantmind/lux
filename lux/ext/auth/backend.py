@@ -1,22 +1,52 @@
-from pulsar.api import Http404, BadRequest
+from pulsar.api import BadRequest, Http401, PermissionDenied, Http404
 
 from sqlalchemy.exc import StatementError
 from sqlalchemy.orm import joinedload
 
-from lux.core import PasswordMixin, AuthenticationError, backend_action
+from lux.core import AuthenticationError, AuthBackend as AuthBackendBase
 from lux.utils.crypt import create_uuid
 from lux.utils.auth import normalise_email
 from lux.utils.data import compact_dict
-from lux.ext import rest
 
 from .rest.user import FullUserSchema
 
 
-class TokenBackend(PasswordMixin, rest.TokenBackend):
+class AuthBackend(AuthBackendBase):
     """Mixin to implement authentication backend based on
     SQLAlchemy models
     """
-    @backend_action
+    def on_request(self, request):
+        auth = request.get('HTTP_AUTHORIZATION')
+        cache = request.cache
+        cache.user = self.anonymous()
+        if not auth:
+            return
+        app = request.app
+        try:
+            try:
+                auth_type, key = auth.split(None, 1)
+            except ValueError:
+                raise BadRequest('Invalid Authorization header') from None
+            auth_type = auth_type.lower()
+            if auth_type == 'bearer':
+                token = self.get_token(request, key)
+                if not token:
+                    raise BadRequest
+                request.cache.token = token
+                user = token.user
+            elif auth_type == 'jwt':
+                payload = app.auth.decode_jwt(request, key)
+                payload['token'] = key
+                user = app.auth.service_user(payload)
+        except (Http401, BadRequest, PermissionDenied):
+            raise
+        except Exception:
+            request.app.logger.exception('Could not authorize')
+            raise BadRequest from None
+        else:
+            if user:
+                request.cache.user = user
+
     def get_user(self, session, id=None, token_id=None, username=None,
                  email=None, auth_key=None, **kw):
         """Securely fetch a user by id, username, email or auth key
@@ -42,7 +72,6 @@ class TokenBackend(PasswordMixin, rest.TokenBackend):
         except Http404:
             return
 
-    @backend_action
     def authenticate(self, session, user=None, password=None, **kw):
         if not user:
             user = self.get_user(session, **kw)
@@ -51,19 +80,16 @@ class TokenBackend(PasswordMixin, rest.TokenBackend):
         else:
             raise AuthenticationError('Invalid credentials')
 
-    @backend_action
     def create_user(self, session, **data):
         users = session.models['users']
         data.setdefault('active', True)
         return users.create_one(session, data, FullUserSchema)
 
-    @backend_action
     def create_superuser(self, request, **params):
         params['superuser'] = True
         params['active'] = True
         return self.create_user(request, **params)
 
-    @backend_action
     def create_token(self, request, user, **kwargs):
         """Create the token
         """

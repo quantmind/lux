@@ -124,3 +124,11 @@ def get_model_fields(schema, app):
         base_fields=base_fields
     )
 
+
+def resource_name(schema):
+    if not schema:
+        return
+    name = type(schema).__name__
+    if name.endswith('Schema'):
+        name = name[:-6]
+    return name

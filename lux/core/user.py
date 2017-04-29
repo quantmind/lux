@@ -42,6 +42,21 @@ class Anonymous(AttributeDictionary, UserMixin):
         return 0
 
 
+class ServiceUser(Anonymous):
+
+    def is_superuser(self):
+        return self.is_authenticated()
+
+    def is_authenticated(self):
+        return bool(self.token)
+
+    def is_anonymous(self):
+        return True
+
+    def is_active(self):
+        return False
+
+
 class User(AttributeDictionary, UserMixin):
     '''A dictionary-based user
 

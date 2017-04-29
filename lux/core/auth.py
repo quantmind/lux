@@ -1,17 +1,15 @@
-from functools import partial
 from importlib import import_module
 
-from pulsar.api import PermissionDenied, Http401
+from pulsar.api import PermissionDenied, Http401, BadRequest
 from pulsar.utils.structures import inverse_mapping
-from pulsar.utils.importer import module_attribute
-from pulsar.apps.wsgi import wsgi_request
 from pulsar.utils.string import to_bytes
 from pulsar.utils.log import lazyproperty
 
 from lux.utils.data import as_tuple
+import lux.utils.token as jwt
 from lux.models import Component
 
-from .user import Anonymous
+from .user import Anonymous, ServiceUser
 
 
 ACTIONS = {'read': 1,
@@ -88,32 +86,31 @@ class PasswordMixin:
             return UNUSABLE_PASSWORD
 
 
-class AuthBase:
+class JwtMixin:
 
-    @backend_action
-    def anonymous(self, request):
-        pass
+    def decode_jwt(self, request, token):
+        config = self.config
+        return self._decode_jwt(request, token, config['SECRET_KEY'],
+                                algorithm=config['JWT_ALGORITHM'])
 
-    @backend_action
-    def create_user(self, session, **kwargs):
-        pass
+    def _decode_jwt(self, request, token, key=None, algorithm=None, **options):
+        try:
+            return jwt.decode(token, key=key, algorithm=algorithm,
+                              options=options)
+        except jwt.ExpiredSignature:
+            request.logger.warning('JWT token has expired')
+            raise Http401('Token') from None
+        except jwt.DecodeError as exc:
+            request.logger.warning(str(exc))
+            raise BadRequest from None
 
-    @backend_action
+
+class PermissionMixin:
+
     def has_permission(self, request, resource, action):
         '''Check if the given request has permission over ``resource``
         element with permission ``action``
         '''
-        pass
-
-    @backend_action
-    def get_permissions(self, request, resources, actions=None):
-        """Get a dictionary of permissions for the given resource"""
-        pass
-
-
-class SimpleBackend(AuthBase):
-
-    def has_permission(self, request, resource, action):
         return True
 
     def get_permissions(self, request, resources, actions=None):
@@ -122,70 +119,26 @@ class SimpleBackend(AuthBase):
         return dict(((r, perm.copy()) for r in as_tuple(resources)))
 
 
-class MultiAuthBackend(Component, PasswordMixin):
+class AuthBackend(Component, PermissionMixin, PasswordMixin, JwtMixin):
     '''Aggregate several Authentication backends
     '''
-    def __init__(self):
-        self.backends = []
+    service_user = ServiceUser
+    anonymous = Anonymous
 
-    @classmethod
-    def from_app(cls, app):
-        auth = cls()
-        for dotted_path in app.config['AUTHENTICATION_BACKENDS']:
-            backend = module_attribute(dotted_path)
-            if not backend:
-                app.logger.error('Could not load backend "%s"', dotted_path)
-                continue
-            backend = backend()
-            auth.append(backend)
-            app.bind_events(backend)
-        return auth.init_app(app)
+    def __init__(self, app):
+        self.init_app(app)
 
-    def append(self, backend):
-        self.backends.append(backend)
-
-    def request(self, request):
-        cache = request.cache
-        cache.user = self.anonymous(request)
-        return self._execute_backend_method('request', request)
+    def on_request(self, request):
+        request.cache.user = self.anonymous()
 
     def response(self, environ, response):
-        request = wsgi_request(environ)
-        for backend in reversed(self.backends):
-            backend_method = getattr(backend, 'response', None)
-            if backend_method:
-                response = backend_method(request, response) or response
-        return response
+        pass
 
-    def has_permission(self, request, resource, action):
-        has = self._execute_backend_method('has_permission',
-                                           request, resource, action)
-        return True if has is None else has
+    def authenticate(self, session, **kw):
+        raise AuthenticationError
 
-    def default_anonymous(self, request):
-        return Anonymous()
-
-    def __iter__(self):
-        return iter(self.backends)
-
-    def __getattr__(self, method):
-        if method in auth_backend_actions:
-            return partial(self._execute_backend_method, method)
-        else:
-            raise AttributeError("'%s' object has no attribute '%s'" %
-                                 (type(self).__name__, method))
-
-    def _execute_backend_method(self, method, *args, **kwargs):
-        for backend in self:
-            backend_method = getattr(backend, method, None)
-            if backend_method:
-                wait = self.app.green_pool.wait
-                result = wait(backend_method(*args, **kwargs))
-                if result is not None:
-                    return result
-        default = getattr(self, 'default_%s' % method, None)
-        if hasattr(default, '__call__'):
-            return default(*args, **kwargs)
+    def create_user(self, session, **params):
+        raise NotImplementedError
 
 
 class Resource:

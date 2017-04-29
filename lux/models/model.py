@@ -4,11 +4,13 @@ from abc import ABC, abstractmethod
 from copy import copy
 from inspect import isclass
 
-from pulsar.api import UnprocessableEntity
+from pulsar.api import UnprocessableEntity, MethodNotAllowed
 
 from lux.utils.crypt import as_hex
 
 from .component import Component, app_cache
+from .schema import resource_name
+from ..utils.data import compact_dict
 
 
 GET_HEAD = frozenset(('GET', 'HEAD'))
@@ -183,17 +185,21 @@ class Model(ABC, Component):
 
     def create_one(self, session, data, schema=None):
         schema = self.get_schema(schema or self.create_schema)
+        if not schema:
+            raise MethodNotAllowed
         model, errors = schema.load(data, session=session)
         if errors:
-            raise UnprocessableEntity(errors)
+            raise self.unprocessable_entity(errors, schema)
         session.flush()
         return model
 
     def update_one(self, session, data, schema=None):
         schema = self.get_schema(schema or self.update_schema)
+        if not schema:
+            raise MethodNotAllowed
         model, errors = schema.load(data, session=session)
         if errors:
-            raise UnprocessableEntity(errors)
+            raise self.unprocessable_entity(errors, schema)
         return model
 
     def create_uuid(self, id=None):
@@ -295,6 +301,16 @@ class Model(ABC, Component):
         """Validate fields values
         """
         pass
+
+    def unprocessable_entity(self, errors, schema=None):
+        error_list = []
+        resource = resource_name(schema)
+        for field, messages in errors.items():
+            for message in messages:
+                error_list.append(
+                    compact_dict(field=field, code=message, resource=resource)
+                )
+        return UnprocessableEntity(error_list)
 
 
 @app_cache

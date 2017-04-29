@@ -1,14 +1,10 @@
-import json
 from collections import Mapping
 
-from pulsar.api import HttpException
 from pulsar.apps import wsgi
-from pulsar.apps.wsgi import wsgi_cached, render_error_debug
-from pulsar.utils.httpurl import JSON_CONTENT_TYPES
+from pulsar.apps.wsgi import wsgi_cached
 from pulsar.utils.structures import mapping_iterator
 
 from ..utils.data import unique_tuple
-from ..utils.messages import error_message
 
 
 TEXT_CONTENT_TYPES = unique_tuple(('text/html', 'text/plain'))
@@ -147,54 +143,3 @@ class HeadMeta:
             c = self.as_string(c)
             if c:
                 yield c
-
-
-def json_message(request, message, errors=None, **obj):
-    """Create a JSON message to return to clients
-    """
-    obj['message'] = message
-    if errors:
-        obj['errors'] = errors
-    return obj
-
-
-def error_handler(request, exc):
-    """Default renderer for errors."""
-    app = request.app
-    response = request.response
-    if not response.content_type:
-        content_type = request.get('default.content_type')
-        if content_type:
-            if isinstance(content_type, str):
-                content_type = (content_type,)
-            response.content_type = request.content_types.best_match(
-                content_type)
-    content_type = None
-
-    if response.content_type:
-        content_type = response.content_type.split(';')[0]
-
-    msg = (app.config['ERROR_MESSAGES'].get(response.status_code) or
-           response.status)
-
-    if content_type in JSON_CONTENT_TYPES:
-        errors = exc.args[0] if isinstance(exc, HttpException) else None
-        return json.dumps(json_message(request, msg, errors=errors))
-    else:
-        is_html = (content_type == 'text/html')
-        trace = None
-        if response.status_code == 500 and app.debug:
-            trace = render_error_debug(request, exc, is_html)
-
-        if is_html:
-            context = {'status_code': response.status_code,
-                       'status_message': trace or msg}
-            return app.html_response(request,
-                                     ['%s.html' % response.status_code,
-                                      'error.html'],
-                                     context,
-                                     title=response.status)
-        elif trace:
-            return '\n'.join(trace)
-        else:
-            return msg

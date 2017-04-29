@@ -1,7 +1,13 @@
 from functools import partial
 from datetime import datetime
 
-from marshmallow.fields import *    # naqa
+from marshmallow.fields import (
+    Field, Raw, Dict, List, String, UUID, Number, Integer, Decimal,
+    Boolean, FormattedString, Float, DateTime, LocalDateTime,
+    Time, Date, TimeDelta, Url, URL, Email, Method, Function, Str, Bool,
+    Int, Constant,
+    Nested as MaNested, DateTime as MaDateTime
+)
 from apispec.ext.marshmallow.swagger import FIELD_MAPPING
 
 from pulsar.utils.slugify import slugify
@@ -10,17 +16,45 @@ from .model import app_schemas, app_cache
 from .schema import Schema
 
 
-MaNested = Nested
-MaDateTime = DateTime
+__all__ = [
+    'Field',
+    'Raw',
+    'Nested',
+    'Dict',
+    'List',
+    'String',
+    'UUID',
+    'Number',
+    'Integer',
+    'Decimal',
+    'Boolean',
+    'FormattedString',
+    'Float',
+    'DateTime',
+    'LocalDateTime',
+    'Time',
+    'Date',
+    'TimeDelta',
+    'Url',
+    'URL',
+    'Email',
+    'Method',
+    'Function',
+    'Str',
+    'Bool',
+    'Int',
+    'Constant',
+    #
+    'Password',
+    'Slug'
+]
 
 
 class Nested(MaNested):
 
     @property
     def schema(self):
-        """The nested Schema object.
-        .. versionchanged:: 1.0.0
-            Renamed from `serializer` to `schema`
+        """The nested Schema object
         """
         app = self.root.app
         if app and isinstance(self.nested, str):

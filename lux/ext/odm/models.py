@@ -5,8 +5,7 @@ from sqlalchemy import desc, String
 from sqlalchemy.orm import class_mapper, load_only
 from sqlalchemy.sql.expression import func, cast
 from sqlalchemy.exc import DataError, StatementError
-from sqlalchemy.orm.exc import (NoResultFound, MultipleResultsFound,
-                                ObjectDeletedError)
+from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
 from marshmallow_sqlalchemy import ModelConverter
 
@@ -18,6 +17,8 @@ from odm.mapper import object_session
 from lux.core import app_attribute
 from lux.utils.crypt import as_hex
 from lux import models
+
+from .fields import get_primary_keys
 
 
 MissingObjectError = (DataError, NoResultFound, StatementError)
@@ -203,16 +204,11 @@ class Model(models.Model):
 
     @lazyproperty
     def primary_keys(self):
-        mapper = self.db_model.__mapper__
-        return tuple((
-            mapper.get_property_by_column(column)
-            for column in mapper.primary_key
-        ))
+        return get_primary_keys(self.db_model)
 
     def __call__(self, data, session):
         db_model = self.db_model
-        pks = self.primary_keys
-        filters = {pk.key: data.get(pk.key) for pk in pks}
+        filters = {pk.key: data.get(pk.key) for pk in self.primary_keys}
         instance = None
         if None not in filters.values():
             try:

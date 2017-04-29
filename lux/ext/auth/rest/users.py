@@ -1,6 +1,12 @@
 from lux.ext.rest import RestRouter, route
+from lux.models import Schema, fields
 
 from .user import UserModel, UserSchema
+
+
+class UserPathSchema(Schema):
+    id = fields.String(required=True,
+                       description='user unique ID or username')
 
 
 class UserCRUD(RestRouter):
@@ -10,7 +16,8 @@ class UserCRUD(RestRouter):
     """
     model = UserModel(
         "users",
-        model_schema=UserSchema
+        model_schema=UserSchema,
+        update_schema=UserSchema
     )
 
     def get(self, request):
@@ -28,7 +35,7 @@ class UserCRUD(RestRouter):
         """
         return self.model.get_list_response(request)
 
-    @route('<id>')
+    @route('<id>', path_schema=UserPathSchema)
     def get_one(self, request):
         """
         ---
@@ -37,14 +44,13 @@ class UserCRUD(RestRouter):
             - user
         responses:
             200:
-                description: List of users matching filters
-                type: array
-                items:
+                description: The user matching the id or username
+                schema:
                     $ref: '#/definitions/User'
         """
         return self.model.get_model_response(request)
 
-    @route('<id>')
+    @route('<id>', path_schema=UserPathSchema)
     def patch_one(self, request):
         """
         ---
@@ -53,9 +59,8 @@ class UserCRUD(RestRouter):
             - user
         responses:
             200:
-                description: List of users matching filters
-                type: array
-                items:
+                description: The updated user
+                schema:
                     $ref: '#/definitions/User'
         """
-        return self.model.update_model_response(request)
+        return self.model.update_one_response(request)

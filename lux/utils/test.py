@@ -161,11 +161,12 @@ async def load_fixtures(app, path=None, api_url=None, testuser=None,
             for params in items:
                 user = params.pop('api_user', testuser)
                 if user not in test_tokens:
-                    request = await client.post('%s/authorizations' % api_url,
-                                                json=dict(username=user,
-                                                          password=user),
-                                                jwt=admin_jwt)
-                    token = test.json(request.response, 201)['id']
+                    response = await client.post(
+                        '%s/authorizations' % api_url,
+                        json=dict(username=user, password=user),
+                        jwt=admin_jwt
+                    )
+                    token = test.json(response, 201)['id']
                     test_tokens[user] = token
 
                 test_token = test_tokens[user]
@@ -177,10 +178,10 @@ async def load_fixtures(app, path=None, api_url=None, testuser=None,
                     url = '%s/%s' % (
                         url, params.pop(app.models[name].id_field)
                     )
-                request = await client.request(method, url, json=params,
-                                               token=test_token)
-                data = test.json(request.response)
-                code = request.response.status_code
+                response = await client.request(method, url, json=params,
+                                                token=test_token)
+                data = test.json(response)
+                code = response.status_code
                 if code > 201:
                     raise AssertionError('%s api call got %d: %s' %
                                          (url, code, data))
@@ -224,7 +225,10 @@ class TestClient(HttpWsgiClient, Component):
         if cookie:
             heads.append(('Cookie', cookie))
         response = await super()._request(method, url, headers=heads, **kw)
-        return wsgi_request(response.server_side.request.environ)
+        response.wsgi_request = wsgi_request(
+            response.server_side.request.environ
+        )
+        return response
 
 
 class TestMixin:
@@ -264,27 +268,27 @@ class TestMixin:
         """
         if status_code:
             self.assertEqual(response.status_code, status_code)
-        self.assertEqual(response.content_type,
+        self.assertEqual(response.headers['Content-Type'],
                          'text/html; charset=utf-8')
-        return self._content(response).decode('utf-8')
+        return response.text
 
     def text(self, response, status_code=None):
         """Get JSON object from response
         """
         if status_code:
             self.assertEqual(response.status_code, status_code)
-        self.assertEqual(response.content_type,
+        self.assertEqual(response.headers['Content-Type'],
                          'text/plain; charset=utf-8')
-        return self._content(response).decode('utf-8')
+        return response.text
 
     def json(self, response, status_code=None):
         """Get JSON object from response
         """
         if status_code:
             self.assertEqual(response.status_code, status_code)
-        self.assertEqual(response.content_type,
+        self.assertEqual(response.headers['Content-Type'],
                          'application/json; charset=utf-8')
-        return _json.loads(self._content(response).decode('utf-8'))
+        return response.json()
 
     def xml(self, response, status_code=None):
         """Get JSON object from response
@@ -292,10 +296,9 @@ class TestMixin:
         from bs4 import BeautifulSoup
         if status_code:
             self.assertEqual(response.status_code, status_code)
-        self.assertEqual(response.content_type,
+        self.assertEqual(response.headers['Content-Type'],
                          'application/xml; charset=utf-8')
-        text = self._content(response).decode('utf-8')
-        return BeautifulSoup(text, 'xml')
+        return BeautifulSoup(response.text, 'xml')
 
     def empty(self, response, status_code=None):
         """Get JSON object from response
@@ -305,7 +308,7 @@ class TestMixin:
         self.assertFalse(response.content)
 
     def ws_upgrade(self, response):
-        from lux.extensions.sockjs import LuxWs
+        from lux.ext.sockjs import LuxWs
         self.assertEqual(response.status_code, 101)
         #
         connection = response.connection
@@ -384,9 +387,6 @@ class TestMixin:
         self.assertEqual(cmd.name, command)
         self.assertTrue(cmd.help)
         return cmd
-
-    def _content(self, response):
-        return b''.join(response.content)
 
 
 class TestCase(unittest.TestCase, TestMixin):

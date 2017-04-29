@@ -1,8 +1,10 @@
 import json
 
-from lux.ext.rest import RestRouter, PolicySchema, route
-from lux.models import Schema, fields
+from lux.ext.rest import RestRouter, route
 from lux.ext.odm import Model
+from lux.models import Schema, fields
+
+from ..permissions import PolicySchema
 
 
 class PermissionSchema(Schema):

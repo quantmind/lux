@@ -13,12 +13,9 @@ from .cms import CMS
 from .mail import EmailBackend
 from .cache import cached, Cache, register_cache, create_cache
 from .exceptions import raise_http_error, ShellError, http_assert
-from .auth import (
-    backend_action, auth_backend_actions, Resource,
-    SimpleBackend, AuthenticationError, PasswordMixin
-)
+from .auth import AuthBackend, Resource, AuthenticationError
 from .channels import LuxChannels
-from .user import UserMixin, User
+from .user import UserMixin, User, ServiceUser
 
 
 __all__ = [
@@ -51,9 +48,7 @@ __all__ = [
     'http_assert',
     #
     'Resource',
-    'backend_action',
-    'auth_backend_actions',
-    'SimpleBackend',
+    'AuthBackend',
     'AuthenticationError',
     #
     'Html',
@@ -71,6 +66,7 @@ __all__ = [
     'UserMixin',
     'PasswordMixin',
     'User',
+    'ServiceUser',
     #
     'LuxChannels'
 ]

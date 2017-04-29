@@ -8,7 +8,7 @@ from marshmallow.validate import OneOf
 
 import inflect
 
-from .schema import Schema, schema_registry
+from .schema import Schema, schema_registry, resource_name
 from .component import Component, app_cache
 from .model import ModelContainer, Model
 from .query import Query, Session
@@ -25,6 +25,7 @@ __all__ = [
     'html',
     'ValidationError',
     'schema_registry',
+    'resource_name',
     'app_cache',
     #
     'OneOf',

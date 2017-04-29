@@ -35,9 +35,7 @@ from .cms import CMS
 from .cache import create_cache
 from .exceptions import ShellError
 from .channels import LuxChannels
-from .auth import MultiAuthBackend
 
-from .user import Anonymous
 from ..models import ModelContainer, registry, context
 
 
@@ -103,7 +101,7 @@ class Application(ConsoleMixin, LuxExtension, EventMixin):
                   'Application site name', True),
         Parameter('ENCODING', 'utf-8',
                   'Default encoding for text.'),
-        Parameter('ERROR_HANDLER', 'lux.core.wrappers:error_handler',
+        Parameter('ERROR_HANDLER', 'lux.core.exceptions:error_handler',
                   'Dotted path to handler of Http exceptions'),
         Parameter('ERROR_MESSAGES', None,
                   'Override default rror messages'),
@@ -155,7 +153,7 @@ class Application(ConsoleMixin, LuxExtension, EventMixin):
                   'Links used throughout the web site'),
         #
         # BASE email parameters
-        Parameter('EMAIL_BACKEND', 'lux.core.mail.EmailBackend',
+        Parameter('EMAIL_BACKEND', 'lux.core.mail:EmailBackend',
                   'Default locale'),
         Parameter('EMAIL_DEFAULT_FROM', '',
                   'Default email address to send email from'),
@@ -210,9 +208,10 @@ class Application(ConsoleMixin, LuxExtension, EventMixin):
                   'A dictionary of parameters to pass to the Http Client'),
         #
         # Authentication
-        Parameter('AUTHENTICATION_BACKENDS', [],
-                  'List of python dotted paths to classes which provide '
-                  'a backend for authentication.')
+        Parameter('AUTHENTICATION_BACKEND', 'lux.core.auth:AuthBackend',
+                  'Dotted path to a classe which provides '
+                  'a backend for authentication.'),
+        Parameter('JWT_ALGORITHM', 'HS512', 'Signing algorithm')
         ]
 
     def __init__(self, callable):
@@ -229,6 +228,10 @@ class Application(ConsoleMixin, LuxExtension, EventMixin):
         self.extensions = OrderedDict()
         self.config = _build_config(self)
         self.fire('on_config')
+        cfg = self.config
+        self.auth = module_attribute(cfg['AUTHENTICATION_BACKEND'])(self)
+        self.cache_server = create_cache(self, cfg['CACHE_SERVER'])
+        self.on_error = module_attribute(cfg['ERROR_HANDLER'])
 
     @property
     def app(self):
@@ -257,18 +260,6 @@ class Application(ConsoleMixin, LuxExtension, EventMixin):
     def _loop(self):
         pool = self.green_pool
         return pool._loop if pool else asyncio.get_event_loop()
-
-    @lazyproperty
-    def cache_server(self):
-        """Return the Cache handler
-        """
-        return create_cache(self, self.config['CACHE_SERVER'])
-
-    @lazyproperty
-    def auth(self):
-        """Return the Cache handler
-        """
-        return MultiAuthBackend.from_app(self)
 
     @lazyproperty
     def green_pool(self):
@@ -301,11 +292,11 @@ class Application(ConsoleMixin, LuxExtension, EventMixin):
     def on_request(self, request):
         config = self.config
         environ = request.environ
-        environ['error.handler'] = module_attribute(config['ERROR_HANDLER'])
+        environ['error.handler'] = self.on_error
         environ['default.content_type'] = config['DEFAULT_CONTENT_TYPE']
         cache = request.cache
         cache.app = self
-        cache.user = Anonymous()
+        self.app.auth.on_request(request)
         self.fire('on_request', request)
 
     def session(self, request=None):

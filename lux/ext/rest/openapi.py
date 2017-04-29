@@ -64,9 +64,9 @@ def rule2openapi(path):
 
 class route(wsgi.route):
 
-    def __init__(self, *args, responses=None, **kwargs):
+    def __init__(self, *args, responses=None, path_schema=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.api = api_parameters(responses=responses)
+        self.api = api_parameters(responses=responses, path_schema=path_schema)
 
     def __call__(self, method):
         method = super().__call__(method)
@@ -76,10 +76,10 @@ class route(wsgi.route):
 class api_parameters:
     """Inject api parameters to an endpoint handler
     """
-    def __init__(self, form=None, path=None, query=None, body=None,
+    def __init__(self, form=None, path_schema=None, query=None, body=None,
                  responses=None):
         self.form = form
-        self.path = path
+        self.path_schema = path_schema
         self.query = query
         self.body = body
         self.responses = responses
@@ -92,8 +92,8 @@ class api_parameters:
         doc = doc if doc is not None else {}
         parameters = doc.get('parameters', [])
         processed = set()
-        if self.path:
-            self._extend(api, self.path, parameters, 'path', processed)
+        if self.path_schema:
+            self._extend(api, self.path_schema, parameters, 'path', processed)
         if self.query:
             self._extend(api, self.query, parameters, 'query', processed)
         if self.form:
@@ -114,8 +114,9 @@ class api_parameters:
         required = set(params.get('required') or ())
         for name, obj in properties.items():
             if name in processed:
-                LOG.error('Parameter "%s" already in api path parameter list',
-                          name)
+                api.logger.error(
+                    'Parameter "%s" already in api path parameter list', name
+                )
                 continue
             processed.add(name)
             obj['name'] = name

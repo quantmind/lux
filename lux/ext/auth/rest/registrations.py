@@ -7,7 +7,7 @@ from lux.ext.rest import RestRouter
 from lux.models import Schema, fields, ValidationError
 from lux.ext.odm import Model
 
-from . import ensure_service_user
+from . import ensure_service_user, IdSchema
 
 
 URI = 'registrations'
@@ -56,7 +56,7 @@ class CreateUserSchema(PasswordSchema):
     def post_load(self, data):
         super().post_load(data)
         session = self.model.object_session(data)
-        user = session.models['users'].create_one(session, data)
+        user = self.app.auth.create_user(session, **data)
         # send_email_confirmation(request, reg)
         return user
 
@@ -123,7 +123,7 @@ class RegistrationCRUD(RestRouter):
         ensure_service_user(request)
         return self.model.create_response(request)
 
-    @route('<id>/activate')
+    @route('<id>/activate', path_schema=IdSchema)
     def post_activate(self, request):
         """
         ---

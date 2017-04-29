@@ -1,46 +1,58 @@
+from inspect import currentframe
+
+from marshmallow import ValidationError
+from marshmallow.fields import Field
+
+from pulsar.api import Http404
 
 
-class UniqueField:
+class Validator:
+
+    def field_session(self):
+        frame = currentframe().f_back
+        field = None
+        while frame:
+            if not field:
+                _field = frame.f_locals.get('self')
+                if isinstance(_field, Field):
+                    field = _field
+            session = frame.f_locals.get('session')
+            if session is not None:
+                break
+            frame = frame.f_back
+        return field, session
+
+    def __call__(self, value):
+        raise NotImplementedError
+
+
+class UniqueField(Validator):
     '''Validator for a field which accept unique values
     '''
     validation_error = '{0} not available'
 
-    def __init__(self, model=None, field=None, nullable=False,
-                 validation_error=None):
+    def __init__(self, model, nullable=False, validation_error=None):
         self.model = model
-        self.field = field
         self.nullable = nullable
         self.validation_error = validation_error or self.validation_error
 
-    def __call__(self, value, bfield):
-        model_name = self.model or bfield.form.model
-        field = self.field or bfield.name
-        if not model_name:
-            raise forms.ValidationError('No model')
-
-        if not value and self.nullable:
-            return value
-
-        request = bfield.request
-        app = request.app
-        model = app.models.get(model_name)
-
+    def __call__(self, value):
+        field, session = self.field_session()
+        model = field.root.app.models.get(self.model)
         if not model:
-            raise forms.ValidationError('No model %s' % model_name)
+            raise ValidationError('No model %s' % self.model)
 
-        kwargs = {field: value}
-        kwargs.update(model.model_url_params(request))
-        return self.test(value, bfield, model, **kwargs)
+        kwargs = {field.name: value}
+        self.test(session, value, model, **kwargs)
 
-    def test(self, value, bfield, model, **kwargs):
-        request = bfield.request
-        previous_state = bfield.form.previous_state
+    def test(self, session, value, model, **kwargs):
+        previous_state = None
         try:
-            instance = model.get_instance(request, **kwargs)
+            instance = model.get_one(session, **kwargs)
         except Http404:
             pass
         else:
             if instance != previous_state:
-                raise forms.ValidationError(
-                    self.validation_error.format(value))
-        return value
+                raise ValidationError(
+                    self.validation_error.format(value)
+                )

@@ -44,11 +44,10 @@ dbModel = model_base('odmtest')
 class Extension(LuxExtension):
 
     def api_sections(self, app):
-        return [ObjectiveCRUD(),
-                SecretCRUD()]
+        return (ObjectiveCRUD(), SecretCRUD())
 
 
-class Objective(Model):
+class Objective(dbModel):
     id = Column(Integer, primary_key=True)
     subject = Column(String(250))
     deadline = Column(String(250))
@@ -57,17 +56,16 @@ class Objective(Model):
     created = Column(DateTime, default=datetime.utcnow)
 
 
-class Secret(Model):
+class Secret(dbModel):
     id = Column(Integer, primary_key=True)
     value = Column(String(250))
     created = Column(DateTime, default=datetime.utcnow)
 
 
 class ObjectiveSchema(Schema):
-    subject = fields.String()
-    deadline = fields.String()
-    outcome = fields.String()
-    done = fields.Boolean(default=False)
+
+    class Meta:
+        model = 'objectives'
 
 
 class SecretSchema(Schema):
@@ -76,9 +74,16 @@ class SecretSchema(Schema):
 
 class ObjectiveCRUD(RestRouter):
     model = Model(
-        'objective',
-        model_schema=ObjectiveSchema
+        'objectives',
+        model_schema=ObjectiveSchema,
+        create_schema=ObjectiveSchema
     )
+
+    def get(self, request):
+        return self.model.get_list_response(request)
+
+    def post(self, request):
+        return self.model.create_response(request)
 
 
 class SecretCRUD(RestRouter):

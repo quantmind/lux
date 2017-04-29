@@ -2,9 +2,11 @@ from pulsar.api import Http401
 from pulsar.utils.importer import module_attribute
 
 from lux.core import route
-from lux.ext.rest import RestRouter, user_permissions
+from lux.ext.rest import RestRouter
 from lux.models import fields, Schema
 from lux.ext.odm import Model
+
+from ..permissions import user_permissions
 
 
 URI = 'users'

@@ -1,24 +1,30 @@
+"""Extension for developing RestFul Api conforming to
+the OpenApi specification
+"""
 from urllib.parse import urljoin
 
 from pulsar.api import Http404
 
 from lux.core import Parameter, LuxExtension
 
-from .api import (
-    Apis, RestRouter, Pagination, GithubPagination,
-    route, api_parameters
-)
-from .api.client import ApiClient, HttpRequestMixin
-from .permissions import PolicySchema, user_permissions, validate_policy
+from .client import ApiClient, HttpRequestMixin
 from .query import DictModel
-
+from .apis import Apis, Api
+from .rest import RestRoot, RestRouter
+from .pagination import Pagination, GithubPagination
+from .openapi import route, api_parameters
 
 __all__ = [
+    'Apis',
+    'Api',
+    'RestRoot',
     'RestRouter',
-    'MetadataMixin',
-    'Specification',
-    "ApiClient",
-    "HttpRequestMixin",
+    #
+    'Pagination',
+    'GithubPagination',
+    #
+    'ApiClient',
+    'HttpRequestMixin',
     #
     'DictModel',
     #
@@ -31,10 +37,6 @@ __all__ = [
     'login',
     'logout',
     'check_username',
-    #
-    'PolicySchema',
-    'validate_policy',
-    'user_permissions',
     #
     # OpenAPI
     'route',

@@ -143,19 +143,3 @@ class Query(ABC):
                     entry, direction = entry.split(':')
                 self.sortby_field(entry, direction)
         return self
-
-    def tojson(self, request, **kw):
-        """Convert to a JSON serializable list
-
-        :return: a JSON serialisable list of model objects
-        """
-        model = self.model
-        kw['in_list'] = True
-        result = []
-        for o in self.all():
-            try:
-                data = model.tojson(request, o, **kw)
-            except ModelNotAvailable:
-                continue
-            result.append(data)
-        return result

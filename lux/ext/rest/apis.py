@@ -207,16 +207,12 @@ class Api(models.Component):
         return router
 
     def add_definition(self, schema):
-        if not schema:
-            return
-        name = type(schema).__name__
-        if name.endswith('Schema'):
-            name = name[:-6]
-        try:
-            self.spec.definition(name, schema=schema)
-        except Exception:
-            self.app.logger.exception('Could not add spec definition')
+        name = models.resource_name(schema)
+        if name:
+            try:
+                self.spec.definition(name, schema=schema)
+            except Exception:
+                self.app.logger.exception('Could not add spec definition')
 
     def spec_dict(self):
         return self.spec.to_dict()
-

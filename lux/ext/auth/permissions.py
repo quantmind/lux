@@ -10,11 +10,13 @@ class PolicySchema(Schema):
     effect = fields.String(
         validator=OneOf(('allow', 'deny')), default='allow'
     ),
-    action = fields.String(
-        description='An action is a string, a wildcard or a list of actions'
+    action = fields.List(
+        fields.String(),
+        description='List of actions'
     )
-    resource = fields.String(
-        description='comma separated resource identifiers'
+    resource = fields.List(
+        fields.String(),
+        description='List of resource identifiers'
     )
     condition = fields.String(
         description='Additional coditions'
