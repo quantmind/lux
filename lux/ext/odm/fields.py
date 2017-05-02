@@ -39,8 +39,13 @@ class Related(fields.Field):
 
     @property
     def related_model(self):
-        field = getattr(self.root.db_model, self.attribute or self.name)
+        model = self.root.model
+        field = getattr(model.db_model, self.attribute or self.name)
         return field.property.mapper.class_
+
+    @property
+    def session(self):
+        return self.root.session
 
     @lazyproperty
     def related_keys(self):

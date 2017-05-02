@@ -197,7 +197,7 @@ class Model(ABC, Component):
         schema = self.get_schema(schema or self.update_schema)
         if not schema:
             raise MethodNotAllowed
-        model, errors = schema.load(data, session=session)
+        model, errors = schema.load(data, session=session, partial=True)
         if errors:
             raise self.unprocessable_entity(errors, schema)
         return model

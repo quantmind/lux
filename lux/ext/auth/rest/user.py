@@ -4,7 +4,7 @@ from pulsar.utils.importer import module_attribute
 from lux.core import route
 from lux.ext.rest import RestRouter
 from lux.models import fields, Schema
-from lux.ext.odm import Model
+from lux.ext.odm import Model, Related
 
 from ..permissions import user_permissions
 
@@ -30,7 +30,9 @@ class UserSchema(Schema):
         field=('first_name', 'last_name', 'username', 'email'),
         readOnly=True
     )
-    groups = fields.Nested('GroupSchema', multi=True)
+    groups = fields.List(
+        Related('name')
+    )
 
     class Meta:
         exclude = ('password', 'superuser')

@@ -88,9 +88,16 @@ class PasswordMixin:
 
 class JwtMixin:
 
-    def decode_jwt(self, request, token):
+    def encode_jwt(self, token, secret=None):
         config = self.config
-        return self._decode_jwt(request, token, config['SECRET_KEY'],
+        return jwt.encode(token,
+                          key=secret or config['SECRET_KEY'],
+                          algorithm=config['JWT_ALGORITHM']).decode('utf-8')
+
+    def decode_jwt(self, request, token, secret=None):
+        config = self.config
+        return self._decode_jwt(request, token,
+                                key=secret or config['SECRET_KEY'],
                                 algorithm=config['JWT_ALGORITHM'])
 
     def _decode_jwt(self, request, token, key=None, algorithm=None, **options):

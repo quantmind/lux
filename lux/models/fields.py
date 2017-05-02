@@ -1,12 +1,15 @@
+import uuid
 from functools import partial
 from datetime import datetime
 
 from marshmallow.fields import (
-    Field, Raw, Dict, List, String, UUID, Number, Integer, Decimal,
+    Field, Raw, Dict, List, String, Number, Integer, Decimal,
     Boolean, FormattedString, Float, DateTime, LocalDateTime,
     Time, Date, TimeDelta, Url, URL, Email, Method, Function, Str, Bool,
     Int, Constant,
-    Nested as MaNested, DateTime as MaDateTime
+    UUID as MaUUID,
+    Nested as MaNested,
+    DateTime as MaDateTime
 )
 from apispec.ext.marshmallow.swagger import FIELD_MAPPING
 
@@ -107,6 +110,12 @@ class DateTime(MaDateTime):
         return super()._deserialize(value, attr, data)
 
 
+class UUID(MaUUID):
+
+    def _validated(self, value):
+        return super()._validated(value).hex
+
+
 def password_validate(value):
     if value != value.strip():
         return False
@@ -122,7 +131,11 @@ def app_nested_schemas(app):
 
 
 Schema.TYPE_MAPPING[datetime] = DateTime
+Schema.TYPE_MAPPING[uuid.UUID] = UUID
 
+
+# Required by OpenAPI
 FIELD_MAPPING[Slug] = FIELD_MAPPING[String]             # naqa
 FIELD_MAPPING[Password] = FIELD_MAPPING[String]         # naqa
 FIELD_MAPPING[DateTime] = FIELD_MAPPING[MaDateTime]     # naqa
+FIELD_MAPPING[UUID] = FIELD_MAPPING[MaUUID]             # naqa

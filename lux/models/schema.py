@@ -1,7 +1,8 @@
 from collections import MutableMapping
+from inspect import currentframe
 
 import marshmallow as ma
-from marshmallow import class_registry, post_load
+from marshmallow import class_registry, post_load, post_dump
 from marshmallow.exceptions import RegistryError
 
 from . import context
@@ -72,18 +73,34 @@ class Schema(ma.Schema):
 
     def load(self, data, *, session=None, **kwargs):
         if session:
-            self.session = session
             return super().load(data, **kwargs)
         else:
             return data, None
 
+    @property
+    def session(self):
+        frame = currentframe().f_back
+        while frame:
+            if 'session' in frame.f_locals:
+                return frame.f_locals['session']
+            frame = frame.f_back
+
     @post_load
-    def _(self, data):
+    def _pl(self, data):
         data = self.model(data, self.session)
-        self.session = None
         return self.post_load(data) or data
 
     def post_load(self, data):
+        pass
+
+    @post_dump
+    def _pd(self, data):
+        for key, value in tuple(data.items()):
+            if value is None:
+                data.pop(key)
+        return self.post_dump(data) or data
+
+    def post_dump(self, data):
         pass
 
 

@@ -530,14 +530,14 @@ class AppTestCase(unittest.TestCase, TestMixin):
                            "password": credentials}
 
         # Get new token
-        request = await cls.client.post(cls.api_url('authorizations'),
-                                        json=credentials, **kw)
+        response = await cls.client.post(cls.api_url('authorizations'),
+                                         json=credentials, **kw)
         test = cls._test
-        data = test.json(request.response, 201)
+        data = test.json(response, 201)
         test.assertTrue('id' in data)
         test.assertTrue('expiry' in data)
         test.assertTrue(data['session'])
-        user = request.cache.user
+        user = response.wsgi_request.cache.user
         test.assertTrue(user.is_anonymous())
         return data['id']
 

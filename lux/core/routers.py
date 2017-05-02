@@ -2,9 +2,11 @@ from pulsar.api import Http404
 from pulsar.apps.wsgi import RouterParam, Router, Route, Html, route
 from pulsar.utils.httpurl import JSON_CONTENT_TYPES, CacheControl
 
+from apispec.ext.marshmallow.swagger import schema2jsonschema
+
 from ..utils.data import unique_tuple
 from .auth import Resource
-from ..models import get_form_class, get_form_layout
+from ..utils.data import compact_dict
 
 
 DEFAULT_CONTENT_TYPES = unique_tuple(('text/html', 'text/plain', 'text/csv'),
@@ -128,45 +130,36 @@ class HtmlRouter(JsonRouter):
 class WebFormRouter(HtmlRouter):
     """A Router for rending web forms
     """
-    form = None
+    schema = None
     form_method = None
     form_enctype = 'multipart/form-data'
     form_action = None
     response_content_types = ['text/html',
                               'application/json']
 
-    def get_form_class(self, request, form=None):
-        return get_form_class(request, form or self.form)
-
-    def get_form_layout(self, request, form=None):
-        return get_form_layout(request, form or self.form)
-
     def get_html(self, request):
-        form = self.get_form_layout(request)
-        if not form:
+        if not self.schema:
             raise Http404
-        method = self.form_method or 'post'
-        action = self.form_action
-        if hasattr(action, '__call__'):
-            action = action(request)
-        if not action:
-            action = request.full_path()
-        return form(request).as_form(action=action,
-                                     enctype=self.form_enctype,
-                                     method=method)
+        tag = request.config['HTML_FORM_TAG']
+        action = '%s/jsonform' % request.absolute_uri()
+        return '<%s url="%s"></%s>' % (tag, action, tag)
 
     @route()
     def jsonform(self, request):
-        form = self.get_form_layout(request)
-        if not form:
+        if not self.schema:
             raise Http404
+        schema = schema2jsonschema(self.schema)
+        form = schema.get('properties')
+        for name in schema.get('required', ()):
+            form[name]['required'] = True
         method = self.form_method or 'post'
         action = self.form_action
         if hasattr(action, '__call__'):
             action = action(request)
         if not action:
-            action = request.full_path()
-        data = form(request).as_dict(action=action,
-                                     enctype=self.form_enctype,
-                                     method=method)
+            action = request.full_path()[:-9]
+        data = compact_dict(action=action,
+                            enctype=self.form_enctype,
+                            method=method,
+                            fields=form)
         return request.json_response(data)

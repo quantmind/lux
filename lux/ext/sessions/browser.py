@@ -6,10 +6,10 @@ from functools import wraps
 from pulsar.api import (
     Http401, PermissionDenied, Http404, HttpRedirect, BadRequest
 )
-from pulsar.apps.wsgi import Route, wsgi_request
+from pulsar.apps.wsgi import Route
 
 from lux.utils.date import to_timestamp, date_from_now, iso8601
-from lux.core import app_attribute, backend_action, User
+from lux.core import app_attribute, User
 
 from .store import session_store
 
@@ -28,7 +28,6 @@ def exclude_urls(app):
 
 
 def session_backend_action(method):
-    backend_action(method)
 
     @wraps(method)
     def _(self, r, *args, **kwargs):

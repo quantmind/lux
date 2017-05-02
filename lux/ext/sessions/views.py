@@ -8,6 +8,7 @@ from pulsar.api import (
 from pulsar.apps.wsgi import route
 
 from lux.core import JsonRouter, WebFormRouter, HtmlRouter
+from lux.ext.auth.rest.authorization import LoginSchema
 
 
 class ActionsRouter(HtmlRouter):
@@ -17,7 +18,7 @@ class ActionsRouter(HtmlRouter):
 class Login(WebFormRouter):
     """Web login view with post handler
     """
-    form = 'login'
+    schema = LoginSchema
 
     def get(self, request):
         if request.cache.user.is_authenticated():

@@ -6,6 +6,7 @@ from sqlalchemy.orm import class_mapper, load_only
 from sqlalchemy.sql.expression import func, cast
 from sqlalchemy.exc import DataError, StatementError
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
+from sqlalchemy.dialects import postgresql
 
 from marshmallow_sqlalchemy import ModelConverter
 
@@ -17,14 +18,18 @@ from odm.mapper import object_session
 from lux.core import app_attribute
 from lux.utils.crypt import as_hex
 from lux import models
+from lux.models import fields
 
 from .fields import get_primary_keys
 
 
 MissingObjectError = (DataError, NoResultFound, StatementError)
-default_converter = ModelConverter(models.Schema)
-property2field = default_converter.property2field
-column2field = default_converter.column2field
+model_converter = ModelConverter(models.Schema)
+property2field = model_converter.property2field
+column2field = model_converter.column2field
+
+model_converter.SQLA_TYPE_MAPPING = model_converter.SQLA_TYPE_MAPPING.copy()
+model_converter.SQLA_TYPE_MAPPING[postgresql.UUID] = fields.UUID
 
 
 class Query(models.Query):
