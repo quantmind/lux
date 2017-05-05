@@ -55,9 +55,9 @@ class Extension(LuxExtension):
         Parameter('CHECK_USERNAME', 'lux.ext.auth:check_username',
                   'Dotted path to username validation function'),
         # TOKENS
-        Parameter('AUTHENTICATION_BACKEND', 'lux.ext.auth:AuthBackend',
-                  'Dotted path to a classe which provides '
-                  'a backend for authentication.')
+        #Parameter('AUTHENTICATION_BACKEND', 'lux.ext.auth:AuthBackend',
+        #          'Dotted path to a classe which provides '
+        #          'a backend for authentication.')
     ]
 
     def on_config(self, app):

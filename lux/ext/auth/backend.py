@@ -35,7 +35,7 @@ class AuthBackend(AuthBackendBase):
                 request.cache.token = token
                 user = token.user
             elif auth_type == 'jwt':
-                payload = app.auth.decode_jwt(request, key)
+                payload = self.decode_jwt(request, key)
                 payload['token'] = key
                 user = app.auth.service_user(payload)
         except (Http401, BadRequest, PermissionDenied):
