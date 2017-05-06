@@ -82,7 +82,7 @@ class CMS(core.CMS):
             ).json()
             inner_html = self.data_to_html(page, data, inner_html)
         except Http404:
-            if request.cache.cms_router:
+            if request.cache.get('cms_router'):
                 raise
         return super().inner_html(request, page, inner_html)
 

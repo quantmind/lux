@@ -9,6 +9,8 @@ built on top of sqlalchemy, pulsar and greenlet.
 
 _ ..pulsar-odm: https://github.com/quantmind/pulsar-odm
 """
+from sqlalchemy.ext.serializer import dumps
+
 from odm import declared_attr
 from odm.mapper import object_session
 
@@ -68,14 +70,12 @@ class Extension(LuxExtension):
         request = session.request
         if not app.channels or not request:
             return
-        models = odm_models(app)
         for instance, event in session.changes():
-            model = models.get(instance.__class__.__name__.lower())
-            if model:
-                data = model.tojson(request, instance, in_list=True, safe=True)
-                app.channels.publish(app.config['CHANNEL_DATAMODEL'],
-                                     '%s.%s' % (model.identifier, event),
-                                     data)
+            app.channels.publish(
+                app.config['CHANNEL_DATAMODEL'],
+                '%s.%s' % (instance.__class__.__name__.lower(), event),
+                dumps(instance)
+            )
 
     def on_close(self, app):
         app.odm().close()

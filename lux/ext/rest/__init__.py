@@ -8,7 +8,6 @@ from pulsar.api import Http404
 from lux.core import Parameter, LuxExtension
 
 from .client import ApiClient, HttpRequestMixin
-from .query import DictModel
 from .apis import Apis, Api
 from .rest import RestRoot, RestRouter
 from .pagination import Pagination, GithubPagination
@@ -25,8 +24,6 @@ __all__ = [
     #
     'ApiClient',
     'HttpRequestMixin',
-    #
-    'DictModel',
     #
     'Pagination',
     'GithubPagination',

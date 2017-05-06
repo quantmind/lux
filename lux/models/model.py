@@ -87,11 +87,12 @@ class Model(ABC, Component):
         return self.uri
     __str__ = __repr__
 
+    # ABSTRACT METHODS
+
     @abstractmethod
     def __call__(self, data, session):
         pass
 
-    # ABSTRACT METHODS
     @abstractmethod
     def session(self, request=None):
         """Return a session for aggregating a query.
@@ -101,6 +102,13 @@ class Model(ABC, Component):
         * ``add(model)``: add a model to the session
         * ``delete(model)`: delete a model
         """
+
+    @abstractmethod
+    def get_query(self, session):
+        """Create a new :class:`.Query` from a session
+        """
+
+    # SCHEMA METHODS
 
     def get_schema(self, schema):
         if isclass(schema):
@@ -125,12 +133,11 @@ class Model(ABC, Component):
         schema = self.get_schema(schema or self.model_schema)
         return schema.fields.get(name) if schema else None
 
-    def get_query(self, session):
-        """Create a new :class:`.Query` from a session
-        """
-        return session
+    def fields_map(self, base_fields=None, **kwargs):
+        return base_fields
 
     # Model CRUD Responses
+
     def get_one_response(self, request, instance=None, schema=None):
         with self.session(request) as session:
             if instance is None:
@@ -225,7 +232,7 @@ class Model(ABC, Component):
         if load_only and isinstance(load_only, str):
             load_only = (load_only,)
         if check_permission:
-            fields = check_permission(request, load_only=load_only)
+            fields = check_permission(session, load_only=load_only)
             query = query.load_only(*fields)
         elif load_only:
             query = query.load_only(*load_only)

@@ -1,6 +1,9 @@
+"""In memory model implementation
+"""
 from pulsar.api import Http404
 
-from lux import models
+from . import model
+from . import query
 
 
 OPERATORS = {
@@ -13,18 +16,16 @@ OPERATORS = {
 }
 
 
-class DictModel(models.Model):
+class Model(model.Model):
 
     def session(self, request):
-        return Query(self, request)
+        return Session(self, request)
+
+    def get_query(self, session):
+        return Query(self, session)
 
 
-
-class RestSession:
-
-    def __init__(self, model, request):
-        self.model = model
-        self.request = request
+class Session(query.Session):
 
     def __enter__(self):
         return self
@@ -42,17 +43,16 @@ class RestSession:
         pass
 
 
-class Query(models.Query):
+class Query(query.Query):
     _data = None
     _limit = None
     _offset = None
     _filtered_data = None
 
-    def __init__(self, model, request):
-        super().__init__(model)
+    def __init__(self, model, session):
+        super().__init__(model, session)
         self._filters = []
         self._sortby = []
-        self.request = request
 
     def __repr__(self):
         if self._data is None:
@@ -87,16 +87,15 @@ class Query(models.Query):
         return len(self.all())
 
     def filter_args(self, args):
-        self.request.logger.error('Cannot filter positional arguments for '
-                                  'model %s.' % self.name)
+        self.logger.error('Cannot filter positional arguments for '
+                          'model %s.' % self.name)
 
     def filter_field(self, field, op, value):
         self._filtered_data = None
         if op in OPERATORS:
             self._filters.append((field, OPERATORS[op], value))
         else:
-            self.request.logger.error('Could not apply filter %s to %s',
-                                      op, self)
+            self.logger.error('Could not apply filter %s to %s', op, self)
 
     def sortby_field(self, field, direction):
         self._sortby.append((field, direction))
@@ -104,11 +103,10 @@ class Query(models.Query):
     def all(self):
         data = self._filtered_data
         if data is None:
-            model = self.model
             self._filtered_data = data = []
             for entry in self._get_data():
                 if self._filter(entry):
-                    data.append(model.instance(entry, self.fields))
+                    data.append(entry)
 
         for field, direction in self._sortby:
             if direction == 'desc':
@@ -126,17 +124,17 @@ class Query(models.Query):
     def _filter(self, entry):
         for field, op, value in self._filters:
             try:
-                val = field.value(entry.get(field.name))
+                val = entry.get(field.name)
                 if not isinstance(value, (list, tuple)):
                     value = (value,)
-                if not any((op(val, field.value(v)) for v in value)):
+                if not any((op(val, v) for v in value)):
                     return False
             except Exception:
                 return False
         return True
 
     def _get_data(self):
-        return []
+        raise NotImplementedError
 
 
 class asc:

@@ -3,8 +3,7 @@ import os
 from pulsar.api import Http404, ImproperlyConfigured
 
 from lux.core import cached
-from lux.models import Schema, fields
-from lux.ext.rest.query import DictModel, Query
+from lux.models import Schema, fields, memory
 from lux.utils.files import skipfile
 from lux.utils.data import as_tuple
 
@@ -21,7 +20,7 @@ class ContentSchema(Schema):
     body = fields.String(sortable=True)
 
 
-class ContentModel(DictModel):
+class ContentModel(memory.Model):
     '''A Content model with file-system backend
 
     This model provide read-only operations
@@ -54,10 +53,10 @@ class ContentModel(DictModel):
         return self.instance_urls(request, instance, data)
 
 
-class ContentQuery(Query):
+class ContentQuery(memory.Query):
 
     def __init__(self, model, session):
-        super().__init__(model, session.request)
+        super().__init__(model, session)
         self._groups = []
 
     def filter_field(self, field, op, value):
