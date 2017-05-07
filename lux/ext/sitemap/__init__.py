@@ -50,6 +50,7 @@ class BaseSitemap(Router):
         return ()
 
     def get(self, request):
+        request.set_response_content_type(self.response_content_types)
         response = request.response
         sitemap, _ = self.sitemap(request)
         response.content = sitemap

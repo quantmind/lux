@@ -9,7 +9,7 @@ from .routers import (
     JSON_CONTENT_TYPES, DEFAULT_CONTENT_TYPES
 )
 from .templates import register_template_engine, template_engine, Template
-from .cms import CMS
+from .cms import CMS, Page
 from .mail import EmailBackend
 from .cache import cached, Cache, register_cache, create_cache
 from .exceptions import raise_http_error, ShellError, http_assert
@@ -37,7 +37,10 @@ __all__ = [
     'register_template_engine',
     'template_engine',
     'Template',
+    #
     'CMS',
+    'Page',
+    #
     'EmailBackend',
     'cached',
     'Cache',

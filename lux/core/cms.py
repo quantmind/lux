@@ -2,6 +2,7 @@ from pulsar.apps.wsgi import Route
 
 from lux.utils.url import absolute_uri
 
+from ..models import Component
 from .extension import app_attribute
 from .templates import Template
 
@@ -74,28 +75,23 @@ class Page:
         return page
 
 
-class CMS:
-    """Lux CMS base class.
-
-    .. attribute:: app
-
-        lux :class:`.Application`
+class CMS(Component):
+    """Lux CMS base class
     """
     html_main_key = '{{ html_main }}'
 
-    def __init__(self, app):
-        self.app = app
+    def middleware(self):
+        """Middleware for the CMS
+        """
+        return ()
 
-    @property
-    def config(self):
-        return self.app.config
-
-    def page(self, path):
-        """Obtain a page object from a request path.
+    def page(self, request):
+        """Obtain a page object from a request.
 
         This method always return a :class:`.Page`. If no
         registered pages match the path, it returns an empty :class:`.Page`.
         """
+        path = request.path[1:]
         return self.match(path) or Page()
 
     def as_page(self, page=None):
@@ -173,7 +169,7 @@ class CMS:
     def context(self, request, context):
         """Context dictionary for this cms
         """
-        return ()
+        return {}
 
     def replace_html_main(self, template, html_main):
         if not isinstance(template, Template):

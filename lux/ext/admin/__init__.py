@@ -25,6 +25,6 @@ class Extension(LuxExtension):
     def middleware(self, app):
         admin = app.config['ADMIN_URL']
         if admin and app.config['DEFAULT_CONTENT_TYPE'] == 'text/html':
-            self.require(app, 'lux.extensions.rest')
+            self.require(app, 'lux.ext.rest')
             self.admin = admin = Admin(admin)
             return [admin.load(app)]

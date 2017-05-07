@@ -54,8 +54,8 @@ class CMS(core.CMS):
     """
     set_priority = True
 
-    def __init__(self, app):
-        super().__init__(app)
+    def init_app(self, app):
+        self.app = app
         middleware = app._handler.middleware
         processed = set()
         middleware.append(CMSmap('/sitemap.xml', cms=self))

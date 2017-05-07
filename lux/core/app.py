@@ -729,7 +729,8 @@ def _build_handler(self):
     self.channels = self.providers['Channels'](self)
 
     if not self.cms:
-        self.cms = CMS(self)
+        self.cms = CMS()
+    self.cms.init_app(self)
 
     extensions = list(self.extensions.values())
     middleware = [self.environ]
@@ -741,6 +742,9 @@ def _build_handler(self):
         middle = extension.response_middleware(self)
         if middle:
             rmiddleware.extend(middle)
+    #
+    # add CMS middleware last
+    middleware.extend(self.cms.middleware())
     #
     # Response middleware executed in reversed order
     rmiddleware = list(reversed(rmiddleware))

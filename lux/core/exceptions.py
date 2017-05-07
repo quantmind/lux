@@ -94,7 +94,15 @@ def error_handler(request, exc):
                                   'error.html'],
                                  context,
                                  title=response.status)
+    elif content_type[-4:] == '/xml':
+        return XML_ERROR % (response.status_code, message)
     elif trace:
         return '\n'.join(trace)
     else:
         return message
+
+
+XML_ERROR = """<error-page>
+<error-code>%s</error-code>
+<message>%s</message>
+</error-page>"""

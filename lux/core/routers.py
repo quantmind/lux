@@ -62,7 +62,7 @@ class HtmlRouter(JsonRouter):
         # get cms for this router
         cms = app.cms
         # fetch the cms page
-        page = cms.page(request.path[1:])
+        page = cms.page(request)
         # render the inner part of the html page
         if isinstance(inner_html, Html):
             inner_html = inner_html.to_string(request)
