@@ -18,5 +18,5 @@ class cors:
         response.headers[CORS] = origin
         if headers:
             response['Access-Control-Allow-Headers'] = headers
-        response['Access-Control-Allow-Methods'] = self.methods
+        response['Access-Control-Allow-Methods'] = ', '.join(self.methods)
         return response
