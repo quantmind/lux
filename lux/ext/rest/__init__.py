@@ -11,7 +11,7 @@ from .client import ApiClient, HttpRequestMixin
 from .apis import Apis, Api
 from .rest import RestRoot, RestRouter
 from .pagination import Pagination, GithubPagination
-from .openapi import route, api_parameters
+from .openapi import route, api_parameters, as_body
 
 __all__ = [
     'Apis',
@@ -37,7 +37,8 @@ __all__ = [
     #
     # OpenAPI
     'route',
-    'api_parameters'
+    'api_parameters',
+    'as_body'
 ]
 
 

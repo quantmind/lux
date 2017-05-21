@@ -64,9 +64,14 @@ def rule2openapi(path):
 
 class route(wsgi.route):
 
-    def __init__(self, *args, responses=None, path_schema=None, **kwargs):
+    def __init__(self, *args, form=None, path_schema=None,
+                 query=None, body=None, responses=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.api = api_parameters(responses=responses, path_schema=path_schema)
+        self.api = api_parameters(
+            form=form, path_schema=path_schema,
+            query=query, body=body,
+            responses=responses
+        )
 
     def __call__(self, method):
         method = super().__call__(method)
