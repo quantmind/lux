@@ -1,3 +1,5 @@
+import os
+
 from pulsar.apps.wsgi import Route
 
 from lux.utils.url import absolute_uri
@@ -182,6 +184,21 @@ class CMS(Component):
                 html_main = template
 
         return Template(html_main)
+
+    # Template redering
+    def template_full_path(self, names):
+        """Return a template filesystem full path or None
+
+        Loops through all :attr:`extensions` in reversed order and
+        check for ``name`` within the ``templates`` directory
+        """
+        if not isinstance(names, (list, tuple)):
+            names = (names,)
+        for name in names:
+            for ext in reversed(tuple(self.app.extensions.values())):
+                filename = ext.get_template_full_path(self, name)
+                if filename and os.path.exists(filename):
+                    return filename
 
 
 @app_attribute

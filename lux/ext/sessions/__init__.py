@@ -73,7 +73,6 @@ class Extension(LuxExtension):
     def middleware(self, app):
         if is_html(app):
             cfg = app.config
-
             if cfg['LOGIN_URL']:
                 yield Login(cfg['LOGIN_URL'])
                 if cfg['LOGOUT_URL']:
@@ -81,11 +80,11 @@ class Extension(LuxExtension):
                 if cfg['HTML_AUTH_TOKEN_URL']:
                     yield Token(cfg['HTML_AUTH_TOKEN_URL'])
 
-            if cfg['REGISTER_URL']:
-                yield SignUp(cfg['REGISTER_URL'])
+                if cfg['REGISTER_URL']:
+                    yield SignUp(cfg['REGISTER_URL'])
 
-            if cfg['RESET_PASSWORD_URL']:
-                yield ForgotPassword(cfg['RESET_PASSWORD_URL'])
+                if cfg['RESET_PASSWORD_URL']:
+                    yield ForgotPassword(cfg['RESET_PASSWORD_URL'])
 
     def on_jwt(self, app, request, payload):
         cfg = app.config
