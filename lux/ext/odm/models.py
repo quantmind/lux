@@ -50,9 +50,9 @@ class Query(models.Query):
         except MissingObjectError:
             raise Http404
         except MultipleResultsFound:
-            self.logger.error('%s - Multiple result found for model %s. '
+            self.logger.error('%s - Multiple result found for "%s". '
                               'Returning the first' %
-                              (self.request.first_line, self.name))
+                              (self.request, self.model))
             return query.first()
 
     def all(self):

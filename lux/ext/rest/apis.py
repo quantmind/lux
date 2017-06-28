@@ -2,7 +2,7 @@ import logging
 import json
 from contextlib import contextmanager
 from collections import OrderedDict
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urlparse
 
 from pulsar.api import Http404, ImproperlyConfigured
 from pulsar.apps.wsgi import Route
@@ -142,7 +142,7 @@ class Api(models.Component):
                        version=data['VERSION'],
                        plugins=data['SPEC_PLUGINS'],
                        basePath=url.path,
-                       host=url.netloc,
+                       host=url.netloc or None,
                        schemes=schemes,
                        produces=data['PRODUCES'])
         return cls(app, data['MODEL'], spec, data['SPEC_PATH'],

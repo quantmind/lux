@@ -173,8 +173,8 @@ class Specification(JsonRouter):
         if self.api:
             pass
         spec = self.api.spec_dict()
-        if 'host' not in spec:
+        if not spec.get('host'):
             spec['host'] = request.get_host()
-        if 'schemes' not in spec:
+        if not spec.get('schemes'):
             spec['schemes'] = [request.scheme]
         return request.json_response(spec)

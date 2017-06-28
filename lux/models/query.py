@@ -46,10 +46,6 @@ class Query(ABC):
         self.app.fire('on_query', self)
 
     @property
-    def name(self):
-        return self.model.name
-
-    @property
     def app(self):
         return self.model.app
 
