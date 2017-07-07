@@ -1,4 +1,5 @@
 import re
+import logging
 
 from apispec import APISpec
 from apispec.utils import load_yaml_from_docstring
@@ -12,6 +13,20 @@ from pulsar.apps import wsgi
 
 default_plugins = ['apispec.ext.marshmallow']
 METHODS = ['get', 'head', 'post', 'put', 'patch', 'delete', 'trace']
+LOGGER = logging.getLogger('lux.rest.openapi')
+
+
+class OpenAPI(APISpec):
+
+    def to_dict(self):
+        spec = super().to_dict()
+        spec.pop('swagger')
+        spec['openapi'] = '3.0.0'
+        spec['components'] = dict(
+            schemas=spec.pop('definitions'),
+            parameters=spec.pop('parameters')
+        )
+        return spec
 
 
 class APISchema(Schema):
@@ -104,14 +119,13 @@ class api_parameters:
         if self.form:
             self._extend(api, self.form, parameters, 'formData', processed)
         if isinstance(self.body, as_body):
-            obj = self.body(api.spec)
-            processed.add(obj['name'])
-            parameters.append(obj)
+            self.body(api, doc)
         if parameters:
             doc['parameters'] = parameters
         return doc
 
     def _extend(self, api, schema, parameters, loc, processed):
+        return
         spec = self._spec(api)
         spec.definition('param', schema=schema)
         params = spec.to_dict()['definitions']['param']
@@ -131,7 +145,7 @@ class api_parameters:
             parameters.append(obj)
 
     def _spec(self, api):
-        return APISpec('', '', plugins=list(api.spec.plugins))
+        return OpenAPI('', '', plugins=list(api.spec.plugins))
 
     def _as_body(self, definition, parameters):
         if not isinstance(definition, dict):
@@ -145,25 +159,25 @@ class api_parameters:
 
 
 class as_body:
+    """Wrap a Schema so it can be used as a ``requestBody``
+    within an Operation Object
+    """
 
     def __init__(self, schema, **obj):
         self.obj = obj
         self.schema_cls = schema if isinstance(schema, type) else type(schema)
 
-    def __call__(self, spec):
+    def __call__(self, api, op):
         definition = None
-        plg = spec.plugins.get('apispec.ext.marshmallow')
+        plg = api.spec.plugins.get('apispec.ext.marshmallow')
         if plg and 'refs' in plg:
             definition = plg['refs'].get(self.schema_cls)
         if not definition:
-            LOG.warning('Could not add body parameter %s' % self.schema_cls)
+            api.logger.warning(
+                'Could not add body parameter to %s', self.schema_cls
+            )
         else:
-            obj = self.obj.copy()
-            obj['schema'] = {"$ref": "#/definitions/%s" % definition}
-            obj['in'] = 'body'
-            if 'name' not in obj:
-                obj['name'] = definition.lower()
-            return obj
+            op['requestBody'] = {"$ref": "#/components/schemas/%s" % definition}
 
 
 class Specification(JsonRouter):
@@ -173,8 +187,10 @@ class Specification(JsonRouter):
         if self.api:
             pass
         spec = self.api.spec_dict()
-        if not spec.get('host'):
-            spec['host'] = request.get_host()
-        if not spec.get('schemes'):
-            spec['schemes'] = [request.scheme]
+        spec['servers'] = [
+            dict(
+                url='%s://%s' % (request.scheme, request.get_host()),
+                description="default server"
+            )
+        ]
         return request.json_response(spec)

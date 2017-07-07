@@ -12,10 +12,10 @@ from pulsar.utils.importer import module_attribute
 
 from lux import models
 
-from apispec import APISpec
-
 from .rest import RestRoot, RestRouter, Rest404
-from .openapi import rule2openapi, api_operations, api_schema, Specification
+from .openapi import (
+    OpenAPI, rule2openapi, api_operations, api_schema, Specification
+)
 from .exc import ErrorMessageSchema, ErrorSchema
 from .cors import cors
 
@@ -138,7 +138,7 @@ class Api(models.Component):
         data = api_schema.dump(schema.data).data
         url = urlparse(data['BASE_URL'])
         schemes = [url.scheme] if url.scheme else None
-        spec = APISpec(data['TITLE'],
+        spec = OpenAPI(data['TITLE'],
                        version=data['VERSION'],
                        plugins=data['SPEC_PLUGINS'],
                        basePath=url.path,
