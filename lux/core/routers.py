@@ -1,5 +1,5 @@
 from pulsar.api import Http404
-from pulsar.apps.wsgi import RouterParam, Router, Route, Html, route
+from pulsar.apps.wsgi import RouterParam, Router, Route, route
 from pulsar.utils.httpurl import JSON_CONTENT_TYPES, CacheControl
 
 from apispec.ext.marshmallow.swagger import schema2jsonschema
@@ -45,7 +45,7 @@ class JsonRouter(Router):
 
 
 class HtmlRouter(JsonRouter):
-    """Extend pulsar :class:`~pulsar.apps.wsgi.routers.Router`
+    """Extend pulsar Router
     with content management.
     """
     response_content_types = DEFAULT_CONTENT_TYPES
@@ -55,29 +55,8 @@ class HtmlRouter(JsonRouter):
         resource(request)
 
     def get(self, request):
-        return self.html_response(request, self.get_html(request))
-
-    def html_response(self, request, inner_html):
-        app = request.app
-        # get cms for this router
-        cms = app.cms
-        # fetch the cms page
-        page = cms.page(request)
-        # render the inner part of the html page
-        if isinstance(inner_html, Html):
-            inner_html = inner_html.to_string(request)
-        page.inner_template = cms.inner_html(request, page, inner_html)
-
-        # This request is for the inner template only
-        if request.url_data.get('template') == 'ui':
-            request.response.content = page.render_inner(request)
-            response = request.response
-        else:
-
-            response = app.html_response(request, page, self.context(request))
-
-        self.cache_control(response)
-        return response
+        html = self.get_html(request)
+        return request.app.cms.html_response(request, html)
 
     def get_inner_template(self, request, inner_template=None):
         return inner_template or self.template
@@ -110,21 +89,6 @@ class HtmlRouter(JsonRouter):
         for r in self.routes:
             if isinstance(r, Router):
                 r.add_api_urls(request, api)
-
-    def angular_page(self, app, router, page):
-        """Add angular router information (lux.extensions.angular)
-        """
-        url = page['url']
-        if router.route.variables:
-            # Variables in the url
-            # params = dict(((v, v) for v in router.route.variables))
-            # url = router.route.url(**params)
-            # A page with variable requires to be resolved by the api
-            # The resolve requires a model
-            page['resolveTemplate'] = True
-        else:
-            url = page['url']
-        page['templateUrl'] = '%s?template=ui' % url
 
 
 class WebFormRouter(HtmlRouter):

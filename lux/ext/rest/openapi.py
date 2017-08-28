@@ -1,7 +1,8 @@
 import re
 import logging
+from collections import OrderedDict
 
-from apispec import APISpec
+from apispec import APISpec, Path
 from apispec.utils import load_yaml_from_docstring
 
 from marshmallow import Schema, fields
@@ -10,9 +11,12 @@ from lux.core import JsonRouter
 
 from pulsar.apps import wsgi
 
+from .cors import cors
+
 
 default_plugins = ['apispec.ext.marshmallow']
 METHODS = ['get', 'head', 'post', 'put', 'patch', 'delete', 'trace']
+RE_URL = re.compile(r'<(?:[^:<>]+:)?([^<>]+)>')
 LOGGER = logging.getLogger('lux.rest.openapi')
 
 
@@ -28,6 +32,15 @@ class OpenAPI(APISpec):
         )
         return spec
 
+    def add_path(self, path=None, operations=None, **kwargs):
+        parameters = operations.pop('parameters', None) if operations else None
+        if not isinstance(path, Path):
+            path = Path(path, operations)
+            operations = None
+        super().add_path(path=path, operations=operations, **kwargs)
+        if parameters:
+            self._paths[path.path]['parameters'] = parameters
+
 
 class APISchema(Schema):
     BASE_URL = fields.String(required=True)
@@ -41,33 +54,132 @@ class APISchema(Schema):
 
 
 api_schema = APISchema()
-RE_URL = re.compile(r'<(?:[^:<>]+:)?([^<>]+)>')
 
 
-def api_operations(api, router):
-    """Get all API operations"""
-    operations = {}
-    for method in METHODS:
-        handle = getattr(router, method, None)
-        if not hasattr(handle, '__call__'):
-            continue
+class ApiOperation:
 
-        doc = load_yaml_from_docstring(handle.__doc__)
-        parameters = getattr(handle, 'parameters', None)
-        if parameters:
-            doc = parameters.add_to(api, doc)
-        if not doc and method == 'head':
-            get = operations.get('get')
-            if get:
-                doc = get.copy()
-                if 'summary' in doc:
-                    doc['summary'] = 'Same as get but does not return body'
-                    doc.pop('description', None)
-                else:
-                    doc['description'] = 'Same as get but does not return body'
-        operations[method] = doc or {}
+    def __init__(self, path, method, doc, info):
+        self.path = path
+        self.method = method
+        self.doc = doc if doc is not None else {}
+        self.info = info
+        self.parameters = []
+        self.param_processed = set()
 
-    return operations
+    def add_to_spec(self, spec):
+        info = self.info
+        if info.path_schema:
+            self._extend(spec, info.path_schema, 'path', self.path)
+        if info.query:
+            self._extend(spec, info.query, 'query')
+        if info.form:
+            self._extend(spec, info.form, 'formData')
+        if isinstance(info.body, as_body):
+            info.body(spec, self.doc)
+
+    def _extend(self, spec, schema, loc, entity=None):
+        entity = entity or self
+        tmp = self._spec(spec)
+        tmp.definition('param', schema=schema)
+        params = tmp.to_dict()['components']['schemas']['param']
+        properties = params['properties']
+        required = set(params.get('required') or ())
+        for name, obj in properties.items():
+            if name in entity.param_processed:
+                LOGGER.error(
+                    'Parameter "%s" from operation "%s" is already in '
+                    'parameter list of "%s"',
+                    name, self.method, entity
+                )
+                continue
+            entity.param_processed.add(name)
+            obj['name'] = name
+            obj['in'] = loc
+            if name in required:
+                obj['required'] = True
+            entity.parameters.append(obj)
+
+    def _spec(self, spec):
+        return OpenAPI('', '', plugins=list(spec.plugins))
+
+    def _as_body(self, definition, parameters):
+        if not isinstance(definition, dict):
+            body = dict(schema={"$ref": "#/definitions/%s" % definition})
+        if 'name' not in body:
+            body['name'] = 'body'
+        body['in'] = 'body'
+        body['required'] = True
+        parameters.add(body['name'])
+        return body
+
+
+class ApiPath:
+    """Utility class for adding a path object to the OpenAPI spec
+    
+    The path object (dictionary) is extracted from the router
+    HTTP methods
+    """
+    def __init__(self, router, cors=False):
+        self.router = router
+        self.cors = cors
+        self.path = rule2openapi(router.route.rule)
+        self.parameters = []
+        self.param_processed = set()
+
+    def __repr__(self):
+        return self.path
+
+    def __str__(self):
+        return self.path
+
+    def add_to_spec(self, spec):
+        operations = self.api_operations(spec)
+        if not operations:
+            return
+        path = Path(self.path, operations)
+        spec.add_path(path)
+        if self.parameters:
+            spec._paths[path.path]['parameters'] = self.parameters
+        if self.cors:
+            self.router.options = cors(
+                [method.upper() for method in operations]
+            )
+
+    def api_operations(self, spec):
+        """Get all API operations for a given path
+        
+        The path is represented by the router
+        
+        :param spec: instance of OpenAPI
+        :param router: router handling the path
+        """
+        operations = OrderedDict()
+        for method in METHODS:
+            handle = getattr(self.router, method, None)
+            if not hasattr(handle, '__call__'):
+                continue
+
+            doc = load_yaml_from_docstring(handle.__doc__)
+            info = getattr(handle, 'parameters', None)
+            if info:
+                op = ApiOperation(self, method, doc, info)
+                op.add_to_spec(spec)
+                doc = op.doc
+
+            if not doc and method == 'head':
+                get = operations.get('get')
+                if get:
+                    doc = get.copy()
+                    if 'summary' in doc:
+                        doc['summary'] = 'Same as get but does not return body'
+                        doc.pop('description', None)
+                    else:
+                        doc['description'] = (
+                            'Same as get but does not return body'
+                        )
+            operations[method] = doc or {}
+
+        return operations
 
 
 def rule2openapi(path):
@@ -94,7 +206,7 @@ class route(wsgi.route):
 
 
 class api_parameters:
-    """Inject api parameters to an endpoint handler
+    """Inject api parameters to an endpoint path or operation
     """
     def __init__(self, form=None, path_schema=None, query=None, body=None,
                  responses=None):
@@ -108,55 +220,6 @@ class api_parameters:
         f.parameters = self
         return f
 
-    def add_to(self, api, doc):
-        doc = doc if doc is not None else {}
-        parameters = doc.get('parameters', [])
-        processed = set()
-        if self.path_schema:
-            self._extend(api, self.path_schema, parameters, 'path', processed)
-        if self.query:
-            self._extend(api, self.query, parameters, 'query', processed)
-        if self.form:
-            self._extend(api, self.form, parameters, 'formData', processed)
-        if isinstance(self.body, as_body):
-            self.body(api, doc)
-        if parameters:
-            doc['parameters'] = parameters
-        return doc
-
-    def _extend(self, api, schema, parameters, loc, processed):
-        return
-        spec = self._spec(api)
-        spec.definition('param', schema=schema)
-        params = spec.to_dict()['definitions']['param']
-        properties = params['properties']
-        required = set(params.get('required') or ())
-        for name, obj in properties.items():
-            if name in processed:
-                api.logger.error(
-                    'Parameter "%s" already in api path parameter list', name
-                )
-                continue
-            processed.add(name)
-            obj['name'] = name
-            obj['in'] = loc
-            if name in required:
-                obj['required'] = True
-            parameters.append(obj)
-
-    def _spec(self, api):
-        return OpenAPI('', '', plugins=list(api.spec.plugins))
-
-    def _as_body(self, definition, parameters):
-        if not isinstance(definition, dict):
-            body = dict(schema={"$ref": "#/definitions/%s" % definition})
-        if 'name' not in body:
-            body['name'] = 'body'
-        body['in'] = 'body'
-        body['required'] = True
-        parameters.add(body['name'])
-        return body
-
 
 class as_body:
     """Wrap a Schema so it can be used as a ``requestBody``
@@ -167,17 +230,19 @@ class as_body:
         self.obj = obj
         self.schema_cls = schema if isinstance(schema, type) else type(schema)
 
-    def __call__(self, api, op):
+    def __call__(self, spec, op):
         definition = None
-        plg = api.spec.plugins.get('apispec.ext.marshmallow')
+        plg = spec.plugins.get('apispec.ext.marshmallow')
         if plg and 'refs' in plg:
             definition = plg['refs'].get(self.schema_cls)
         if not definition:
-            api.logger.warning(
+            LOGGER.warning(
                 'Could not add body parameter to %s', self.schema_cls
             )
         else:
-            op['requestBody'] = {"$ref": "#/components/schemas/%s" % definition}
+            op['requestBody'] = {
+                "$ref": "#/components/schemas/%s" % definition
+            }
 
 
 class Specification(JsonRouter):

@@ -1,14 +1,21 @@
+import logging
+
 from pulsar.utils.structures import AttributeDictionary
+from pulsar.apps.wsgi import Route
 from pulsar.api import Http404
 
 from lux.ext.sitemap import Sitemap, SitemapIndex
-from lux.core import cached, Template
-from lux import core
+from lux.core import (
+    cached, Template, Page, HtmlRouter, app_attribute, CMS as CMSbase
+)
 
 from .contents import get_reader
 
 
-class CMSRouter(core.HtmlRouter):
+LOGGER = logging.getLogger('lux.ext.content')
+
+
+class CMSRouter(HtmlRouter):
     """Fallback CMS Router
     """
     def get_html(self, request):
@@ -47,37 +54,41 @@ class RouterMap(Sitemap):
             yield page
 
 
-class CMS(core.CMS):
+class CMS(CMSbase):
     """Override default lux :class:`.CMS` handler
 
     This CMS handler reads page information from the database and
     """
+    api_contents_path = 'contents'
+    api_context_path = 'context'
     set_priority = True
 
-    def init_app(self, app):
-        self.app = app
-        middleware = app._handler.middleware
+    def middleware(self):
         processed = set()
-        middleware.append(CMSmap('/sitemap.xml', cms=self))
-        for route, page in self.sitemap():
+        yield CMSmap('/sitemap.xml', cms=self)
+        for route, page in app_sitemap(self.app):
             if page.name in processed:
                 continue
             if not page.priority:
                 continue
             url = '%s/sitemap.xml' % page.path if page.path else 'sitemap1.xml'
-            sitemap = RouterMap(url, name=page.name)
-            middleware.append(sitemap)
+            yield RouterMap(url, name=page.name)
             processed.add(page.name)
         # Last add the CMS router
-        middleware.append(CMSRouter('<path:path>'))
+        yield CMSRouter('<path:path>')
+
+    def routes_paths(self, request):
+        """list if route, paths tuples defining the sitemap
+        """
+        return app_sitemap(request.app)
 
     def inner_html(self, request, page, inner_html=None):
         try:
             if not page.name:
                 raise Http404
             path = page.urlargs.get('path') or 'index'
-            data = request.api.contents[page.name].get(
-                path,
+            data = request.api.get(
+                '/%s/%s/%s' % (self.api_contents_path, page.name, path),
                 auth_error=Http404
             ).json()
             inner_html = self.data_to_html(page, data, inner_html)
@@ -86,8 +97,8 @@ class CMS(core.CMS):
                 raise
         return super().inner_html(request, page, inner_html)
 
-    def context(self, request, context):
-        ctx = {}
+    def context(self, request, context=None):
+        ctx = dict(context or ())
         app = request.app
         for entry in self.context_data(request):
             lazy = LazyContext(app, entry, context)
@@ -98,7 +109,8 @@ class CMS(core.CMS):
     def context_data(self, request):
         try:
             params = {'load_only': ['slug', 'body']}
-            return request.api.contents.context.get(
+            return request.api.get(
+                '/%s/%s' % (self.api_contents_path, self.api_context_path),
                 params=params,
                 auth_error=Http404
             ).json()['result']
@@ -174,3 +186,45 @@ class LazyContext:
             self.context = body
             context[self.key] = body
         return self.context
+
+
+@app_attribute
+def app_sitemap(app):
+    """Build and store HTML sitemap in the application
+    """
+    return routes_from_groups(app.config['CONTENT_GROUPS'])
+
+
+def routes_from_groups(groups):
+    """build the routes from content groups
+    """
+    assert isinstance(groups, list), 'groups must be a list'
+    paths = {}
+
+    for page in groups:
+        if not isinstance(page, dict):
+            LOGGER.error(
+                'expected page in groups to be a dict, got %s', type(page)
+            )
+            continue
+
+        page = page.copy()
+        path = page.pop('path', None)
+        if not path:
+            LOGGER.error('group page without path')
+            continue
+
+        if path == '*':
+            path = ''
+        if path.startswith('/'):
+            path = path[1:]
+        if path.endswith('/'):
+            path = path[:-1]
+
+        page = Page(path=path, **page)
+
+        paths[path] = page
+        paths['%s/<path:path>' % path] = page
+
+    return [(Route(path), paths[path]) for path in reversed(sorted(paths))]
+

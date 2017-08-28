@@ -13,11 +13,8 @@ from pulsar.utils.importer import module_attribute
 from lux import models
 
 from .rest import RestRoot, RestRouter, Rest404
-from .openapi import (
-    OpenAPI, rule2openapi, api_operations, api_schema, Specification
-)
+from .openapi import OpenAPI, ApiPath, api_schema, Specification
 from .exc import ErrorMessageSchema, ErrorSchema
-from .cors import cors
 
 
 LOCAL_API_LOGGER = logging.getLogger('lux.local.api')
@@ -197,11 +194,8 @@ class Api(models.Component):
         return self._router
 
     def prepare_router(self, router):
-        path = rule2openapi(router.route.rule)
-        operations = api_operations(self, router)
-        if self.cors and operations:
-            router.options = cors([method.upper() for method in operations])
-        self.spec.add_path(path, operations)
+        api_path = ApiPath(router, cors=self.cors)
+        api_path.add_to_spec(self.spec)
         for child in router.routes:
             self.prepare_router(child)
         return router

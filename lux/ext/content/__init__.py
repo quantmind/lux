@@ -23,6 +23,12 @@ class Extension(LuxExtension):
     _config = [
         Parameter('CONTENT_REPO', None,
                   'Directory where content repo is located'),
+        Parameter('CONTENT_GROUPS', {
+            "site": {
+                "path": "*",
+                "body_template": "home.html"
+            }
+        }, 'List of content model configurations'),
         Parameter('CONTENT_LOCATION', None,
                   'Directory where content is located inside CONTENT_REPO'),
         Parameter('HTML_TEMPLATES_URL', 'templates',

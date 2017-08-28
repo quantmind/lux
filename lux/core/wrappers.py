@@ -56,7 +56,7 @@ class WsgiRequest(wsgi.WsgiRequest):
     def html_document(self):
         """The HTML document for this request
         """
-        return self.app.html_document(self)
+        return self.app.cms.html_document(self)
 
     @property
     def scheme(self):

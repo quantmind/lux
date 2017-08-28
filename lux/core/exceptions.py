@@ -6,6 +6,7 @@ from pulsar.utils.httpurl import JSON_CONTENT_TYPES
 from pulsar.apps.wsgi import render_error_debug
 
 from ..utils.data import compact_dict
+from .cms import Page
 # from ..utils.messages import error_message
 
 
@@ -89,11 +90,12 @@ def error_handler(request, exc):
     elif is_html:
         context = {'status_code': response.status_code,
                    'status_message': trace or message}
-        return app.html_response(request,
-                                 ['%s.html' % response.status_code,
-                                  'error.html'],
-                                 context,
-                                 title=response.status)
+        page = Page(body_template=(
+            '%s.html' % response.status_code, 'error.html')
+        )
+        return app.cms.page_response(
+            request, page, context, title=response.status
+        )
     elif content_type[-4:] == '/xml':
         return XML_ERROR % (response.status_code, message)
     elif trace:

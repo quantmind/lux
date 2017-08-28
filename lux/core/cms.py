@@ -1,12 +1,14 @@
 import os
 
-from pulsar.apps.wsgi import Route
+from pulsar.apps.wsgi import Html, HtmlDocument
+from pulsar.utils.httpurl import CacheControl
 
 from lux.utils.url import absolute_uri
+from lux.utils.token import encode_json
 
 from ..models import Component
-from .extension import app_attribute
 from .templates import Template
+from .wrappers import HeadMeta
 
 
 HEAD_META = set(('title', 'description', 'author', 'keywords'))
@@ -38,7 +40,7 @@ class Page:
         in the context dictionary at the key ``page``
     """
     def __init__(self, name=None, path=None, body_template=None,
-                 inner_template=None, meta=None, urlargs=None, **kw):
+                 inner_template=None, meta=None, urlargs=None):
         self.name = name
         self.path = path
         self.body_template = body_template
@@ -80,11 +82,17 @@ class Page:
 class CMS(Component):
     """Lux CMS base class
     """
+    cache_control = CacheControl()
     html_main_key = '{{ html_main }}'
 
     def middleware(self):
         """Middleware for the CMS
         """
+        return ()
+
+    def routes_paths(self, request):
+        '''returns a list/tuple of route, page pairs
+        '''
         return ()
 
     def page(self, request):
@@ -94,12 +102,73 @@ class CMS(Component):
         registered pages match the path, it returns an empty :class:`.Page`.
         """
         path = request.path[1:]
-        return self.match(path) or Page()
+        for route, page in self.routes_paths(request):
+            matched = route.match(path)
+            if matched is not None and '__remaining__' not in matched:
+                page = page.copy()
+                page.urlargs = matched
+                return page
+        return Page()
 
-    def as_page(self, page=None):
-        if not isinstance(page, Page):
-            page = Page(body_template=page)
+    def as_page(self, body_template=None, **kw):
+        """Create a page from a template or update a page with metadata
+        """
+        if not isinstance(body_template, Page):
+            page = Page(body_template=body_template)
+        else:
+            page = body_template
+        page.meta.update(kw)
         return page
+
+    def html_document(self, request):
+        """Build the HTML document.
+
+        Usually there is no need to call directly this method.
+        Instead one can use the :attr:`.WsgiRequest.html_document`.
+        """
+        app = self.app
+        cfg = app.config
+        doc = HtmlDocument(title=cfg['HTML_TITLE'],
+                           media_path=cfg['MEDIA_URL'],
+                           minified=cfg['MINIFIED_MEDIA'],
+                           data_debug=app.debug,
+                           charset=cfg['ENCODING'],
+                           asset_protocol=cfg['ASSET_PROTOCOL'])
+        doc.meta = HeadMeta(doc.head)
+        doc.jscontext = dict((
+            (p.name, cfg[p.name]) for p in cfg['_parameters'].values()
+            if p.jscontext
+        ))
+        doc.jscontext['debug'] = app.debug
+        # Locale
+        lang = cfg['LOCALE'][:2]
+        doc.attr('lang', lang)
+        #
+        # Head
+        head = doc.head
+
+        for script in cfg['HTML_SCRIPTS']:
+            head.scripts.append(script)
+        #
+        for entry in cfg['HTML_META'] or ():
+            head.add_meta(**entry)
+
+        for script in cfg['HTML_BODY_SCRIPTS']:
+            doc.body.scripts.append(script, async=True)
+
+        app.fire('on_html_document', request, doc, safe=True)
+        #
+        # Add links last
+        links = head.links
+        for link in cfg['HTML_LINKS']:
+            if isinstance(link, dict):
+                link = link.copy()
+                href = link.pop('href', None)
+                if href:
+                    links.append(href, **link)
+            else:
+                links.append(link)
+        return doc
 
     def inner_html(self, request, page, inner_html):
         """Render the inner part of the page template (``html_main``)
@@ -109,20 +178,57 @@ class CMS(Component):
         """
         return self.replace_html_main(page.inner_template, inner_html)
 
-    def match(self, path):
-        '''Match a path with a page form :meth:`.sitemap`
+    def html_response(self, request, inner_html):
+        # fetch the cms page
+        page = self.page(request)
+        # render the inner part of the html page
+        if isinstance(inner_html, Html):
+            inner_html = inner_html.to_string(request)
+        page.inner_template = self.inner_html(request, page, inner_html)
 
-        It returns Nothing if no page is matched
-        '''
-        for route, page in self.sitemap():
-            matched = route.match(path)
-            if matched is not None and '__remaining__' not in matched:
-                page = page.copy()
-                page.urlargs = matched
-                return page
+        # This request is for the inner template only
+        if request.url_data.get('template') == 'ui':
+            request.response.content = page.render_inner(request)
+            response = request.response
+        else:
+            response = self.page_response(request, page, self.context(request))
 
-    def sitemap(self):
-        return app_sitemap(self.app)
+        self.cache_control(response)
+        return response
+
+    def page_response(self, request, page, context=None,
+                      jscontext=None, title=None, status_code=None):
+        """Html response for a page.
+
+        :param request: the :class:`.WsgiRequest`
+        :param page: A :class:`Page`, template file name or a list of
+            template filenames
+        :param context: optional context dictionary
+        """
+        request.response.content_type = 'text/html'
+        doc = request.html_document
+        if jscontext:
+            doc.jscontext.update(jscontext)
+
+        if title:
+            doc.head.title = title
+
+        if status_code:
+            request.response.status_code = status_code
+        context = self.context(request, context)
+        body = self.render_body(request, page, context)
+
+        doc.body.append(body)
+
+        if not request.config['MINIFIED_MEDIA']:
+            doc.head.embedded_js.insert(
+                0, 'window.minifiedMedia = false;')
+
+        if doc.jscontext:
+            encoded = encode_json(doc.jscontext, self.config['SECRET_KEY'])
+            doc.head.add_meta(name="html-context", content=encoded)
+
+        return doc.http_response(request)
 
     def render_body(self, request, page, context):
         doc = request.html_document
@@ -168,10 +274,10 @@ class CMS(Component):
     def html_content(self, request, path, context):
         pass
 
-    def context(self, request, context):
+    def context(self, request, context=None):
         """Context dictionary for this cms
         """
-        return {}
+        return context or {}
 
     def replace_html_main(self, template, html_main):
         if not isinstance(template, Template):
@@ -199,45 +305,3 @@ class CMS(Component):
                 filename = ext.get_template_full_path(self, name)
                 if filename and os.path.exists(filename):
                     return filename
-
-
-@app_attribute
-def app_sitemap(app):
-    """Build and store HTML sitemap in the application
-    """
-    groups = app.config['CONTENT_GROUPS']
-    if not isinstance(groups, dict):
-        return []
-    paths = {}
-    variables = {}
-
-    for name, page in groups.items():
-        if not isinstance(page, dict):
-            continue
-        page = page.copy()
-        path = page.pop('path', None)
-        if not path:
-            continue
-        if path == '*':
-            path = ''
-        if path.startswith('/'):
-            path = path[1:]
-        if path.endswith('/'):
-            path = path[:-1]
-        page['name'] = name
-        page = Page(path=path, **page)
-
-        if not path or path.startswith('<'):
-            variables[path] = page
-            continue
-        paths[path] = page
-        paths['%s/<path:path>' % path] = page
-
-    sitemap = [(Route(path), paths[path]) for path in reversed(sorted(paths))]
-
-    for path in reversed(sorted(variables)):
-        sitemap.append((Route(path or '<path:path>'), variables[path]))
-        if path:
-            sitemap.append((Route('%s/<path:path>' % path), variables[path]))
-
-    return sitemap

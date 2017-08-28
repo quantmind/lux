@@ -13,7 +13,7 @@ from importlib import import_module
 
 from pulsar.api import ImproperlyConfigured, Config
 from pulsar.apps.wsgi import (
-    WsgiHandler, HtmlDocument, wait_for_body_middleware,
+    WsgiHandler, wait_for_body_middleware,
     middleware_in_executor, wsgi_request
 )
 from pulsar.utils.log import lazyproperty
@@ -25,11 +25,10 @@ from pulsar.utils.string import to_bytes
 from pulsar.utils.slugify import slugify
 
 from lux import __version__
-from lux.utils.token import encode_json
 
 from .commands import ConfigError, ConsoleMixin
 from .extension import LuxExtension, Parameter, EventMixin, app_attribute
-from .wrappers import HeadMeta, LuxContext, ERROR_MESSAGES
+from .wrappers import LuxContext, ERROR_MESSAGES
 from .templates import render_data, template_engine, Template
 from .cms import CMS
 from .cache import create_cache
@@ -140,12 +139,6 @@ class Application(ConsoleMixin, LuxExtension, EventMixin):
                   'Html tag for lux grids'),
         #
         # CONTENT base parameters
-        Parameter('CONTENT_GROUPS', {
-            "site": {
-                "path": "*",
-                "body_template": "home.html"
-            }
-        }, 'List of content model configurations'),
         Parameter('CONTENT_LINKS',
                   {'python': 'https://www.python.org/',
                    'lux': 'https://github.com/quantmind/lux',
@@ -330,53 +323,6 @@ class Application(ConsoleMixin, LuxExtension, EventMixin):
         :class:`~.ConsoleParser`."""
         return self.meta.version
 
-    def html_document(self, request):
-        """Build the HTML document.
-
-        Usually there is no need to call directly this method.
-        Instead one can use the :attr:`.WsgiRequest.html_document`.
-        """
-        cfg = self.config
-        doc = HtmlDocument(title=cfg['HTML_TITLE'],
-                           media_path=cfg['MEDIA_URL'],
-                           minified=cfg['MINIFIED_MEDIA'],
-                           data_debug=self.debug,
-                           charset=cfg['ENCODING'],
-                           asset_protocol=cfg['ASSET_PROTOCOL'])
-        doc.meta = HeadMeta(doc.head)
-        doc.jscontext = dict(self._config_context())
-        doc.jscontext['lux_version'] = __version__
-        doc.jscontext['debug'] = request.app.debug
-        # Locale
-        lang = cfg['LOCALE'][:2]
-        doc.attr('lang', lang)
-        #
-        # Head
-        head = doc.head
-
-        for script in cfg['HTML_SCRIPTS']:
-            head.scripts.append(script)
-        #
-        for entry in cfg['HTML_META'] or ():
-            head.add_meta(**entry)
-
-        for script in cfg['HTML_BODY_SCRIPTS']:
-            doc.body.scripts.append(script, async=True)
-
-        self.fire('on_html_document', request, doc, safe=True)
-        #
-        # Add links last
-        links = head.links
-        for link in cfg['HTML_LINKS']:
-            if isinstance(link, dict):
-                link = link.copy()
-                href = link.pop('href', None)
-                if href:
-                    links.append(href, **link)
-            else:
-                links.append(link)
-        return doc
-
     def close(self):
         self.green_pool.shutdown(False)
         self.fire('on_close')
@@ -486,41 +432,6 @@ class Application(ConsoleMixin, LuxExtension, EventMixin):
     def template_engine(self, engine=None):
         engine = engine or self.config['DEFAULT_TEMPLATE_ENGINE']
         return template_engine(self, engine)
-
-    def html_response(self, request, page, context=None,
-                      jscontext=None, title=None, status_code=None):
-        """Html response via a template.
-
-        :param request: the :class:`.WsgiRequest`
-        :param page: A :class:`Page`, template file name or a list of
-            template filenames
-        :param context: optional context dictionary
-        """
-        request.response.content_type = 'text/html'
-        doc = request.html_document
-        if jscontext:
-            doc.jscontext.update(jscontext)
-
-        if title:
-            doc.head.title = title
-
-        if status_code:
-            request.response.status_code = status_code
-        context = self.context(request, context)
-        page = self.cms.as_page(page)
-        body = self.cms.render_body(request, page, context)
-
-        doc.body.append(body)
-
-        if not request.config['MINIFIED_MEDIA']:
-            doc.head.embedded_js.insert(
-                0, 'window.minifiedMedia = false;')
-
-        if doc.jscontext:
-            encoded = encode_json(doc.jscontext, self.config['SECRET_KEY'])
-            doc.head.add_meta(name="html-context", content=encoded)
-
-        return doc.http_response(request)
 
     def site_url(self, path=None):
         """Build the site url from an optional ``path``
@@ -637,11 +548,6 @@ class Application(ConsoleMixin, LuxExtension, EventMixin):
             self.logger = cfg.configured_logger('lux')
         else:
             super()._setup_logger(config, opts)
-
-    def _config_context(self):
-        cfg = self.config
-        return ((p.name, cfg[p.name]) for p in cfg['_parameters'].values()
-                if p.jscontext)
 
 
 # INTERNALS
