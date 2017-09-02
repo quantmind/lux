@@ -1,6 +1,7 @@
 from datetime import date, datetime
 from functools import partial
 
+import sqlalchemy as sa
 from sqlalchemy import desc, String
 from sqlalchemy.orm import class_mapper, load_only
 from sqlalchemy.sql.expression import func, cast
@@ -30,6 +31,7 @@ column2field = model_converter.column2field
 
 model_converter.SQLA_TYPE_MAPPING = model_converter.SQLA_TYPE_MAPPING.copy()
 model_converter.SQLA_TYPE_MAPPING[postgresql.UUID] = fields.UUID
+model_converter.SQLA_TYPE_MAPPING[sa.Enum] = fields.Enum
 
 
 class Query(models.Query):
@@ -56,7 +58,7 @@ class Query(models.Query):
             return query.first()
 
     def all(self):
-        return self._query().all()
+        return list(self._query())
 
     def delete(self):
         return self._query().delete()
@@ -177,8 +179,11 @@ class Query(models.Query):
 
     def _query(self):
         if self.fields:
-            fields = self.model.db_columns(self.fields)
-            self.sql_query = self.sql_query.options(load_only(*fields))
+            self.fields = self.model.db_columns(self.fields)
+            if self.fields:
+                self.sql_query = self.sql_query.options(
+                    load_only(*self.fields)
+                )
         return self.sql_query
 
 
@@ -212,6 +217,10 @@ class Model(models.Model):
         return get_primary_keys(self.db_model)
 
     def __call__(self, data, session):
+        """Create a new model instance from data and add to session
+        
+        Check that model does not exist already
+        """
         db_model = self.db_model
         filters = {pk.key: data.get(pk.key) for pk in self.primary_keys}
         instance = None
@@ -264,12 +273,8 @@ class Model(models.Model):
     def db_columns(self, columns=None):
         '''Return a list of columns available in the database table
         '''
-        dbc = self._fields.load(self).db_columns
-        if columns is None:
-            return tuple(dbc)
-        else:
-            columns = self.column_fields(columns)
-            return [c for c in columns if c in dbc]
+        dbc = self._db_columns()
+        return tuple((c for c in columns if c in dbc) if columns else dbc)
 
     # INTERNALS
     def _same_instance(self, obj1, obj2):
@@ -283,19 +288,23 @@ class Model(models.Model):
                 return True
         return False
 
-    def fields_map(self, include_fk=False, fields=None,
-                   exclude=None, base_fields=None, dict_cls=dict):
-        '''List of column definitions
-        '''
-        result = dict_cls()
-        base_fields = base_fields or {}
+    def _db_columns(self):
         db_name = self.db_name
         fields_map = odm_fields_map(self.app)
         db_columns = fields_map.get(db_name)
-
         if db_columns is None:
             db_columns = {}
             fields_map[db_name] = db_columns
+        return db_columns
+
+    def fields_map(self, include_fk=False, fields=None,
+                   exclude=None, base_fields=None, dict_cls=dict):
+        '''Override fields map function and returns a mapping of
+        field names with schema fields objects
+        '''
+        result = dict_cls()
+        base_fields = base_fields or {}
+        db_columns = self._db_columns()
 
         for column in self.db_model.__mapper__.iterate_properties:
             if _should_exclude_field(column, fields=fields, exclude=exclude):

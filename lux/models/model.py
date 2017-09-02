@@ -110,13 +110,17 @@ class Model(ABC, Component):
 
     # SCHEMA METHODS
 
-    def get_schema(self, schema):
+    def get_schema(self, schema, only=None):
         if isclass(schema):
+            if only:
+                return schema(app=self.app, only=only)
             schemas = app_schemas(self.app)
             name = schema.__name__
             if name not in schemas:
                 schemas[name] = schema(app=self.app)
-            schema = schemas[name]
+            return schemas[name]
+        elif only:
+            return type(schema)(app=self.app, only=only)
         return schema
 
     def all_schemas(self):
@@ -164,11 +168,15 @@ class Model(ABC, Component):
             data = schema.dump(model).data
         return request.json_response(data, 201)
 
-    def get_list_response(self, request):
+    def get_list_response(self, request, *filters, **params):
+        """Get a HTTP response for a list of model data
+        """
+        params.update(request.url_data)
         with self.session(request) as session:
-            models = self.get_list(session)
-            schema = self.get_schema(self.model_schema)
-            data = schema.dump(models, many=True).data
+            query = self.query(session, *filters, **params)
+            only = query.fields or None
+            schema = self.get_schema(self.model_schema, only=only)
+            data = schema.dump(query.all(), many=True).data
         return request.json_response(data)
 
     def delete_one_response(self, request, instance=None):
@@ -178,6 +186,8 @@ class Model(ABC, Component):
             session.delete(instance)
         request.response.status_code = 204
         return request.response
+
+    # CRUD Methods
 
     def get_list(self, session, *filters, **kwargs):
         """Get a list of instances from positional and keyed-valued filters

@@ -1,4 +1,5 @@
 import uuid
+import enum
 from functools import partial
 from datetime import datetime
 
@@ -49,7 +50,8 @@ __all__ = [
     'Constant',
     #
     'Password',
-    'Slug'
+    'Slug',
+    'Enum'
 ]
 
 
@@ -114,6 +116,12 @@ class UUID(MaUUID):
 
     def _validated(self, value):
         return super()._validated(value).hex
+
+
+class Enum(Field):
+
+    def _serialize(self, value, attr, obj):
+        return value.name if isinstance(value, enum.Enum) else value
 
 
 def password_validate(value):

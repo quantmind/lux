@@ -67,7 +67,8 @@ class Query(ABC):
     def all(self):
         """Aggregate results of this query.
 
-        :return: an iterable over :class:`.ModelInstance`"""
+        :return: an iterable over models
+        """
 
     @abstractmethod
     def count(self):

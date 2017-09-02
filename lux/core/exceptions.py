@@ -60,7 +60,7 @@ def error_handler(request, exc):
                 content_type = (content_type,)
             response.content_type = request.content_types.best_match(
                 content_type)
-    content_type = None
+    content_type = ''
 
     if response.content_type:
         content_type = response.content_type.split(';')[0]
