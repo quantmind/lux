@@ -7,6 +7,7 @@ from pulsar.apps.greenio import GreenHttp
 
 from lux.core import raise_http_error, app_attribute
 from lux.utils.token import encode_json
+from lux.utils.url import initial_slash, is_url
 
 
 def app_token(request):
@@ -65,8 +66,8 @@ class ApiClient:
             if token:
                 req_headers.append(('Authorization', 'Bearer %s' % token))
 
-        if not url.startswith('http'):
-            url = 'http://local%s' % url
+        if not is_url(url):
+            url = 'http://local%s' % initial_slash(url)
         response = http.request(method, url, headers=req_headers, **kw)
         try:
             raise_http_error(response, method, url)

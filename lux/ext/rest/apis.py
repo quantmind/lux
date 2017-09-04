@@ -122,9 +122,17 @@ class Api(models.Component):
         self.jwt = jwt
         self.cors = cors
         self.registry = {}
+        self._spec_path = spec_path
         self._router = [Specification(spec_path, api=self)]
         self.add_definition(ErrorSchema)
         self.add_definition(ErrorMessageSchema)
+
+    @property
+    def spec_path(self):
+        """Full path to Api Spec document
+        """
+        base = self.spec.options['basePath']
+        return '%s/%s' % (base, self._spec_path) if base else self._spec_path
 
     @classmethod
     def from_cfg(cls, app, cfg):

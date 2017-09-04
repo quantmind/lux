@@ -48,7 +48,8 @@ class APISchema(Schema):
     VERSION = fields.String(default='0.1.0')
     SPEC_PLUGINS = fields.List(fields.String(), default=default_plugins)
     PRODUCES = fields.List(fields.String(), default=['application/json'])
-    SPEC_PATH = fields.String(default='spec')
+    SPEC_PATH = fields.String(default='spec',
+                              description='path of api specification document')
     MODEL = fields.String(default='*')
     CORS = fields.Boolean(default=True)
 
