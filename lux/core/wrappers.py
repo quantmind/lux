@@ -31,6 +31,12 @@ class WsgiRequest(wsgi.WsgiRequest):
         return self.cache.app
 
     @property
+    def cms(self):
+        """The :class:`.Application` running the website.
+        """
+        return self.cache.app.cms
+
+    @property
     def config(self):
         """The :attr:`.Application.config` dictionary
         """

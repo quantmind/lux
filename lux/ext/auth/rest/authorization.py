@@ -2,7 +2,7 @@ from pulsar.api import Http401, BadRequest
 
 from lux.models import Schema, fields, validators, ValidationError
 from lux.utils.date import date_from_now
-from lux.ext.rest import RestRouter
+from lux.ext.rest import RestRouter, api_parameters, as_body
 from lux.ext.odm import Model
 
 from .tokens import TokenSchema
@@ -78,6 +78,7 @@ class Authorization(RestRouter):
             raise Http401
         return request.response
 
+    @api_parameters(body=as_body(LoginSchema))
     def post(self, request):
         """
         ---

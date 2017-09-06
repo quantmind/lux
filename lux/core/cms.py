@@ -82,6 +82,7 @@ class Page:
 class CMS(Component):
     """Lux CMS base class
     """
+    template = Template
     cache_control = CacheControl()
     html_main_key = '{{ html_main }}'
 
@@ -110,11 +111,14 @@ class CMS(Component):
                 return page
         return Page()
 
-    def as_page(self, body_template=None, **kw):
+    def as_page(self, body_template=None, inner_template=None, **kw):
         """Create a page from a template or update a page with metadata
         """
         if not isinstance(body_template, Page):
-            page = Page(body_template=body_template)
+            page = Page(
+                body_template=body_template,
+                inner_template=inner_template
+            )
         else:
             page = body_template
         page.meta.update(kw)
