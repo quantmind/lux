@@ -6,7 +6,6 @@ from urllib.parse import urlparse
 
 from pulsar.api import Http404, ImproperlyConfigured
 from pulsar.apps.wsgi import Route
-from pulsar.utils.structures import mapping_iterator
 from pulsar.utils.httpurl import remove_double_slash
 from pulsar.utils.importer import module_attribute
 
@@ -32,9 +31,11 @@ class Apis(list, models.Component):
             urls = [
                 {
                     "TITLE": app.config['APP_NAME'],
-                    "BASE_URL": urls
+                    "BASE_PATH": urls
                 }
             ]
+        elif not isinstance(urls, (list, tuple)):
+            urls = [urls]
         return cls().init_app(app).extend(urls)
 
     def routes(self):
@@ -80,7 +81,7 @@ class Apis(list, models.Component):
                 yield Rest404(remove_double_slash('%s/<path:path>' % url))
 
     def extend(self, iterable):
-        for cfg in mapping_iterator(iterable):
+        for cfg in iterable:
             if not isinstance(cfg, dict):
                 self.logger.error('API spec must be a dictionary, got %s', cfg)
                 continue
@@ -141,7 +142,7 @@ class Api(models.Component):
             app.logger.error('Could not create Api: %s', schema.errors)
             return
         data = api_schema.dump(schema.data).data
-        url = urlparse(data['BASE_URL'])
+        url = urlparse(data['BASE_PATH'])
         schemes = [url.scheme] if url.scheme else None
         spec = OpenAPI(data['TITLE'],
                        version=data['VERSION'],

@@ -1,2 +1,6 @@
 
-EXTENSIONS = ['lux.ext.rest']
+EXTENSIONS = (
+    'lux.ext.rest',
+    'lux.ext.odm',
+    'lux.ext.auth',
+)

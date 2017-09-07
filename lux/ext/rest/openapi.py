@@ -21,7 +21,8 @@ LOGGER = logging.getLogger('lux.rest.openapi')
 
 
 class OpenAPI(APISpec):
-
+    """Open API v 3.0 document builder
+    """
     def to_dict(self):
         spec = super().to_dict()
         spec.pop('swagger')
@@ -43,7 +44,7 @@ class OpenAPI(APISpec):
 
 
 class APISchema(Schema):
-    BASE_URL = fields.String(required=True)
+    BASE_PATH = fields.String(required=True)
     TITLE = fields.String(required=True)
     VERSION = fields.String(default='0.1.0')
     SPEC_PLUGINS = fields.List(fields.String(), default=default_plugins)
