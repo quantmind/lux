@@ -36,7 +36,7 @@ class TestEnum(Enum):
 
 
 def odm_json(request, data):
-    models = odm_models(request.app)
+    models = request.app.models
     for instance in data:
         model = models.get(instance.__class__.__name__.lower())
         if model:

@@ -8,15 +8,16 @@ class cors:
         self.methods = methods
 
     def __call__(self, request):
-        headers = request.get('HTTP_ACCESS_CONTROL_REQUEST_HEADERS')
-        response = request.response
+        request_headers = request.get('HTTP_ACCESS_CONTROL_REQUEST_HEADERS')
+        headers = request.response.headers
         origin = request.get('HTTP_ORIGIN', '*')
 
         if origin == 'null':
             origin = '*'
 
-        response.headers[CORS] = origin
-        if headers:
-            response['Access-Control-Allow-Headers'] = headers
-        response['Access-Control-Allow-Methods'] = ', '.join(self.methods)
-        return response
+        headers[CORS] = origin
+        if request_headers:
+            headers['Access-Control-Allow-Headers'] = request_headers
+        headers['Access-Control-Allow-Methods'] = ', '.join(self.methods)
+        headers['content-length'] = '0'
+        return request.response

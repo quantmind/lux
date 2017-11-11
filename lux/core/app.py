@@ -35,7 +35,7 @@ from .cache import create_cache
 from .exceptions import ShellError
 from .channels import LuxChannels
 
-from ..models import ModelContainer, registry, context
+from ..models import ModelContainer, context
 
 
 LUX_CORE = os.path.dirname(__file__)
@@ -76,9 +76,6 @@ class Application(ConsoleMixin, LuxExtension, EventMixin):
     logger = None
     admin = None
     _handler = None
-    forms = None
-    """Form registry for this application. Add/override forms via the
-    on_loaded event"""
     cms = None
     """CMS handler"""
     api = None
@@ -267,7 +264,6 @@ class Application(ConsoleMixin, LuxExtension, EventMixin):
 
     def wsgi_handler(self):
         if not self._handler:
-            self.forms = registry.copy()
             self._handler = _build_handler(self)
             self.fire('on_loaded')
         return self._handler

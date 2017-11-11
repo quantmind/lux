@@ -87,7 +87,8 @@ class Related(fields.Field):
                 if result is None:
                     raise NoResultFound
         except NoResultFound:
-            # The related-object DNE in the DB, but we still want to deserialize it
+            # The related-object DNE in the DB
+            # but we still want to deserialize it
             # ...perhaps we want to add it to the DB later
             return self.related_model(**value)
         return result

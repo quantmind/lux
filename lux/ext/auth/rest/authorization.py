@@ -1,6 +1,6 @@
 from pulsar.api import Http401, BadRequest
 
-from lux.models import Schema, fields, validators, ValidationError
+from lux.models import Schema, fields, ValidationError
 from lux.utils.date import date_from_now
 from lux.ext.rest import RestRouter, api_parameters, as_body
 from lux.ext.odm import Model
@@ -15,14 +15,12 @@ class LoginSchema(Schema):
     username = fields.Slug(
         required=True,
         minLength=2,
-        maxLength=30,
-        validate=validators.string
+        maxLength=30
     )
     password = fields.Password(
         required=True,
         minLength=2,
-        maxLength=128,
-        validate=validators.string
+        maxLength=128
     )
 
 

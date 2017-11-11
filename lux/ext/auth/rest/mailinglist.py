@@ -39,7 +39,7 @@ class MailingListSchema(Schema):
             except Http404:
                 pass
             else:
-                raise forms.ValidationError('Already subscribed')
+                raise ValidationError('Already subscribed')
 
 
 class MailingListCRUD(RestRouter):

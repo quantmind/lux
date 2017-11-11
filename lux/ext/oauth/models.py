@@ -1,5 +1,5 @@
 from sqlalchemy.orm import relationship, backref
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
+from sqlalchemy import Column, String, ForeignKey, DateTime
 
 from odm.types import JSONType, UUIDType
 from odm import declared_attr

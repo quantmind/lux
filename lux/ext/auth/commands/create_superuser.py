@@ -46,7 +46,7 @@ class Command(LuxCommand):
             else:
                 password2 = password
             try:
-                reg = api.post('/registrations', json=dict(
+                api.post('/registrations', json=dict(
                     username=username,
                     email=email,
                     password=password,

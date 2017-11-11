@@ -66,8 +66,10 @@ class Query(query.Query):
         data = self.all()
         if data:
             if len(data) > 1:
-                self.request.logger.error('Multiple result found for model %s.'
-                                          'returning the first' % self.name)
+                self.request.logger.error(
+                    'Multiple result found for model %s.'
+                    'returning the first' % self.model
+                )
             return data[0]
         else:
             raise Http404

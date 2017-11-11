@@ -1,12 +1,12 @@
 from lux.utils import test
-from lux.ext.rest import DictModel
+from lux.models.memory import Model
 
 
 class TestDictModel(test.TestCase):
     config_file = 'tests.rest'
 
     def test_instance(self):
-        model = DictModel('test', fields=('id', 'foo', 'name'))
+        model = Model('test', fields=('id', 'foo', 'name'))
         self.assertDictEqual(model.create_instance(), {})
         o = model.instance()
         model.set_instance_value(o, 'foo', 'bla')
@@ -16,7 +16,7 @@ class TestDictModel(test.TestCase):
         self.assertEqual(len(model.fields()), 5)
 
     def test_json(self):
-        model = DictModel('test', fields=('id', 'foo', 'name'))
+        model = Model('test', fields=('id', 'foo', 'name'))
         app = self.application()
         app.models.register(model)
         request = app.wsgi_request()

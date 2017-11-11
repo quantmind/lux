@@ -182,7 +182,7 @@ class Model(ABC, Component):
     def delete_one_response(self, request, instance=None):
         with self.session(request) as session:
             if instance is None:
-                instance = self.get_one(session)
+                instance = self.get_one(session, **request.urlargs)
             session.delete(instance)
         request.response.status_code = 204
         return request.response

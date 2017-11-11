@@ -2,6 +2,7 @@
 """
 from pulsar.api import MethodNotAllowed
 
+from lux.core import AuthenticationError
 from lux.models import Schema, fields, ValidationError
 from lux.ext.rest import RestRouter, route
 

@@ -10,6 +10,8 @@ from pulsar.apps.wsgi import route
 from lux.core import JsonRouter, WebFormRouter, HtmlRouter
 from lux.ext.auth.rest.authorization import LoginSchema
 
+from .error import schema_http_exception
+
 
 class ActionsRouter(HtmlRouter):
     pass
@@ -34,7 +36,7 @@ class Login(WebFormRouter):
                 auth_backend.login(request, **form.cleaned_data)
                 result = {'success': True}
             except Exception as exc:
-                result = form_http_exception(form, exc)
+                result = schema_http_exception(form, exc)
         else:
             result = form.tojson()
 
@@ -44,13 +46,10 @@ class Login(WebFormRouter):
 class Logout(JsonRouter):
 
     def post(self, request):
-        form = Form(request, data=request.body_data() or {})
-
-        if form.is_valid():
+        result = self.check(request)
+        if not result:
             request.cache.auth_backend.logout(request)
             result = {'success': True}
-        else:
-            result = form.tojson()
         return self.json_response(request, result)
 
 
@@ -60,13 +59,10 @@ class Token(JsonRouter):
         user = request.cache.user
         if not user.is_authenticated():
             raise PermissionDenied
-        form = Form(request, data=request.body_data() or {})
-        if form.is_valid():
-            data = {'token': request.cache.session.token}
-        else:
-            data = form.tojson()
-
-        return self.json_response(request, data)
+        result = self.check(request)
+        if not result:
+            result = {'token': request.cache.session.token}
+        return self.json_response(request, result)
 
 
 class SignUp(WebFormRouter):
@@ -88,7 +84,7 @@ class SignUp(WebFormRouter):
                 result = {'email': result['user']['email']}
                 request.response.status_code = 201
             except Exception as exc:
-                result = form_http_exception(form, exc)
+                result = schema_http_exception(request, exc)
         else:
             result = form.tojson()
         return self.json_response(request, result)
@@ -120,7 +116,7 @@ class ForgotPassword(WebFormRouter):
                     jwt=True
                 ).json()
             except Exception as exc:
-                result = form_http_exception(form, exc)
+                result = schema_http_exception(form, exc)
         else:
             result = form.tojson()
         return self.json_response(request, result)
@@ -132,7 +128,7 @@ class ForgotPassword(WebFormRouter):
         key = request.urlargs['key']
 
         if request.method == 'GET':
-            form = get_form_layout(request, 'reset-password')
+            form = _auth_form(request, 'reset-password')
             if not form:
                 raise Http404
             request.api.passwords.head(key, jwt=True)
@@ -151,15 +147,14 @@ class ForgotPassword(WebFormRouter):
                         jwt=True
                     ).json()
                 except Exception as exc:
-                    result = form_http_exception(form, exc)
+                    result = schema_http_exception(request, exc)
             else:
                 result = form.tojson()
             return self.json_response(request, result)
 
 
-def _auth_form(request, form):
-    form = get_form_class(request, form)
-    if not form:
+def _auth_form(request, schema):
+    if not schema:
         raise Http404
 
     request.set_response_content_type(['application/json'])
@@ -167,4 +162,4 @@ def _auth_form(request, form):
     if user.is_authenticated():
         raise MethodNotAllowed
 
-    return form(request, data=request.body_data())
+    return schema(data=request.body_data())

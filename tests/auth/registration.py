@@ -39,8 +39,9 @@ class RegistrationMixin:
         self.json(response, 404)
 
     async def test_post_registrations_400(self):
-        response = await self.client.post('/registrations', json={},
-                                         jwt='sdjhvsjchsd')
+        response = await self.client.post(
+            '/registrations', json={}, jwt='sdjhvsjchsd'
+        )
         self.json(response, 400)
 
     # Get registrations

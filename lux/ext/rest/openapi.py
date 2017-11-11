@@ -117,7 +117,7 @@ class ApiOperation:
 
 class ApiPath:
     """Utility class for adding a path object to the OpenAPI spec
-    
+
     The path object (dictionary) is extracted from the router
     HTTP methods
     """
@@ -149,9 +149,9 @@ class ApiPath:
 
     def api_operations(self, spec):
         """Get all API operations for a given path
-        
+
         The path is represented by the router attribute
-        
+
         :param spec: instance of OpenAPI where to add the path info
         """
         operations = OrderedDict()
@@ -238,7 +238,8 @@ class as_body:
             definition = plg['refs'].get(self.schema_cls)
         if not definition:
             LOGGER.warning(
-                'Could not add body parameter to "%s"', self.schema_cls.__name__
+                'Could not add body parameter to "%s"',
+                self.schema_cls.__name__
             )
         else:
             op['requestBody'] = {

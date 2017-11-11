@@ -227,4 +227,3 @@ def routes_from_groups(groups):
         paths['%s/<path:path>' % path] = page
 
     return [(Route(path), paths[path]) for path in reversed(sorted(paths))]
-

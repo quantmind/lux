@@ -5,7 +5,7 @@ from datetime import datetime
 
 from marshmallow.fields import (
     Field, Raw, Dict, List, String, Number, Integer, Decimal,
-    Boolean, FormattedString, Float, DateTime, LocalDateTime,
+    Boolean, FormattedString, Float, LocalDateTime,
     Time, Date, TimeDelta, Url, URL, Email, Method, Function, Str, Bool,
     Int, Constant,
     UUID as MaUUID,

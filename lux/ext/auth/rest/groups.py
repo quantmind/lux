@@ -26,7 +26,7 @@ class GroupPathSchema(Schema):
 class GroupModel(Model):
 
     def __call__(self, data, session):
-        permissions = data.pop('permissions', None)
+        data.pop('permissions', None)
         group = super().__call__(data, session)
         return group
 

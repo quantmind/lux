@@ -218,7 +218,7 @@ class Model(models.Model):
 
     def __call__(self, data, session):
         """Create a new model instance from data and add to session
-        
+
         Check that model does not exist already
         """
         db_model = self.db_model

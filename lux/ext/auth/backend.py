@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pulsar.api import BadRequest, Http401, PermissionDenied, Http404
 
 from sqlalchemy.exc import StatementError
@@ -62,7 +64,7 @@ class AuthBackend(AuthBackendBase):
         if auth_key:
             try:
                 reg = models['registrations'].get_one(session, id=auth_key)
-                return reg.user if reg.expiry > now else None
+                return reg.user if reg.expiry > datetime.now() else None
             except Http404:
                 return None
         try:
