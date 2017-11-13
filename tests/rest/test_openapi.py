@@ -23,12 +23,16 @@ class TestOpenApi(test.AppTestCase):
         api = self.app.apis[0]
         self.assertTrue(api.spec)
         self.assertEqual(api.spec_path, '/v1/spec')
-        self.assertTrue(api.spec.options['basePath'], '/v1')
-        self.assertTrue(api.spec.info['title'], 'test api')
+        self.assertTrue(api.spec.doc['info']['title'], 'test api')
 
     def test_api_doc_info(self):
         doc = self.app.apis[0].spec.to_dict()
         self.assertIsInstance(doc, dict)
+        self.assertEqual(doc['openapi'], '3.0.0')
         info = doc['info']
         self.assertEqual(info['title'], 'test api')
-        self.assertEqual(info['description'], 'this is just a test api')
+        self.assertTrue(info['version'])
+
+    def test_api_spec_paths(self):
+        api = self.app.apis[0]
+        self.assertTrue(api.spec.doc['paths'])

@@ -32,62 +32,61 @@ class GroupModel(Model):
 
 
 class GroupCRUD(RestRouter):
-    model = GroupModel(
-        URI,
-        model_schema=GroupSchema,
-        create_schema=GroupSchema
-    )
+    """
+    ---
+    summary: Group path
+    description: provide operations for groups
+    tags:
+        - group
+    """
+    model = GroupModel(URI, GroupSchema)
 
+    @route(default_response_schema=[GroupSchema],
+           responses=(401, 403))
     def get(self, request):
         """
         ---
         summary: get a list of groups
-        tags:
-            - user
-            - group
         responses:
             200:
                 description: a list of groups
-                type: array
-                items:
-                    $ref: '#/definitions/Group'
-            401:
-                description: not authenticated
-                schema:
-                    $ref: '#/definitions/ErrorMessage'
         """
         return self.model.get_list_response(request)
 
-    def post(self, request):
+    @route(default_response=201,
+           default_response_schema=GroupSchema,
+           body_schema=GroupSchema,
+           responses=(401, 403))
+    def post(self, request, **kw):
         """
         ---
         summary: Create a new group
-        tags:
-            - group
-        responses:
-            201:
-                description: A new Group has was created
-                schema:
-                    $ref: '#/definitions/Group'
         """
-        return self.model.create_response(request)
+        return self.model.create_response(request, **kw)
 
-    @route('<id>', path_schema=GroupPathSchema)
-    def get_one(self, request):
+    @route(GroupPathSchema,
+           default_response_schema=GroupSchema,
+           responses=(401, 403, 404))
+    def get_one(self, request, **kw):
         """
         ---
         summary: get a group by its id or name
-        tags:
-            - user
-            - group
         responses:
             200:
                 description: the group matching the id or name
-                schema:
-                    $ref: '#/definitions/Group'
-            401:
-                description: not authenticated
-                schema:
-                    $ref: '#/definitions/ErrorMessage'
         """
-        return self.model.get_one_response(request)
+        return self.model.get_one_response(request, **kw)
+
+    @route(GroupPathSchema,
+           default_response_schema=GroupSchema,
+           body_schema=GroupSchema,
+           responses=(401, 403, 404, 422))
+    def patch_one(self, request, **kw):
+        """
+        ---
+        summary: get a group by its id or name
+        responses:
+            200:
+                description: the group matching the id or name
+        """
+        return self.model.update_one_response(request, **kw)

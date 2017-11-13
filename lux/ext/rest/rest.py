@@ -2,6 +2,7 @@ from pulsar.api import Http404
 
 from lux.core import JsonRouter
 from lux.models import Model
+from lux.openapi import METHODS
 
 
 REST_CONTENT_TYPES = ['application/json']
@@ -61,6 +62,15 @@ class RestRouter(JsonRouter):
             else:
                 url = url.format(self.model.uri)
 
+        rule_methods = {}
+        for name, info in self.rule_methods.items():
+            openapi = info.parameters.get('openapi')
+            # don't consider new routes the standard methods,
+            # they are already dealt with
+            if openapi and name in METHODS:
+                continue
+            rule_methods[name] = info
+        self.rule_methods = rule_methods
         super().__init__(url, *args, **kwargs)
 
     def filters_params(self, request, *filters, **params):

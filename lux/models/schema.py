@@ -72,10 +72,7 @@ class Schema(ma.Schema):
         super().__init__(*args, **kwargs)
 
     def load(self, data, *, session=None, **kwargs):
-        if session:
-            return super().load(data, **kwargs)
-        else:
-            return data, None
+        return super().load(data, **kwargs)
 
     @property
     def session(self):
@@ -102,6 +99,9 @@ class Schema(ma.Schema):
 
     def post_dump(self, data):
         pass
+
+    def rule(self):
+        return '/'.join(('<%s>' % field for field in self.fields))
 
 
 class schema_registry:

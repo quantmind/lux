@@ -4,3 +4,5 @@ EXTENSIONS = (
     'lux.ext.odm',
     'lux.ext.auth',
 )
+
+DEFAULT_CONTENT_TYPE = "application/json"

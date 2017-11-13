@@ -11,7 +11,7 @@ from .client import ApiClient, HttpRequestMixin
 from .apis import Apis, Api
 from .rest import RestRoot, RestRouter
 from .pagination import Pagination, GithubPagination
-from .openapi import route, api_parameters, as_body
+from .route import route
 
 __all__ = [
     'Apis',
@@ -36,9 +36,7 @@ __all__ = [
     'check_username',
     #
     # OpenAPI
-    'route',
-    'api_parameters',
-    'as_body'
+    'route'
 ]
 
 
@@ -86,7 +84,31 @@ class Extension(LuxExtension):
         Parameter('PAGINATION', 'lux.ext.rest.Pagination',
                   'Pagination class'),
         Parameter('MAX_TOKEN_SESSION_EXPIRY', 7 * 24 * 60 * 60,
-                  'Maximum expiry for a token used by a web site in seconds.')
+                  'Maximum expiry for a token used by a web site in seconds.'),
+        Parameter('DEFAULT_REST_RESPONSES', {
+            201: {
+                "description": "Successfully created"
+            },
+            204: {
+                "description": "Successfully deleted"
+            },
+            400: {
+                "description": "Payload not valid JSON",
+                "schema": "Error"
+            },
+            401: {
+                "description": "Application Token is expired or not available",
+                "schema": "Error"
+            },
+            403: {
+                "description": "Not permitted",
+                "schema": "Error"
+            },
+            422: {
+                "description": "The payload did not validate",
+                "schema": "ErrorMessage"
+            }
+        })
     ]
 
     def on_config(self, app):

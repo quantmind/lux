@@ -1,66 +1,69 @@
 from lux.ext.rest import RestRouter, route
 from lux.models import Schema, fields
 
-from .user import UserModel, UserSchema
+from .user import UserModel, UserSchema, UserUpdateSchema, UserQuerySchema
 
 
 class UserPathSchema(Schema):
-    id = fields.String(required=True,
-                       description='user unique ID or username')
+    id = fields.String(description='user unique ID or username')
 
 
 class UserCRUD(RestRouter):
     """
     ---
     summary: CRUD operations for users
+    tags:
+        - user
     """
-    model = UserModel(
-        "users",
-        model_schema=UserSchema,
-        update_schema=UserSchema
-    )
+    model = UserModel("users", UserSchema)
 
-    def get(self, request):
+    @route(query_schema=UserQuerySchema,
+           default_response_schema=[UserSchema],
+           responses=(401, 403))
+    def get(self, request, **kwargs):
         """
         ---
         summary: List users
-        tags:
-            - user
         responses:
             200:
                 description: List of users matching filters
-                type: array
-                items:
-                    $ref: '#/definitions/User'
         """
-        return self.model.get_list_response(request)
+        return self.model.get_list_response(request, **kwargs)
 
-    @route('<id>', path_schema=UserPathSchema)
-    def get_one(self, request):
+    @route(body_schema=UserSchema,
+           default_response=201,
+           default_response_schema=UserSchema,
+           responses=(400, 401, 403))
+    def post(self, request, body_schema):
+        """
+        ---
+        summary: Create a new user
+        """
+        return self.model.create_response(request, body_schema)
+
+    @route(UserPathSchema,
+           default_response_schema=UserSchema,
+           responses=(401, 403))
+    def get_user(self, request):
         """
         ---
         summary: Get a user by its id or username
-        tags:
-            - user
         responses:
             200:
                 description: The user matching the id or username
-                schema:
-                    $ref: '#/definitions/User'
         """
         return self.model.get_model_response(request)
 
-    @route('<id>', path_schema=UserPathSchema)
-    def patch_one(self, request):
+    @route(UserPathSchema,
+           body_schema=UserUpdateSchema,
+           default_response_schema=UserSchema,
+           responses=(400, 401, 403))
+    def patch_user(self, request, body_schema):
         """
         ---
         summary: Update a user by its id or username
-        tags:
-            - user
         responses:
-            200:
+            201:
                 description: The updated user
-                schema:
-                    $ref: '#/definitions/User'
         """
-        return self.model.update_one_response(request)
+        return self.model.update_one_response(request, body_schema)

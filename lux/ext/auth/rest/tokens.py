@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from lux.models import Schema, fields
-from lux.ext.rest import RestRouter
+from lux.ext.rest import RestRouter, route
 from lux.ext.odm import Model
 
 
@@ -12,11 +12,10 @@ class TokenSchema(Schema):
         model = 'tokens'
 
 
-class NewTokenSchema(TokenSchema):
+class TokenCreateSchema(TokenSchema):
     """Create a new Authorization ``Token`` for the authenticated ``User``.
     """
-    description = fields.String(required=True, minLength=2, maxLength=256,
-                                html_type='textarea')
+    description = fields.String(required=True, minLength=2, maxLength=256)
 
 
 class TokenModel(Model):
@@ -30,38 +29,32 @@ class TokenModel(Model):
 
 
 class TokenCRUD(RestRouter):
-    model = TokenModel(
-        'tokens',
-        model_schema=TokenSchema,
-        create_schema=NewTokenSchema
-    )
+    """
+    ---
+    summary: Mange user tokens
+    tags:
+        - user
+        - token
+    """
+    model = TokenModel('tokens', TokenSchema)
 
+    @route(default_response_schema=[TokenSchema])
     def get(self, request):
         """
         ---
-        summary: List users
-        tags:
-            - user
+        summary: List tokens for a user
         responses:
             200:
-                description: List of users matching filters
-                type: array
-                items:
-                    $ref: '#/definitions/User'
+                description: List all user tokens matching query filters
         """
         return self.model.get_list_response(request)
 
+    @route(default_response=201,
+           default_response_schema=TokenSchema,
+           body_schema=TokenCreateSchema)
     def post(self, request):
         """
         ---
         summary: Create a new token
-        tags:
-            - user
-            - token
-        responses:
-            201:
-                description: A new token was successfully created
-                schema:
-                    $ref: '#/definitions/Token'
         """
         return self.model.create_response(request)

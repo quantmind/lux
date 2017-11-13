@@ -2,8 +2,8 @@ from datetime import datetime
 
 from pulsar.api import PermissionDenied, Http404
 
-from lux.core import route, http_assert
-from lux.ext.rest import RestRouter
+from lux.core import http_assert
+from lux.ext.rest import RestRouter, route
 from lux.models import Schema, fields, ValidationError
 from lux.ext.odm import Model
 
@@ -49,7 +49,7 @@ class PasswordSchema(Schema):
             raise ValidationError('Passwords did not match')
 
 
-class CreateUserSchema(PasswordSchema):
+class UserCreateSchema(PasswordSchema):
     username = fields.Slug(required=True, minLength=2, maxLength=30)
     email = fields.Email(required=True)
 
@@ -85,43 +85,36 @@ class RegistrationModel(Model):
 
 
 class RegistrationCRUD(RestRouter):
-    model = RegistrationModel(
-        "registrations",
-        model_schema=RegistrationSchema,
-        create_schema=CreateUserSchema
-    )
+    """
+    ---
+    summary: Registration to the API
+    tags:
+        - authentication
+        - registration
+    """
+    model = RegistrationModel("registrations", RegistrationSchema)
 
+    @route(default_response_schema=[RegistrationSchema])
     def get(self, request):
         """
         ---
         summary: List registration objects
-        tags:
-            - authentication
-            - registration
         responses:
             200:
                 description: List of registrations matching filters
-                type: array
-                items:
-                    $ref: '#/definitions/Registration'
         """
         return self.model.get_list_response(request)
 
-    def post(self, request):
+    @route(default_response=201,
+           default_response_schema=RegistrationSchema,
+           body_schema=UserCreateSchema)
+    def post(self, request, **kw):
         """
         ---
         summary: Create a new registration
-        tags:
-            - authentication
-            - registration
-        responses:
-            201:
-                description: A new registration was successfully created
-                schema:
-                    $ref: '#/definitions/Registration'
         """
         ensure_service_user(request)
-        return self.model.create_response(request)
+        return self.model.create_response(request, **kw)
 
     @route('<id>/activate', path_schema=IdSchema)
     def post_activate(self, request):
@@ -131,24 +124,15 @@ class RegistrationCRUD(RestRouter):
         description: Clients should POST to this endpoint once they are
             happy the user has confirm his/her identity.
             This is a one time only operation.
-        tags:
-            - authentication
-            - registration
         responses:
             204:
                 description: Activation was successful
             400:
                 description: Bad Token
-                schema:
-                    $ref: '#/definitions/ErrorMessage'
             401:
                 description: Token missing or expired
-                schema:
-                    $ref: '#/definitions/ErrorMessage'
             404:
                 description: Activation id not found
-                schema:
-                    $ref: '#/definitions/ErrorMessage'
         """
         ensure_service_user(request)
         model = self.get_model(request)

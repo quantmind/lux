@@ -1,11 +1,13 @@
+"""User schemas and REST routes for the authenticated user
+"""
 from pulsar.api import Http401
 from pulsar.utils.importer import module_attribute
 
-from lux.core import route
-from lux.ext.rest import RestRouter
+from lux.ext.rest import RestRouter, route
 from lux.models import fields, Schema
 from lux.ext.odm import Model, Related
 
+from .permissions import PermissionSchema
 from ..permissions import user_permissions
 
 
@@ -35,15 +37,22 @@ class UserSchema(Schema):
     )
 
     class Meta:
-        exclude = ('password', 'superuser')
         model = URI
+        exclude = ('password', 'superuser')
+
+
+class UserUpdateSchema(UserSchema):
+
+    class Meta:
+        model = URI
+        exclude = ('password', 'superuser', 'groups', 'id')
 
 
 class UserQuerySchema(Schema):
 
     class Meta:
-        exclude = ('password', 'groups')
         model = URI
+        exclude = ('password', 'groups')
 
 
 class UserModel(Model):
@@ -73,64 +82,47 @@ class UserRest(RestRouter):
     """
     ---
     summary: Rest operations for the authenticated user
+    tags:
+        - user
     """
-    model = UserModel(
-        'user',
-        model_schema=UserSchema,
-        update_schema=UserSchema,
-        query_schema=UserQuerySchema,
-        authenticated=True
-    )
+    model = UserModel('user', UserSchema, authenticated=True)
 
-    def get(self, request):
+    @route(default_response_schema=UserSchema,
+           responses=(400, 401, 403))
+    def get(self, request, **kw):
         """
         ---
         summary: get the authenticated user
-        tags:
-            - user
         responses:
             200:
                 description: the authenticated user
-                schema:
-                    $ref: '#/definitions/User'
-            401:
-                description: not authenticated
-                schema:
-                    $ref: '#/definitions/ErrorMessage'
 
         """
-        return self.model.get_one_response(request)
+        return self.model.get_one_response(request, **kw)
 
-    def patch(self, request):
+    @route(default_response_schema=UserSchema,
+           body_schema=UserUpdateSchema,
+           responses=(400, 401, 403))
+    def patch(self, request, **kw):
         """
         ---
         summary: Update authenticated user and/or user profile
-        tags:
-            - user
         responses:
             200:
                 description: successfully updated
-                schema:
-                    $ref: '#/definitions/User'
-            401:
-                description: not authenticated
-                schema:
-                    $ref: '#/definitions/ErrorMessage'
         """
-        return self.model.update_one_response(request)
+        return self.model.update_one_response(request, **kw)
 
-    @route('permissions')
-    def get_permissions(self, request):
+    @route('permissions',
+           default_response_schema=PermissionSchema)
+    def get_permissions(self, request, **kw):
         """
         ---
         summary: Fetch permissions the authenticated user to perform actions
         tags:
-            - user
             - permission
         responses:
             200:
-                description: successfully updated
-                schema:
-                    $ref: '#/definitions/UserPermissions'
+                description: User permissions
         """
-        return request.json_response(user_permissions(request))
+        return request.json_response(user_permissions(request, **kw))

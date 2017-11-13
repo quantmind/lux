@@ -2,7 +2,7 @@ from pulsar.api import Http401, BadRequest
 
 from lux.models import Schema, fields, ValidationError
 from lux.utils.date import date_from_now
-from lux.ext.rest import RestRouter, api_parameters, as_body
+from lux.ext.rest import RestRouter, route
 from lux.ext.odm import Model
 
 from .tokens import TokenSchema
@@ -47,14 +47,17 @@ class AuthorizeSchema(LoginSchema):
 
 
 class Authorization(RestRouter):
-    """Authentication views for Restful APIs
     """
-    model = Model(
-        'authorizations',
-        model_schema=TokenSchema,
-        create_schema=AuthorizeSchema
-    )
+    ---
+    summary: Authentication path
+    description: provide operation for creating new authentication tokens
+        and check their validity
+    tags:
+        - auth
+    """
+    model = Model('authorizations', TokenSchema)
 
+    @route()
     def head(self, request):
         """
         ---
@@ -62,8 +65,6 @@ class Authorization(RestRouter):
         description: Check validity of the token in the
             Authorization header. It works for both user and
             application tokens.
-        tags:
-            - auth
         responses:
             200:
                 description: Token is valid
@@ -76,59 +77,28 @@ class Authorization(RestRouter):
             raise Http401
         return request.response
 
-    @api_parameters(body=as_body(LoginSchema))
+    @route(body_schema=AuthorizeSchema,
+           default_response=201,
+           default_response_schema=TokenSchema,
+           responses=(400, 401, 403, 422))
     def post(self, request):
         """
         ---
-        summary: Perform a login operation
+        summary: Create a new user token
         description: The headers must contain a valid token
             signed by the application sending the request
-        tags:
-            - auth
-        responses:
-            201:
-                description: Successful response
-                schema:
-                    $ref: '#/definitions/Token'
-            400:
-                description: Bad Application Token or payload not valid JSON
-                schema:
-                    $ref: '#/definitions/ErrorMessage'
-            401:
-                description: Application Token is expired or not available
-                schema:
-                    $ref: '#/definitions/ErrorMessage'
-            403:
-                description: The Application has no permission to login users
-                schema:
-                    $ref: '#/definitions/ErrorMessage'
-            422:
-                description: The login payload did not validate
-                schema:
-                    $ref: '#/definitions/ErrorMessage'
         """
         ensure_service_user(request)
         return self.model.create_response(request)
 
+    @route(default_response=204,
+           responses=(401, 403))
     def delete(self, request):
         """
         ---
         summary: Delete the token used by the authenticated User
         description: A valid bearer token must be available in the
             Authorization header
-        tags:
-            - auth
-        responses:
-            204:
-                description: Token was successfully deleted
-            400:
-                description: Bad User Token
-                schema:
-                    $ref: '#/definitions/ErrorMessage'
-            401:
-                description: User Token is expired or not available
-                schema:
-                    $ref: '#/definitions/ErrorMessage'
         """
         token = request.cache.get('token')
         if not request.cache.user.is_authenticated():

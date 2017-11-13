@@ -53,11 +53,7 @@ class Extension(LuxExtension):
                   'A string or bytes used for encrypting data. Must be unique '
                   'to the application and long and random enough'),
         Parameter('CHECK_USERNAME', 'lux.ext.auth:check_username',
-                  'Dotted path to username validation function'),
-        # TOKENS
-        # Parameter('AUTHENTICATION_BACKEND', 'lux.ext.auth:AuthBackend',
-        #           'Dotted path to a classe which provides '
-        #           'a backend for authentication.')
+                  'Dotted path to username validation function')
     ]
 
     def on_config(self, app):

@@ -59,55 +59,42 @@ class PasswordResetModel(RegistrationModel):
 
 
 class PasswordsCRUD(RestRouter):
-    """Endpoints for password recovery
     """
-    model = PasswordResetModel(
-        'passwords',
-        model_schema=RegistrationSchema,
-        create_schema=ChangePasswordRequestSchema,
-        type=2
-    )
+    ---
+    summary: Endpoints for password recovery
+    tags:
+        - authentication
+        - password
+    """
+    model = PasswordResetModel('passwords', RegistrationSchema, type=2)
 
+    @route(default_response=201,
+           default_response_schema=RegistrationSchema,
+           body_schema=ChangePasswordRequestSchema)
     def post(self, request):
         """
         ---
-        summary: Create a new password reset registration
-        tags:
-            - authentication
-            - password
+        summary: Request a new password-reset
         responses:
             201:
-                description: A new password-reset registration was
+                description: A new password-reset request was
                     successfully created
-                schema:
-                    $ref: '#/definitions/Registration'
         """
         ensure_service_user(request)
         return self.model.create_response(request)
 
-    @route('<id>/change')
+    @route('<id>/change',
+           default_response=204,
+           body_schema=ChangePasswordSchema,
+           responses=(400, 401, 403, 404, 422))
     def post_change(self, request):
         """
         ---
-        summary: Change a password
-        description: Change password for a user
-        tags:
-            - authentication
-            - password
+        summary: Change a password for a user
+        description: given a password-reset change id,
+            change the user password
         responses:
             204:
                 description: Password change was successful
-            400:
-                description: Bad Token
-                schema:
-                    $ref: '#/definitions/ErrorMessage'
-            401:
-                description: Token missing or expired
-                schema:
-                    $ref: '#/definitions/ErrorMessage'
-            404:
-                description: Activation id not found
-                schema:
-                    $ref: '#/definitions/ErrorMessage'
         """
         return self.model.confirm_response(request)

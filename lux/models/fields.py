@@ -12,7 +12,8 @@ from marshmallow.fields import (
     Nested as MaNested,
     DateTime as MaDateTime
 )
-from apispec.ext.marshmallow.swagger import FIELD_MAPPING
+from marshmallow import class_registry
+from lux.openapi.ext.marshmallow import map_to_openapi_type
 
 from pulsar.utils.slugify import slugify
 
@@ -61,30 +62,16 @@ class Nested(MaNested):
     def schema(self):
         """The nested Schema object
         """
-        app = self.root.app
-        if app and isinstance(self.nested, str):
-            nested_schemas = app_nested_schemas(app)
-            nested = nested_schemas.get(self)
-            if nested is None:
-                nested = app_schemas(app).get(self.nested)
-                if nested:
-                    if isinstance(self.only, str):
-                        only = (self.only,)
-                    else:
-                        only = self.only
-                    context = getattr(self.parent, 'context', {})
-                    nested = type(nested)(
-                        many=self.many, only=only, app=app,
-                        exclude=self.exclude, context=context,
-                        load_only=self._nested_normalized_option('load_only'),
-                        dump_only=self._nested_normalized_option('dump_only'))
-                    nested_schemas[self] = nested
-                    return nested
-            else:
-                return nested
+        if isinstance(self.nested, str):
+            schema_class = class_registry.get_class(self.nested, True)
+            if schema_class:
+                if isinstance(schema_class, list):
+                    schema_class = schema_class[-1]
+                return schema_class(many=self.many)
         return super().schema
 
 
+@map_to_openapi_type(String)
 class Password(String):
 
     def __init__(self, *args, **kw):
@@ -93,6 +80,7 @@ class Password(String):
         self.validators.append(password_validate)
 
 
+@map_to_openapi_type(String)
 class Slug(String):
     validation_error = ('Only lower case, alphanumeric characters and '
                         'hyphens are allowed')
@@ -104,6 +92,7 @@ class Slug(String):
         self.validators.append(partial(slug_validator, separator))
 
 
+@map_to_openapi_type(MaDateTime)
 class DateTime(MaDateTime):
 
     def _deserialize(self, value, attr, data):
@@ -112,6 +101,7 @@ class DateTime(MaDateTime):
         return super()._deserialize(value, attr, data)
 
 
+@map_to_openapi_type(MaUUID)
 class UUID(MaUUID):
 
     def _validated(self, value):
@@ -140,10 +130,3 @@ def app_nested_schemas(app):
 
 Schema.TYPE_MAPPING[datetime] = DateTime
 Schema.TYPE_MAPPING[uuid.UUID] = UUID
-
-
-# Required by OpenAPI
-FIELD_MAPPING[Slug] = FIELD_MAPPING[String]             # naqa
-FIELD_MAPPING[Password] = FIELD_MAPPING[String]         # naqa
-FIELD_MAPPING[DateTime] = FIELD_MAPPING[MaDateTime]     # naqa
-FIELD_MAPPING[UUID] = FIELD_MAPPING[MaUUID]             # naqa

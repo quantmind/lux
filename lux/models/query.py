@@ -4,7 +4,8 @@ from .component import Component
 
 
 class Session(ABC, Component):
-
+    """A model session link a database with a lux application and models
+    """
     def __init__(self, app, request=None):
         self.request = request
         self.init_app(app)
