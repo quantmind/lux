@@ -3,23 +3,24 @@ import os
 import unittest
 import string
 import logging
-import json as _json
 import pickle
+from asyncio import get_event_loop
 from collections import OrderedDict
+from urllib.parse import urlparse
 from unittest import mock
 from io import StringIO
 
-from pulsar import get_event_loop, as_coroutine
-from pulsar.utils.httpurl import (Headers, encode_multipart_formdata,
-                                  ENCODE_BODY_METHODS, remove_double_slash)
+from pulsar.api import as_coroutine
+from pulsar.utils.httpurl import remove_double_slash
 from pulsar.utils.string import random_string
 from pulsar.utils.websocket import frame_parser
-from pulsar.apps.wsgi import WsgiResponse
-from pulsar.apps.http import full_url
-from pulsar.apps.test import test_timeout, sequential
+from pulsar.apps.wsgi import WsgiResponse, wsgi_request
+from pulsar.utils.system import json as _json
+from pulsar.apps.test import test_timeout, sequential, test_wsgi_request
+from pulsar.apps.greenio import wait
 
-from lux.core import App, AppComponent
-from lux.extensions.rest import HttpRequestMixin
+from lux.core import App, app_client
+from lux.models import Component
 from lux.core.commands.generate_secret_key import generate_secret
 
 from .token import app_token
@@ -28,8 +29,7 @@ from .token import app_token
 logger = logging.getLogger('pulsar.test')
 
 
-__all__ = ['TestClient',
-           'TestCase',
+__all__ = ['TestCase',
            'AppTestCase',
            'WebApiTestCase',
            'load_fixtures',
@@ -46,6 +46,12 @@ def randomname(prefix=None, len=8):
     name = random_string(min_len=len, max_len=len,
                          characters=string.ascii_letters)
     return ('%s%s' % (prefix, name)).lower()
+
+
+def wsgi_request_from_app(app, **kw):
+    request = wait(test_wsgi_request(**kw))
+    app.on_request(request)
+    return request
 
 
 def green(test_fun):
@@ -88,12 +94,12 @@ def test_app(test, config_file=None, config_params=True, argv=None, **params):
         argv.append('--log-level')
         levels = test.cfg.log_level if hasattr(test, 'cfg') else ['none']
         argv.extend(levels)
-    app = App(config_file, argv=argv, cfg=test.cfg, **kwargs).setup(
-        on_config=test.app_test_providers)
+    app = App(config_file, argv=argv, cfg=test.cfg, **kwargs).setup()
     if app.config['SECRET_KEY'] == 'secret-key':
         app.config['SECRET_KEY'] = generate_secret()
     app.stdout = StringIO()
     app.stderr = StringIO()
+    assert app.request_handler()
     return app
 
 
@@ -107,15 +113,15 @@ def create_users(app, items, testuser, index=None):
             "active": True
         })
     logger.debug('Creating %d users', len(items))
-    request = app.wsgi_request()
-    auth = app.auth_backend
+    request = wsgi_request_from_app(app)
     processed = set()
-    for params in items:
-        if params.get('username') in processed:
-            continue
-        user = auth.create_user(request, **params)
-        if user:
-            processed.add(user.username)
+    with app.models['users'].session(request) as session:
+        for params in items:
+            if params.get('username') in processed:
+                continue
+            user = session.auth.create_user(session, **params)
+            if user:
+                processed.add(user.username)
     return len(processed)
 
 
@@ -125,9 +131,6 @@ async def load_fixtures(app, path=None, api_url=None, testuser=None,
 
     This function requires an authentication backend supporting user creation
     """
-    if not hasattr(app.auth_backend, 'create_user'):
-        return
-
     testuser = testuser or 'testuser'
     fpath = path if path else os.path.join(app.meta.path, 'fixtures')
     total = 0
@@ -141,7 +144,7 @@ async def load_fixtures(app, path=None, api_url=None, testuser=None,
     if api_url.endswith('/'):
         api_url = api_url[:-1]
 
-    client = TestClient(app)
+    client = app_client(app, False)
     test = TestCase()
     test_tokens = {}
 
@@ -156,11 +159,12 @@ async def load_fixtures(app, path=None, api_url=None, testuser=None,
             for params in items:
                 user = params.pop('api_user', testuser)
                 if user not in test_tokens:
-                    request = await client.post('%s/authorizations' % api_url,
-                                                json=dict(username=user,
-                                                          password=user),
-                                                jwt=admin_jwt)
-                    token = test.json(request.response, 201)['id']
+                    response = await client.post(
+                        '%s/authorizations' % api_url,
+                        json=dict(username=user, password=user),
+                        jwt=admin_jwt
+                    )
+                    token = test.json(response, 201)['id']
                     test_tokens[user] = token
 
                 test_token = test_tokens[user]
@@ -172,77 +176,16 @@ async def load_fixtures(app, path=None, api_url=None, testuser=None,
                     url = '%s/%s' % (
                         url, params.pop(app.models[name].id_field)
                     )
-                request = await client.request(method, url, json=params,
-                                               token=test_token)
-                data = test.json(request.response)
-                code = request.response.status_code
+                response = await client.request(method, url, json=params,
+                                                token=test_token)
+                data = test.json(response)
+                code = response.status_code
                 if code > 201:
                     raise AssertionError('%s api call got %d: %s' %
                                          (url, code, data))
                 total += 1
 
     logger.info('Created %s objects', total)
-
-
-class TestClient(AppComponent, HttpRequestMixin):
-    """An utility for simulating lux clients
-    """
-    def run_command(self, command, argv=None, **kwargs):
-        """Run a lux command"""
-        argv = argv or []
-        cmd = self.app.get_command(command)
-        return cmd(argv, **kwargs)
-
-    async def request(self, method, path=None, **params):
-        request, sr = self.request_start_response(method, path, **params)
-        await self.app(request.environ, sr)
-        return request
-
-    def request_start_response(self, method, path, HTTP_ACCEPT=None,
-                               headers=None, data=None, json=None,
-                               content_type=None, token=None, oauth=None,
-                               jwt=None, cookie=None, params=None, **extra):
-        method = method.upper()
-        extra['REQUEST_METHOD'] = method.upper()
-        path = path or '/'
-        extra['HTTP_ACCEPT'] = HTTP_ACCEPT or '*/*'
-        extra['pulsar.connection'] = mock.MagicMock()
-        heads = []
-        if headers:
-            heads.extend(headers)
-        if json is not None:
-            content_type = 'application/json'
-            assert not data
-            data = json
-        if content_type:
-            heads.append(('content-type', content_type))
-        if token:
-            heads.append(('Authorization', 'Bearer %s' % token))
-        elif oauth:
-            heads.append(('Authorization', 'OAuth %s' % oauth))
-        elif jwt:
-            heads.append(('Authorization', 'JWT %s' % jwt))
-        if cookie:
-            heads.append(('Cookie', cookie))
-
-        if params:
-            path = full_url(path, params)
-
-        # Encode data
-        if (method in ENCODE_BODY_METHODS and data is not None and
-                not isinstance(data, bytes)):
-            content_type = Headers(heads).get('content-type')
-            if content_type is None:
-                data, content_type = encode_multipart_formdata(data)
-                heads.append(('content-type', content_type))
-            elif content_type == 'application/json':
-                data = _json.dumps(data).encode('utf-8')
-
-        request = self.app.wsgi_request(path=path, headers=heads, body=data,
-                                        **extra)
-        request.environ['SERVER_NAME'] = 'localhost'
-        start_response = mock.MagicMock()
-        return request, start_response
 
 
 class TestMixin:
@@ -255,10 +198,6 @@ class TestMixin:
     :attr:`config_file`
     """
     prefixdb = 'testlux_'
-
-    @classmethod
-    def app_test_providers(cls, app):
-        pass
 
     def authenticity_token(self, doc):
         name = doc.find('meta', attrs={'name': 'csrf-param'})
@@ -286,27 +225,27 @@ class TestMixin:
         """
         if status_code:
             self.assertEqual(response.status_code, status_code)
-        self.assertEqual(response.content_type,
+        self.assertEqual(response.headers['Content-Type'],
                          'text/html; charset=utf-8')
-        return self._content(response).decode('utf-8')
+        return response.text
 
     def text(self, response, status_code=None):
         """Get JSON object from response
         """
         if status_code:
             self.assertEqual(response.status_code, status_code)
-        self.assertEqual(response.content_type,
+        self.assertEqual(response.headers['Content-Type'],
                          'text/plain; charset=utf-8')
-        return self._content(response).decode('utf-8')
+        return response.text
 
     def json(self, response, status_code=None):
         """Get JSON object from response
         """
         if status_code:
             self.assertEqual(response.status_code, status_code)
-        self.assertEqual(response.content_type,
+        self.assertEqual(response.headers['Content-Type'],
                          'application/json; charset=utf-8')
-        return _json.loads(self._content(response).decode('utf-8'))
+        return response.json()
 
     def xml(self, response, status_code=None):
         """Get JSON object from response
@@ -314,10 +253,9 @@ class TestMixin:
         from bs4 import BeautifulSoup
         if status_code:
             self.assertEqual(response.status_code, status_code)
-        self.assertEqual(response.content_type,
+        self.assertEqual(response.headers['Content-Type'],
                          'application/xml; charset=utf-8')
-        text = self._content(response).decode('utf-8')
-        return BeautifulSoup(text, 'xml')
+        return BeautifulSoup(response.text, 'xml')
 
     def empty(self, response, status_code=None):
         """Get JSON object from response
@@ -327,7 +265,7 @@ class TestMixin:
         self.assertFalse(response.content)
 
     def ws_upgrade(self, response):
-        from lux.extensions.sockjs import LuxWs
+        from lux.ext.sockjs import LuxWs
         self.assertEqual(response.status_code, 101)
         #
         connection = response.connection
@@ -407,9 +345,6 @@ class TestMixin:
         self.assertTrue(cmd.help)
         return cmd
 
-    def _content(self, response):
-        return b''.join(response.content)
-
 
 class TestCase(unittest.TestCase, TestMixin):
     """TestCase class for lux tests.
@@ -467,7 +402,7 @@ class AppTestCase(unittest.TestCase, TestMixin):
 
     @classmethod
     def get_client(cls):
-        return TestClient(cls.app)
+        return app_client(cls.app, False)
 
     @classmethod
     def create_test_application(cls):
@@ -552,14 +487,14 @@ class AppTestCase(unittest.TestCase, TestMixin):
                            "password": credentials}
 
         # Get new token
-        request = await cls.client.post(cls.api_url('authorizations'),
-                                        json=credentials, **kw)
+        response = await cls.client.post(cls.api_url('authorizations'),
+                                         json=credentials, **kw)
         test = cls._test
-        data = test.json(request.response, 201)
+        data = test.json(response, 201)
         test.assertTrue('id' in data)
         test.assertTrue('expiry' in data)
         test.assertTrue(data['session'])
-        user = request.cache.user
+        user = response.wsgi_request.cache.user
         test.assertTrue(user.is_anonymous())
         return data['id']
 
@@ -595,7 +530,7 @@ class WebApiTestCase(AppTestCase):
         for api in cls.web.apis:
             if api.netloc:
                 cls.web.api.local_apps[api.netloc] = cls.app
-        cls.webclient = TestClient(cls.web)
+        cls.webclient = app_client(cls.web, False)
 
     def check_html_token(self, doc, token):
         value = doc.find('meta', attrs={'name': 'user-token'})

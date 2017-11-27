@@ -1,5 +1,5 @@
 from lux.core import Parameter
-from lux.extensions import base
+from lux.ext import base
 
 
 CONTENT_GROUPS = {

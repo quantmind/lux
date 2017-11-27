@@ -5,7 +5,7 @@ try:
 except ImportError:     # pragma    nocover
     StrictRedis = None
 
-from pulsar import ImproperlyConfigured
+from pulsar.api import ImproperlyConfigured
 from pulsar.apps.test import check_server
 from pulsar.utils.string import random_string
 from pulsar.apps.data.redis.client import RedisClient

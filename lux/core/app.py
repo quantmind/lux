@@ -1,43 +1,39 @@
 """Lux Application class
 """
 import os
-import json
 import asyncio
 import logging
 import threading
-from asyncio import create_subprocess_shell, subprocess
+from contextlib import contextmanager
+from asyncio import create_subprocess_shell, subprocess, new_event_loop
 
 from inspect import isclass
 from collections import OrderedDict
 from importlib import import_module
 
-import pulsar
-from pulsar import ImproperlyConfigured
-from pulsar.apps.wsgi import (
-    WsgiHandler, HtmlDocument, test_wsgi_environ, wait_for_body_middleware,
-    middleware_in_executor, wsgi_request
-)
+from pulsar.api import ImproperlyConfigured, Config, EventHandler
 from pulsar.utils.log import lazyproperty
 from pulsar.utils.importer import module_attribute
-from pulsar.apps.greenio import GreenWSGI, GreenHttp
+from pulsar.apps.greenio import GreenHttp
 from pulsar.apps.http import HttpClient
+from pulsar.apps.test import test_wsgi_request
 from pulsar.utils.string import to_bytes
+from pulsar.utils.slugify import slugify
 
 from lux import __version__
-from lux.utils.data import multi_pop
-from lux.utils.token import encode_json
 
-from .commands import ConfigError
-from .console import ConsoleMixin
-from .extension import LuxExtension, Parameter, EventMixin, app_attribute
-from .wrappers import HeadMeta, LuxContext, formreg
+from .commands import ConfigError, ConsoleMixin
+from .extension import LuxExtension, Parameter, ALL_EVENTS, app_attribute
+from .wrappers import LuxContext, ERROR_MESSAGES
 from .templates import render_data, template_engine, Template
 from .cms import CMS
-from .models import ModelContainer
 from .cache import create_cache
 from .exceptions import ShellError
 from .channels import LuxChannels
-from .auth import BackendMixin
+from .green import Handler
+from .routers import Router, raise404
+
+from ..models import ModelContainer, context
 
 
 LUX_CORE = os.path.dirname(__file__)
@@ -61,7 +57,7 @@ def Http(app):
     params = app.config['HTTP_CLIENT_PARAMETERS'] or {}
     green = app.green_pool
     if not green:
-        params['loop'] = pulsar.new_event_loop()
+        params['loop'] = new_event_loop()
     http = HttpClient(**params)
     return GreenHttp(http) if green else http
 
@@ -70,25 +66,20 @@ def is_html(app):
     return app.config['DEFAULT_CONTENT_TYPE'] == 'text/html'
 
 
-class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
+class Application(ConsoleMixin, LuxExtension, EventHandler):
     """A WSGI callable for serving lux applications.
     """
-    cfg = None
     channels = None
     debug = False
     logger = None
     admin = None
     _handler = None
-    forms = None
-    """Form registry for this application. Add/override forms via the
-    on_loaded event"""
     cms = None
     """CMS handler"""
     api = None
-    """Handler for Lux API server"""
-    _WsgiHandler = WsgiHandler
     _http = None
     _config = [
+        #
         Parameter('EXTENSIONS', [],
                   'List of extension names to use in your application. '
                   'The order matter since the wsgi middleware of extension is '
@@ -102,10 +93,10 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
                   'Application site name', True),
         Parameter('ENCODING', 'utf-8',
                   'Default encoding for text.'),
-        Parameter('SETTINGS_FILES', None,
-                  'Path to a json file with additional settings'),
-        Parameter('ERROR_HANDLER', 'lux.core.wrappers:error_handler',
+        Parameter('ERROR_HANDLER', 'lux.core.exceptions:error_handler',
                   'Dotted path to handler of Http exceptions'),
+        Parameter('ERROR_MESSAGES', None,
+                  'Override default rror messages'),
         Parameter('MEDIA_URL', '/media/',
                   'the base url for static files', True),
         Parameter('MINIFIED_MEDIA', True,
@@ -113,6 +104,7 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
                   'their extensions with .min.ext. For example, javascript '
                   'links *.js become *.min.js', True),
         #
+        Parameter('SERVER_NAME', 'Lux/%s' % __version__),
         Parameter('SECRET_KEY',
                   'secret-key',
                   'A string or bytes used for encrypting data. Must be unique '
@@ -140,12 +132,6 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
                   'Html tag for lux grids'),
         #
         # CONTENT base parameters
-        Parameter('CONTENT_GROUPS', {
-            "site": {
-                "path": "*",
-                "body_template": "home.html"
-            }
-        }, 'List of content model configurations'),
         Parameter('CONTENT_LINKS',
                   {'python': 'https://www.python.org/',
                    'lux': 'https://github.com/quantmind/lux',
@@ -153,7 +139,7 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
                   'Links used throughout the web site'),
         #
         # BASE email parameters
-        Parameter('EMAIL_BACKEND', 'lux.core.mail.EmailBackend',
+        Parameter('EMAIL_BACKEND', 'lux.core.mail:EmailBackend',
                   'Default locale'),
         Parameter('EMAIL_DEFAULT_FROM', '',
                   'Default email address to send email from'),
@@ -189,8 +175,6 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
                   'List/tuple of markdown extensions'),
         Parameter('GREEN_POOL', 100,
                   'Run the WSGI handle in a pool of greenlet'),
-        Parameter('THREAD_POOL', False,
-                  'Run the WSGI handle in the event loop executor'),
         #
         # PubSub Channels base parameters
         Parameter('PUBSUB_STORE', None,
@@ -205,11 +189,18 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
                   'Channel name for the server'),
         #
         Parameter('HTTP_CLIENT_PARAMETERS', None,
-                  'A dictionary of parameters to pass to the Http Client')
+                  'A dictionary of parameters to pass to the Http Client'),
+        #
+        # Authentication
+        Parameter('AUTHENTICATION_BACKEND', 'lux.core.auth:AuthBackend',
+                  'Dotted path to a classe which provides '
+                  'a backend for authentication.'),
+        Parameter('JWT_ALGORITHM', 'HS512', 'Signing algorithm')
         ]
 
     def __init__(self, callable):
         self.callable = callable
+        self.cfg = callable.cfg
         self.meta.argv = callable.argv
         self.meta.script = callable.script
         self.threads = threading.local()
@@ -217,24 +208,14 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
             'Http': Http,
             'Channels': LuxChannels.create
         }
-        self.models = ModelContainer(self)
+        self.models = ModelContainer().init_app(self)
         self.extensions = OrderedDict()
         self.config = _build_config(self)
-
-        self.fire('on_config')
-
-    def __call__(self, environ, start_response):
-        """The WSGI thing."""
-        wsgi_handler = self.wsgi_handler()
-        self.wsgi_request(environ, start_response=start_response)
-        return wsgi_handler(environ, start_response)
-
-    def wsgi_handler(self):
-        if self._handler is None:
-            self.forms = formreg.copy()
-            self._handler = _build_handler(self)
-            self.fire('on_loaded')
-        return self._handler
+        self.event('on_config').fire()
+        cfg = self.config
+        self.auth = module_attribute(cfg['AUTHENTICATION_BACKEND'])(self)
+        self.cache_server = create_cache(self, cfg['CACHE_SERVER'])
+        self.on_error = module_attribute(cfg['ERROR_HANDLER'])
 
     @property
     def app(self):
@@ -252,15 +233,17 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
         return self.callable.params
 
     @property
+    def argv(self):
+        return self.callable.argv
+
+    @property
+    def description(self):
+        return self.callable.description
+
+    @property
     def _loop(self):
         pool = self.green_pool
         return pool._loop if pool else asyncio.get_event_loop()
-
-    @lazyproperty
-    def cache_server(self):
-        """Return the Cache handler
-        """
-        return create_cache(self, self.config['CACHE_SERVER'])
 
     @lazyproperty
     def green_pool(self):
@@ -268,6 +251,46 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
             self.config['THREAD_POOL'] = False
             from pulsar.apps.greenio import GreenPool
             return GreenPool(self.config['GREEN_POOL'])
+
+    def __call__(self, environ, start_response):
+        """The WSGI thing."""
+        return self.request_handler()(environ, start_response)
+
+    def request_handler(self):
+        if not self._handler:
+            self._loop.set_task_factory(context.task_factory)
+            self._handler = _build_handler(self)
+            self.event('on_loaded').fire()
+        return self._handler
+
+    def wsgi_request(self, **kw):
+        """Used for testing"""
+        request = self.green_pool.wait(test_wsgi_request(**kw))
+        self.on_request(request)
+        return request
+
+    def on_request(self, data=None):
+        request = data
+        config = self.config
+        environ = request.environ
+        environ['error.handler'] = self.on_error
+        environ['default.content_type'] = config['DEFAULT_CONTENT_TYPE']
+        cache = request.cache
+        cache.app = self
+        context.set('__request__', request)
+        self.auth.on_request(request)
+        self.fire_event('on_request', data=request)
+
+    def session(self, request=None):
+        return self.models.session(request)
+
+    @contextmanager
+    def ctx(self):
+        context.set('__app__', self)
+        try:
+            yield context
+        finally:
+            context.pop('__app__')
 
     def require(self, *extensions):
         return super().require(self, *extensions)
@@ -289,80 +312,6 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
         :class:`~.ConsoleParser`."""
         return self.meta.version
 
-    def wsgi_request(self, environ=None, loop=None, path=None,
-                     app_handler=None, urlargs=None, start_response=None,
-                     **kw):
-        """Create a :class:`.WsgiRequest` from a wsgi ``environ`` and set the
-        ``app`` attribute in the cache.
-        Additional keyed-valued parameters can be inserted.
-        """
-        if not environ:
-            # No WSGI environment, build a test one
-            environ = test_wsgi_environ(path=path, loop=loop, **kw)
-        request = wsgi_request(environ, app_handler=app_handler,
-                               urlargs=urlargs)
-        environ['error.handler'] = module_attribute(
-            self.config['ERROR_HANDLER'])
-        environ['default.content_type'] = self.config['DEFAULT_CONTENT_TYPE']
-        # Check if pulsar is serving the application
-        if 'pulsar.cfg' not in environ:
-            if not self.cfg:
-                self.cfg = pulsar.Config(debug=self.debug)
-            environ['pulsar.cfg'] = self.cfg
-        request.cache.app = self
-        if request.get('HTTP_X_HTTP_LOCAL') == 'local':
-            request.cache.logger = LOCAL_LOGGER
-        if start_response:
-            request.cache.start_response = start_response
-        return request
-
-    def html_document(self, request):
-        """Build the HTML document.
-
-        Usually there is no need to call directly this method.
-        Instead one can use the :attr:`.WsgiRequest.html_document`.
-        """
-        cfg = self.config
-        doc = HtmlDocument(title=cfg['HTML_TITLE'],
-                           media_path=cfg['MEDIA_URL'],
-                           minified=cfg['MINIFIED_MEDIA'],
-                           data_debug=self.debug,
-                           charset=cfg['ENCODING'],
-                           asset_protocol=cfg['ASSET_PROTOCOL'])
-        doc.meta = HeadMeta(doc.head)
-        doc.jscontext = dict(self._config_context())
-        doc.jscontext['lux_version'] = __version__
-        doc.jscontext['debug'] = request.app.debug
-        # Locale
-        lang = cfg['LOCALE'][:2]
-        doc.attr('lang', lang)
-        #
-        # Head
-        head = doc.head
-
-        for script in cfg['HTML_SCRIPTS']:
-            head.scripts.append(script)
-        #
-        for entry in cfg['HTML_META'] or ():
-            head.add_meta(**entry)
-
-        for script in cfg['HTML_BODY_SCRIPTS']:
-            doc.body.scripts.append(script, async=True)
-
-        self.fire('on_html_document', request, doc, safe=True)
-        #
-        # Add links last
-        links = head.links
-        for link in cfg['HTML_LINKS']:
-            if isinstance(link, dict):
-                link = link.copy()
-                href = link.pop('href', None)
-                if href:
-                    links.append(href, **link)
-            else:
-                links.append(link)
-        return doc
-
     def close(self):
         self.green_pool.shutdown(False)
         self.fire('on_close')
@@ -373,31 +322,6 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
         """
         dotted_path = self.config['EMAIL_BACKEND']
         return module_attribute(dotted_path)(self)
-
-    def on_start(self, server):
-        self.fire('on_start', server)
-
-    def load_extension(self, dotted_path):
-        """Load an :class:`.LuxExtension` class into this :class:`App`.
-
-        :param dotted_path: python dotted path to the extension.
-        :return: an :class:`.LuxExtension` class or ``None``
-
-        If the module contains an :class:`.LuxExtension` class named
-        ``LuxExtension``, it will be added to the :attr:`extension` dictionary.
-        """
-        try:
-            module = import_module(dotted_path)
-        except ImportError:
-            if not self.logger:
-                # this is the application extension, raise
-                raise
-            self.logger.exception('%s cannot load extension "%s".',
-                                  self, dotted_path)
-            return
-        Ext = getattr(module, 'Extension', None)
-        if Ext and isclass(Ext) and issubclass(Ext, LuxExtension):
-            return Ext
 
     # Template redering
     def template_full_path(self, names):
@@ -413,9 +337,6 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
                 filename = ext.get_template_full_path(self, name)
                 if filename and os.path.exists(filename):
                     return filename
-            filename = os.path.join(LUX_CORE, 'templates', name)
-            if os.path.exists(filename):
-                return filename
 
     def template(self, name):
         """Load a template from the file system.
@@ -445,10 +366,10 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
         all :setting:`EXTENSIONS` which expose the ``context`` method.
         """
         if (isinstance(context, LuxContext) or
-                request.cache._in_application_context):
+                request.cache.get('in_application_context')):
             return context
         else:
-            request.cache._in_application_context = True
+            request.cache.set('in_application_context', True)
             try:
                 ctx = LuxContext()
                 ctx.update(self.config)
@@ -459,7 +380,7 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
                         ext.context(request, ctx)
                 return ctx
             finally:
-                request.cache._in_application_context = False
+                request.cache.set('in_application_context', False)
             return context
 
     def render_template(self, name, context=None,
@@ -475,41 +396,6 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
     def template_engine(self, engine=None):
         engine = engine or self.config['DEFAULT_TEMPLATE_ENGINE']
         return template_engine(self, engine)
-
-    def html_response(self, request, page, context=None,
-                      jscontext=None, title=None, status_code=None):
-        """Html response via a template.
-
-        :param request: the :class:`.WsgiRequest`
-        :param page: A :class:`Page`, template file name or a list of
-            template filenames
-        :param context: optional context dictionary
-        """
-        request.response.content_type = 'text/html'
-        doc = request.html_document
-        if jscontext:
-            doc.jscontext.update(jscontext)
-
-        if title:
-            doc.head.title = title
-
-        if status_code:
-            request.response.status_code = status_code
-        context = self.context(request, context)
-        page = self.cms.as_page(page)
-        body = self.cms.render_body(request, page, context)
-
-        doc.body.append(body)
-
-        if not request.config['MINIFIED_MEDIA']:
-            doc.head.embedded_js.insert(
-                0, 'window.minifiedMedia = false;')
-
-        if doc.jscontext:
-            encoded = encode_json(doc.jscontext, self.config['SECRET_KEY'])
-            doc.head.add_meta(name="html-context", content=encoded)
-
-        return doc.http_response(request)
 
     def site_url(self, path=None):
         """Build the site url from an optional ``path``
@@ -614,10 +500,23 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
         else:
             self.reload(True)
 
+    def bind_extension_events(self, extension, events=None):
+        '''Bind ``events`` from an ``extension``.
+
+        :param extension: an class:`.Extension`
+        :param events: optional list of event names. If not supplied,
+            the default lux events are used.
+        '''
+        events = events or ALL_EVENTS
+        for name in events:
+            handler = getattr(extension, name, None)
+            if handler:
+                self.event(name).bind(handler)
+
     # INTERNALS
     def _setup_logger(self, config, opts):
         debug = opts.debug or self.params.get('debug', False)
-        cfg = pulsar.Config()
+        cfg = Config()
         cfg.set('debug', debug)
         cfg.set('log_level', opts.log_level)
         cfg.set('log_handlers', opts.log_handlers)
@@ -626,11 +525,6 @@ class Application(ConsoleMixin, LuxExtension, EventMixin, BackendMixin):
             self.logger = cfg.configured_logger('lux')
         else:
             super()._setup_logger(config, opts)
-
-    def _config_context(self):
-        cfg = self.config
-        return ((p.name, cfg[p.name]) for p in cfg['_parameters'].values()
-                if p.jscontext)
 
 
 # INTERNALS
@@ -666,7 +560,7 @@ def _build_config(self):
     module = import_module(module_name)
     self.meta = self.meta.copy(module)
     if self.meta.name != 'lux':
-        extension = self.load_extension(self.meta.name)
+        extension = _load_extension(self.meta.name)
         if extension:   # extension available, get the version from it
             self.meta.version = extension.meta.version
     #
@@ -678,11 +572,12 @@ def _build_config(self):
         raise ConfigError(opts.config)
     #
     # setup application
+    cfg = dict(_load_config(vars(config_module)))
+    prefix = slugify(cfg.get('APP_NAME', ''), '_').upper()
     config = {'_parameters': {}}
-    self.setup(config, opts)
-    configs = _load_configs(self, config, config_module)
     #
     # Load extensions
+    self.setup(config, cfg, prefix, opts=opts)
     self.logger.debug('Setting up extensions')
     apps = list(config['EXTENSIONS'])
     _add_app(apps, 'lux', 0)
@@ -691,19 +586,18 @@ def _build_config(self):
 
     extensions = self.extensions
     for name in apps[1:]:
-        Ext = self.load_extension(name)
+        Ext = _load_extension(name)
         if Ext:
             extension = Ext()
             extensions[extension.meta.name] = extension
-            self.bind_events(extension)
-            extension.setup(config)
+            self.bind_extension_events(extension)
+            extension.setup(config, cfg, prefix)
 
-    params = configs.pop()
-    _config_from_json(configs, config)
-    config.update(params)
+    config.update(((k, v) for k, v in self.params.items() if k == k.upper()))
     config['EXTENSIONS'] = tuple(apps)
-    for on in getattr(self, '_on_config', ()):
-        on(self, config)
+    error_messages = ERROR_MESSAGES.copy()
+    error_messages.update(config.get('ERROR_MESSAGES') or ())
+    config['ERROR_MESSAGES'] = error_messages
     return config
 
 
@@ -715,84 +609,40 @@ def _build_handler(self):
     self.channels = self.providers['Channels'](self)
 
     if not self.cms:
-        self.cms = CMS(self)
+        self.cms = CMS()
+    self.cms.init_app(self)
 
     extensions = list(self.extensions.values())
-    middleware = [self.auth_backend.request]
-    rmiddleware = [self.auth_backend.response]
+    all_routes = []
+    responses = []
+    root = None
     for extension in extensions:
-        middle = extension.middleware(self)
-        if middle:
-            middleware.extend(middle)
-        middle = extension.response_middleware(self)
-        if middle:
-            rmiddleware.extend(middle)
-    #
-    # Response middleware executed in reversed order
-    rmiddleware = list(reversed(rmiddleware))
-    #
-    # Use a green pool
-    if self.green_pool:
-        if self.channels is not None:
-            middleware.insert(0, self.channels.middleware)
-        handler = GreenWSGI(middleware, self.green_pool, rmiddleware)
-    #
-    # Use thread pool
-    elif self.config['THREAD_POOL']:
-        hnd = WsgiHandler(middleware, rmiddleware, async=False)
-        handler = WsgiHandler([wait_for_body_middleware,
-                               middleware_in_executor(hnd)])
-    #
-    else:
-        raise ImproperlyConfigured(
-            'Green or thread concurrency required. Please specify '
-            'either GREEN_POOL or THREAD_POOL size')
-
-    return handler
-
-
-def _build_middleware(self, extensions, middleware, rmiddleware):
-    for extension in extensions:
-        middle = extension.middleware(self)
-        if middle:
-            middleware.extend(middle)
-        middle = extension.response_middleware(self)
-        if middle:
-            rmiddleware.extend(middle)
-
-
-def _load_configs(self, config, config_module):
-    params = self.params.copy()
-    cfg = dict(_load_config(vars(config_module)))
-    configs = [cfg]
-    settings_files = multi_pop('SETTINGS_FILES', cfg, params)
-
-    if settings_files:
-        if isinstance(settings_files, str):
-            settings_files = [settings_files]
-        ok = []
-
-        for filename in settings_files:
-            try:
-                with open(filename) as fp:
-                    cfg = json.load(fp)
-            except FileNotFoundError:
-                self.logger.error('Could not load "%s", no such file',
-                                  filename)
-            except json.JSONDecodeError:
-                self.logger.error('Could not json decode "%s", skipping',
-                                  filename)
+        handler = getattr(extension, 'on_response', None)
+        if handler:
+            responses.append(handler)
+        for route in (extension.routes(self) or ()):
+            if route.full_route.match('') is not None:
+                if root:
+                    raise ImproperlyConfigured(
+                        "Root route already available, cannot add another from"
+                        " %s extension" % extension
+                    )
+                root = route
             else:
-                cfg.pop('SETTINGS_FILES', None)
-                configs.append(cfg)
-                ok.append(filename)
+                all_routes.append(route)
 
-        if ok:
-            config['SETTINGS_FILES'] = ok
+    if not root:
+        root = Router('/', get=raise404)
 
-    configs.append(params)
-    config['EXTENSIONS'] = multi_pop('EXTENSIONS', *configs) or ()
-    return configs
+    for route in all_routes:
+        root.add_route(route)
+
+    if responses:
+        event = self.event('on_response')
+        for handler in reversed(responses):
+            event.bind(handler)
+    #
+    return Handler(self, root)
 
 
 def _load_config(cfg):
@@ -801,7 +651,8 @@ def _load_config(cfg):
             yield name, value
 
 
-def _config_from_json(configs, parameters):
-
-    for config in configs:
-        extend_config(parameters, config)
+def _load_extension(dotted_path):
+    module = import_module(dotted_path)
+    Ext = getattr(module, 'Extension', None)
+    if Ext and isclass(Ext) and issubclass(Ext, LuxExtension):
+        return Ext

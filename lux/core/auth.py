@@ -1,16 +1,15 @@
-from functools import partial
 from importlib import import_module
 
-from pulsar import PermissionDenied, Http401
+from pulsar.api import PermissionDenied, Http401, BadRequest
 from pulsar.utils.structures import inverse_mapping
-from pulsar.utils.importer import module_attribute
-from pulsar.apps.wsgi import wsgi_request
-from pulsar.utils.pep import to_bytes
+from pulsar.utils.string import to_bytes
+from pulsar.utils.log import lazyproperty
 
 from lux.utils.data import as_tuple
+import lux.utils.token as jwt
+from lux.models import Component
 
-from .extension import Parameter
-from .user import Anonymous
+from .user import Anonymous, ServiceUser
 
 
 ACTIONS = {'read': 1,
@@ -37,49 +36,88 @@ class AuthenticationError(ValueError):
     pass
 
 
-class BackendMixin:
-    """Add authentication backends to the application
-    """
-    _config = [
-        Parameter('AUTHENTICATION_BACKENDS', [],
-                  'List of python dotted paths to classes which provide '
-                  'a backend for authentication.')
-    ]
+class PasswordMixin:
+    '''Adds password encryption to an authentication backend.
 
-    def _on_config(self, config):
-        self.auth_backend = MultiAuthBackend()
-        for dotted_path in config['AUTHENTICATION_BACKENDS']:
-            backend = module_attribute(dotted_path)
-            if not backend:
-                self.logger.error('Could not load backend "%s"', dotted_path)
-                continue
-            backend = backend()
-            self.auth_backend.append(backend)
-            self.bind_events(backend)
+    It has two basic methods,
+    :meth:`.encrypt` and :meth:`.decrypt`.
+    '''
+    @lazyproperty
+    def crypt_module(self):
+        kwargs = self.config['CRYPT_ALGORITHM']
+        if not isinstance(kwargs, dict):
+            kwargs = dict(module=kwargs)
+        kwargs = kwargs.copy()
+        return import_module(kwargs.pop('module')), kwargs
+
+    def encrypt(self, string_or_bytes):
+        '''Encrypt ``string_or_bytes`` using the algorithm specified
+        in the :setting:`CRYPT_ALGORITHM` setting.
+
+        Return an encrypted string
+        '''
+        encoding = self.config['ENCODING']
+        secret_key = self.config['PASSWORD_SECRET_KEY'].encode()
+        b = to_bytes(string_or_bytes, encoding)
+        module, kwargs = self.crypt_module
+        p = module.encrypt(b, secret_key, **kwargs)
+        return p.decode(encoding)
+
+    def crypt_verify(self, encrypted, raw):
+        '''Verify if the ``raw`` string match the ``encrypted`` string
+        '''
+        secret_key = self.config['PASSWORD_SECRET_KEY'].encode()
+        module, kwargs = self.crypt_module
+        return module.verify(to_bytes(encrypted), to_bytes(raw),
+                             secret_key, **kwargs)
+
+    def decrypt(self, string_or_bytes):
+        secret_key = self.config['PASSWORD_SECRET_KEY'].encode()
+        b = to_bytes(string_or_bytes, self.config['ENCODING'])
+        p = self.crypt_module.decrypt(b, secret_key)
+        return p.decode(self.encoding)
+
+    def password(self, raw_password=None):
+        '''Return an encrypted password or unusable password
+        '''
+        if raw_password:
+            return self.encrypt(raw_password)
+        else:
+            return UNUSABLE_PASSWORD
 
 
-class AuthBase:
+class JwtMixin:
 
-    @backend_action
-    def anonymous(self, request):
-        pass
+    def encode_jwt(self, token, secret=None):
+        config = self.config
+        return jwt.encode(token,
+                          key=secret or config['SECRET_KEY'],
+                          algorithm=config['JWT_ALGORITHM']).decode('utf-8')
 
-    @backend_action
+    def decode_jwt(self, request, token, secret=None):
+        config = self.config
+        return self._decode_jwt(request, token,
+                                key=secret or config['SECRET_KEY'],
+                                algorithm=config['JWT_ALGORITHM'])
+
+    def _decode_jwt(self, request, token, key=None, algorithm=None, **options):
+        try:
+            return jwt.decode(token, key=key, algorithm=algorithm,
+                              options=options)
+        except jwt.ExpiredSignature:
+            request.logger.warning('JWT token has expired')
+            raise Http401('Token') from None
+        except jwt.DecodeError as exc:
+            request.logger.warning(str(exc))
+            raise BadRequest from None
+
+
+class PermissionMixin:
+
     def has_permission(self, request, resource, action):
         '''Check if the given request has permission over ``resource``
         element with permission ``action``
         '''
-        pass
-
-    @backend_action
-    def get_permissions(self, request, resources, actions=None):
-        """Get a dictionary of permissions for the given resource"""
-        pass
-
-
-class SimpleBackend(AuthBase):
-
-    def has_permission(self, request, resource, action):
         return True
 
     def get_permissions(self, request, resources, actions=None):
@@ -88,108 +126,23 @@ class SimpleBackend(AuthBase):
         return dict(((r, perm.copy()) for r in as_tuple(resources)))
 
 
-class MultiAuthBackend:
+class AuthBackend(Component, PermissionMixin, PasswordMixin, JwtMixin):
     '''Aggregate several Authentication backends
     '''
-    def __init__(self):
-        self.backends = []
+    service_user = ServiceUser
+    anonymous = Anonymous
 
-    def append(self, backend):
-        self.backends.append(backend)
+    def __init__(self, app):
+        self.init_app(app)
 
-    def request(self, environ, start_response=None):
-        # Inject self as the authentication backend
-        request = wsgi_request(environ)
-        cache = request.cache
-        cache.auth_backend = self
-        cache.user = self.anonymous(request)
-        return self._execute_backend_method('request', request)
+    def on_request(self, request):
+        request.cache.user = self.anonymous()
 
-    def response(self, environ, response):
-        for backend in reversed(self.backends):
-            backend_method = getattr(backend, 'response', None)
-            if backend_method:
-                response = backend_method(response) or response
-        return response
+    def authenticate(self, session, **kw):
+        raise AuthenticationError
 
-    def has_permission(self, request, resource, action):
-        has = self._execute_backend_method('has_permission',
-                                           request, resource, action)
-        return True if has is None else has
-
-    def default_anonymous(self, request):
-        return Anonymous()
-
-    def __iter__(self):
-        return iter(self.backends)
-
-    def __getattr__(self, method):
-        if method in auth_backend_actions:
-            return partial(self._execute_backend_method, method)
-        else:
-            raise AttributeError("'%s' object has no attribute '%s'" %
-                                 (type(self).__name__, method))
-
-    def _execute_backend_method(self, method, request, *args, **kwargs):
-        for backend in self:
-            backend_method = getattr(backend, method, None)
-            if backend_method:
-                wait = request.app.green_pool.wait
-                result = wait(backend_method(request, *args, **kwargs))
-                if result is not None:
-                    return result
-        default = getattr(self, 'default_%s' % method, None)
-        if hasattr(default, '__call__'):
-            return default(request, *args, **kwargs)
-
-
-class PasswordMixin:
-    '''Adds password encryption to an authentication backend.
-
-    It has two basic methods,
-    :meth:`.encrypt` and :meth:`.decrypt`.
-    '''
-    def on_config(self, app):
-        cfg = app.config
-        self.encoding = cfg['ENCODING']
-        self.secret_key = cfg['PASSWORD_SECRET_KEY'].encode()
-        ckwargs = cfg['CRYPT_ALGORITHM']
-        if not isinstance(ckwargs, dict):
-            ckwargs = dict(module=ckwargs)
-        self.ckwargs = ckwargs.copy()
-        self.crypt_module = import_module(self.ckwargs.pop('module'))
-
-    def encrypt(self, string_or_bytes):
-        '''Encrypt ``string_or_bytes`` using the algorithm specified
-        in the :setting:`CRYPT_ALGORITHM` setting.
-
-        Return an encrypted string
-        '''
-        b = to_bytes(string_or_bytes, self.encoding)
-        p = self.crypt_module.encrypt(b, self.secret_key, **self.ckwargs)
-        return p.decode(self.encoding)
-
-    def crypt_verify(self, encrypted, raw):
-        '''Verify if the ``raw`` string match the ``encrypted`` string
-        '''
-        return self.crypt_module.verify(to_bytes(encrypted),
-                                        to_bytes(raw),
-                                        self.secret_key,
-                                        **self.ckwargs)
-
-    def decrypt(self, string_or_bytes):
-        b = to_bytes(string_or_bytes, self.encoding)
-        p = self.crypt_module.decrypt(b, self.secret_key)
-        return p.decode(self.encoding)
-
-    @backend_action
-    def password(self, request, raw_password=None):
-        '''Return an encrypted password
-        '''
-        if raw_password:
-            return self.encrypt(raw_password)
-        else:
-            return UNUSABLE_PASSWORD
+    def create_user(self, session, **params):
+        raise NotImplementedError
 
 
 class Resource:
@@ -241,7 +194,7 @@ class Resource:
 
         Return a tuple of fields names or False
         """
-        get = request.cache.auth_backend.get_permissions
+        get = request.app.auth.get_permissions
         resources = [self.resource]
         for name in self.fields or ():
             resources.append('%s:%s' % (self.resource, name))

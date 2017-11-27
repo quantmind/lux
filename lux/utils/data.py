@@ -7,6 +7,10 @@ def update_dict(source, target):
     return result
 
 
+def compact_dict(**kwargs):
+    return {k: v for k, v in kwargs.items() if v is not None}
+
+
 def grouper(n, iterable, padvalue=None):
     '''grouper(3, 'abcdefg', 'x') --> ('a','b','c'), ('d','e','f'),
     ('g','x','x')'''

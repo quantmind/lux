@@ -1,17 +1,18 @@
-'''
-.. autoclass:: Command
-   :members:
-   :member-order: bysource
-
-'''
+import os
 import argparse
 import logging
+from inspect import isawaitable, cleandoc, getdoc, getfile
+from collections import OrderedDict
+from importlib import import_module
 
-from pulsar import Setting, Application, ImproperlyConfigured, isawaitable
+from pulsar.utils.log import lazyproperty
+from pulsar.api import Setting, Application, ImproperlyConfigured
 from pulsar.utils.config import Config, LogLevel, Debug, LogHandlers
+from pulsar.utils.slugify import slugify
 
 from lux import __version__
 from lux.utils.async import maybe_green
+from lux.utils.files import skipfile
 
 
 class ConfigError(Exception):
@@ -33,12 +34,25 @@ def service_parser(services, description, help=True):
     return p
 
 
+class CmdType(type):
+
+    def __new__(cls, name, bases, attrs):
+        commands = {}
+        for key, value in attrs.items():
+            if key.startswith('command_') and hasattr(value, '__call__'):
+                commands[key[8:]] = value
+        attrs['commands'] = commands
+        return super(CmdType, cls).__new__(cls, name, bases, attrs)
+
+
 class ConsoleParser:
     '''A class for parsing the console inputs.
 
     Used as base class for both :class:`.LuxCommand` and :class:`.App`
     '''
     help = None
+    commands = None
+    description = None
     option_list = ()
     default_option_list = (LogLevel(),
                            LogHandlers(default=['console']),
@@ -51,8 +65,9 @@ class ConsoleParser:
     def get_version(self):
         raise NotImplementedError
 
-    def get_parser(self, **params):
-        parser = argparse.ArgumentParser(**params)
+    def get_parser(self, description=None, **params):
+        description = description or self.description
+        parser = argparse.ArgumentParser(description=description, **params)
         parser.add_argument('--version',
                             action='version',
                             version=self.get_version(),
@@ -85,7 +100,7 @@ class LuxApp(Application):
         return False
 
 
-class LuxCommand(ConsoleParser):
+class LuxCommand(ConsoleParser, metaclass=CmdType):
     '''Signature class for lux commands.
 
     A :class:`.LuxCommand` is never initialised directly, instead,
@@ -118,14 +133,22 @@ class LuxCommand(ConsoleParser):
         self.app = app
 
     def __call__(self, argv, **params):
+        if self.commands:
+            if not argv or argv[0] not in self.commands:
+                return self.write('\n'.join(self.get_usage()))
+            return self.command(self.commands[argv[0]], argv[1:], **params)
+
         if not self.app.callable.command:
             self.app.callable.command = self.name
         app = self.pulsar_app(argv)
         app.cfg.daemon = False
         app()
+        self.execute(self.run, app.cfg, **params)
+
+    def execute(self, method, *args, **params):
         # Make sure the wsgi handler is created
         assert self.app.wsgi_handler()
-        result = maybe_green(self.app, self.run, app.cfg, **params)
+        result = maybe_green(self.app, method, *args, **params)
         if isawaitable(result) and not self.app._loop.is_running():
             result = self.app._loop.run_until_complete(result)
         return result
@@ -160,6 +183,35 @@ class LuxCommand(ConsoleParser):
         '''Write ``stream`` to the :attr:`stderr`.'''
         self.app.write_err(stream)
 
+    def get_usage(self):
+        usage = [
+            '',
+            '%s - %s' % (self.name, self.help or 'no description'),
+            '',
+            'List of available commands',
+            '--------------------------'
+        ]
+        N = max((len(c) for c in self.commands))
+        frmt = '% ' + str(N) + 's - %s'
+        usage.extend((
+            frmt % (name, doc_command(self.commands[name]))
+            for name in sorted(self.commands)
+        ))
+        usage.append('')
+        return usage
+
+    def command(self, executable, argv, **kwargs):
+        parser = argparse.ArgumentParser(description=doc_command(executable))
+        settings = getattr(executable, 'settings', [])
+        for setting in settings:
+            setting.add_argument(parser, True)
+        options = parser.parse_args(argv)
+        args = []
+        for setting in settings:
+            value = getattr(options, setting.name, kwargs.get(setting.name))
+            args.append(value)
+        return executable(self, *args)
+
     def pulsar_app(self, argv, application=None, callable=None,
                    log_name='lux', config=None, **kw):
         app = self.app
@@ -182,3 +234,122 @@ class LuxCommand(ConsoleParser):
                            debug=app.debug,
                            config=config or app.config_module,
                            **kw)
+
+
+class ConsoleMixin(ConsoleParser):
+
+    @lazyproperty
+    def commands(self):
+        """Load all commands from installed applications"""
+        cmnds = OrderedDict()
+        available = set()
+        for e in reversed(self.config['EXTENSIONS']):
+            try:
+                modname = e + ('.core' if e == 'lux' else '') + '.commands'
+                mod = import_module(modname)
+                if hasattr(mod, '__path__'):
+                    path = os.path.dirname(getfile(mod))
+                    try:
+                        commands = []
+
+                        for f in os.listdir(path):
+                            if skipfile(f) or not f.endswith('.py'):
+                                continue
+                            command = f[:-3]
+                            if command not in available:
+                                available.add(command)
+                                commands.append(command)
+
+                        if commands:
+                            cmnds[e] = tuple(commands)
+                    except OSError:
+                        continue
+            except ImportError:
+                pass  # No management module
+        return OrderedDict(((e, cmnds[e]) for e in reversed(cmnds)))
+
+    def get_command(self, name):
+        """Construct and return a :class:`.Command` for this application
+        """
+        for e, cmnds in self.commands.items():
+            if name in cmnds:
+                modname = 'lux.core' if e == 'lux' else e
+                mod = import_module('%s.commands.%s' % (modname, name))
+                return mod.Command(name, self)
+        raise CommandError("Unknown command '%s'" % name)
+
+    def get_usage(self, description=None):
+        """Returns the script's main help text, as a string."""
+        if not description:
+            description = self.config['DESCRIPTION'] or 'Lux toolkit'
+        usage = ['',
+                 '',
+                 '----------------------------------------------',
+                 description,
+                 '----------------------------------------------',
+                 '',
+                 "Type '%s <command> --help' for help on a specific command." %
+                 (self.meta.script or ''),
+                 '', '', "Available commands:", ""]
+        for name, commands in self.commands.items():
+            usage.append(name)
+            usage.extend(('    %s' % cmd for cmd in sorted(commands)))
+            usage.append('')
+        text = '\n'.join(usage)
+        return text
+
+    def get_parser(self, with_commands=True, nargs='?', description=None,
+                   **params):
+        """Return a python :class:`argparse.ArgumentParser` for parsing
+        the command line.
+
+        :param with_commands: Include parsing of all commands (default True).
+        :param params: parameters to pass to the
+            :class:`argparse.ArgumentParser` constructor.
+        """
+        if with_commands:
+            params['usage'] = self.get_usage(description=description)
+            description = None
+        parser = super().get_parser(description=description, **params)
+        parser.add_argument('command', nargs=nargs, help='command to run')
+        return parser
+
+
+class option:
+
+    def __init__(self, *flags, help=None, nargs=None, **kwargs):
+        name = None
+        oflags = []
+        for flag in flags:
+            if not flag.startswith('-'):
+                name = flag
+                if not nargs:
+                    nargs = '?'
+                    oflags = None
+            else:
+                if oflags is None:
+                    raise ImproperlyConfigured(
+                        'cannot mix positional and keyed-valued arguments'
+                    )
+                if flag.startswith('--') or not name:
+                    name = slugify(flag, '_')
+                oflags.append(flag)
+        if not name:
+            raise ImproperlyConfigured('options with no name')
+        if help:
+            kwargs['desc'] = help
+        self.setting = Setting(name, oflags, nargs=nargs, **kwargs)
+
+    def __repr__(self):
+        return repr(self.setting)
+
+    def __call__(self, method):
+        settings = getattr(method, 'settings', [])
+        settings.insert(0, self.setting)
+        method.settings = settings
+        return method
+
+
+def doc_command(method):
+    doc = cleandoc(getdoc(method)).strip()
+    return ', '.join((v for v in (d.strip() for d in doc.split('\n')) if v))

@@ -1,0 +1,16 @@
+lxml
+recommonmark
+premailer
+pyyaml
+beautifulsoup4
+inflect
+
+# pulsar speedup
+uvloop
+httptools
+
+
+# required by odm extension
+psycopg2
+alembic
+marshmallow-sqlalchemy

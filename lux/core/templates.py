@@ -4,7 +4,7 @@ from collections import Mapping
 
 import jinja2
 
-from pulsar import ImproperlyConfigured
+from pulsar.api import ImproperlyConfigured
 
 from lux.utils.date import iso8601
 

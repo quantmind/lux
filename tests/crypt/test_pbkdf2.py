@@ -1,7 +1,6 @@
 from binascii import unhexlify, a2b_hex as _a2b_hex
 
 from lux.utils import test
-from lux.core import PasswordMixin
 from lux.utils.crypt.pbkdf2 import (_0xffffffffL, algorithms,
                                     isbytes, isinteger, callable, binxor,
                                     b64encode, verify, b2a_hex, PBKDF2,
@@ -388,12 +387,3 @@ class TestPBKDF2(test.TestCase):
         with self.assertRaises(ValueError) as e:
             crypt('test', '$$$')
         self.assertEqual(str(e.exception), "Illegal character '$' in salt")
-
-    def test_password_mixin(self):
-        app = self.application(PASSWORD_SECRET_KEY='ekwjfbnerxfo8475f0cnk')
-        raw = 'test-password-123'
-        mixin = PasswordMixin()
-        mixin.on_config(app)
-        psw = mixin.encrypt(raw)
-        self.assertNotEqual(raw, psw)
-        self.assertTrue(mixin.crypt_verify(psw, raw))

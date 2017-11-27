@@ -1,7 +1,7 @@
 include MANIFEST.in
 include README.rst
-include requirements.txt
-include requirements-dev.txt
-recursive-include tests *.py *.js *.html *.scss *.json *.txt *.json
-recursive-include lux *.js *.html *.txt *.mako
-recursive-include example *.py *.js *.html *.scss *.md *.json *.json *.png
+graft requirements
+graft tests
+graft lux
+graft example
+global-exclude *.pyc

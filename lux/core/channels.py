@@ -1,18 +1,18 @@
 import json
 from collections import namedtuple
 
-from pulsar import ProtocolError
+from pulsar.api import ProtocolError
 from pulsar.utils.string import to_string
 from pulsar.apps.data import create_store
 from pulsar.utils.importer import module_attribute
 
-from .component import AppComponent
+from lux import models
 
 
 regex_callbacks = namedtuple('regex_callbacks', 'regex callbacks')
 
 
-class LuxChannels(AppComponent):
+class LuxChannels(models.Component):
     """Manage channels for publish/subscribe
     """
     @classmethod
@@ -26,10 +26,9 @@ class LuxChannels(AppComponent):
             protocol=protocol,
             namespace=app.config['PUBSUB_PREFIX']
         )
-        return cls(app, channels)
+        return cls(channels).init_app(app)
 
-    def __init__(self, app, channels):
-        super().__init__(app)
+    def __init__(self, channels):
         self.channels = channels
 
     def __repr__(self):

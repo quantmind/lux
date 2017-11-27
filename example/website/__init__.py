@@ -1,5 +1,5 @@
 from lux.core import LuxExtension
-from lux.forms import ActionsRouter
+from lux.ext.sessions import ActionsRouter
 
 
 class Extension(LuxExtension):

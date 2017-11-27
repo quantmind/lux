@@ -24,19 +24,15 @@ class AuthUtils:
 
     @test.green
     def _new_credentials(self, username=None, superuser=False, active=True):
-        backend = self.app.auth_backend
-        request = self.app.wsgi_request()
+        with self.app.session() as session:
+            username = username or test.randomname()
+            password = username
+            email = '%s@test.com' % username
 
-        username = username or test.randomname()
-        password = username
-        email = '%s@test.com' % username
-
-        user = backend.create_user(request,
-                                   username=username,
-                                   email=email,
-                                   password=password,
-                                   first_name=username,
-                                   active=active)
+            user = session.auth.create_user(
+                session, username=username, email=email,
+                password=password, first_name=username,
+                active=active, superuser=superuser)
         self.assertTrue(user.id)
         self.assertEqual(user.first_name, username)
         self.assertEqual(user.is_superuser(), superuser)

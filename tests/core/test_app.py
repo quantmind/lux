@@ -1,4 +1,4 @@
-from pulsar import ImproperlyConfigured
+from pulsar.api import ImproperlyConfigured
 
 from lux.utils import test
 

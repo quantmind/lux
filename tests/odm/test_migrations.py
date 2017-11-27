@@ -28,7 +28,7 @@ class TestMigrationsCommands(test.TestCase):
     }
 
     def cmd(self):
-        return self.fetch_command('alembic')
+        return self.fetch_command('sql')
 
     def test_command_alembic(self):
         cmd = self.cmd()

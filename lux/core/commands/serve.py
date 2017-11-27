@@ -1,4 +1,4 @@
-import pulsar
+from pulsar.api import get_actor, arbiter
 from pulsar.apps import wsgi
 from pulsar.utils.log import clear_logger
 
@@ -20,17 +20,17 @@ class Command(LuxCommand):
     def __call__(self, argv, start=True, get_app=False):
         self.app.callable.command = self.name
         app = self.app
-        server = self.pulsar_app(argv, self.wsgiApp)
+        server = self.pulsar_app(argv, self.wsgiApp,
+                                 server_software=app.config['SERVER_NAME'])
         if server.cfg.nominify:
             app.params['MINIFIED_MEDIA'] = False
 
         if start and not server.logger:   # pragma    nocover
-            if not pulsar.get_actor():
+            if not get_actor():
                 clear_logger()
             app._started = server()
-            app.on_start(server)
-            arbiter = pulsar.arbiter()
-            arbiter.start()
+            app.fire_event('on_start', data=server)
+            arbiter().start()
 
         if not start:
             return app if get_app else server

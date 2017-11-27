@@ -30,36 +30,40 @@
             "description": "View users",
             "policy": [
                 {
-                    "resource": "users:*",
-                    "action": "read"
+                    "resource": ["users:*"],
+                    "action": ["read"]
                 },
                 {
                     "resource": [
                         "users:*:groups",
                         "users:*:superuser"
                     ],
-                    "action": "*",
+                    "action": ["*"],
                     "effect": "deny"
                 }
             ]
         },
         {
             "name": "read-secrets-users-groups",
-            "policy": {
-                "resource": [
-                    "secrets:*",
-                    "users:*",
-                    "groups:*"
-                ],
-                "action": "read"
-            }
+            "policy": [
+                {
+                    "resource": [
+                        "secrets:*",
+                        "users:*",
+                        "groups:*"
+                    ],
+                    "action": ["read"]
+                }
+            ]
         },
         {
             "name": "policy-maker",
-            "policy": {
-                "resource": "permissions:*",
-                "action": ["read", "create", "update"]
-            }
+            "policy": [
+                {
+                    "resource": "permissions:*",
+                    "action": ["read", "create", "update"]
+                }
+            ]
         }
     ],
     "groups": [

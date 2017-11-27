@@ -9,9 +9,9 @@ from pulsar.utils.slugify import slugify
 from pulsar.apps.data import parse_store_url, create_store
 from pulsar.utils.importer import module_attribute
 from pulsar.utils.string import to_string
-from pulsar import ImproperlyConfigured, Lock
+from pulsar.api import ImproperlyConfigured, Lock
 
-from .component import AppComponent
+from lux import models
 
 
 logger = logging.getLogger('lux.cache')
@@ -34,14 +34,14 @@ def cached(*args, **kw):
         return CacheObject(*args, **kw)
 
 
-class Cache(AppComponent):
+class Cache(models.Component):
     """Cache base class
     """
     def __init__(self, app, name, url):
-        super().__init__(app)
         self.name = name
         self.url = url
         self._wait = app.green_pool.wait if app.green_pool else passthrough
+        self.init_app(app)
 
     def __repr__(self):
         return self.url

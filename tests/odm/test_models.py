@@ -1,9 +1,9 @@
 from urllib.parse import urlsplit
 
-from pulsar import ImproperlyConfigured
+from pulsar.api import ImproperlyConfigured
 
 from lux.utils import test
-from lux.extensions.rest import DictModel
+from lux.models.memory import Model
 
 from tests.odm.utils import OdmUtils
 
@@ -13,7 +13,7 @@ class TestModels(OdmUtils, test.AppTestCase):
     def test_register_null(self):
         self.assertFalse(self.app.models.register(None))
         users = self.app.models['users']
-        model = DictModel('user')
+        model = Model('user')
         self.assertNotEqual(self.app.models.register(model), model)
         self.assertEqual(self.app.models.register(model), users)
         self.assertEqual(self.app.models.register(lambda: model), users)

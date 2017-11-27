@@ -4,23 +4,22 @@ from enum import Enum
 from sqlalchemy.orm import relationship
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
 
-from lux import forms
-from lux.forms import Layout, Fieldset, Submit
 from lux.core import LuxExtension
-from lux.extensions import odm
-from lux.extensions.odm import RestModel, odm_models
-from lux.extensions.rest import RelationshipField, UniqueField, RestField, CRUD
+from lux.models import Schema, fields, UniqueField
+from lux.ext import odm
+from lux.ext.odm import Model
+from lux.ext.rest import RestRouter
 
 from odm.types import ChoiceType
 
 from tests.config import *  # noqa
 
-EXTENSIONS = ['lux.extensions.base',
-              'lux.extensions.odm',
-              'lux.extensions.rest',
-              'lux.extensions.auth']
+EXTENSIONS = ['lux.ext.base',
+              'lux.ext.odm',
+              'lux.ext.rest',
+              'lux.ext.auth']
 
-AUTHENTICATION_BACKENDS = ['lux.extensions.auth:TokenBackend']
+AUTHENTICATION_BACKENDS = ['lux.ext.auth:TokenBackend']
 DATASTORE = 'postgresql+green://lux:luxtest@127.0.0.1:5432/luxtests'
 API_URL = ''
 DEFAULT_POLICY = [
@@ -37,7 +36,7 @@ class TestEnum(Enum):
 
 
 def odm_json(request, data):
-    models = odm_models(request.app)
+    models = request.app.models
     for instance in data:
         model = models.get(instance.__class__.__name__.lower())
         if model:
@@ -50,18 +49,6 @@ class Extension(LuxExtension):
         return [CRUDTask(),
                 CRUDPerson(),
                 CRUDContent()]
-
-    def on_loaded(self, app):
-        app.forms['task'] = Layout(
-            TaskForm,
-            Fieldset(all=True),
-            Submit('submit')
-        )
-        app.forms['person'] = Layout(
-            PersonForm,
-            Fieldset(all=True),
-            Submit('submit')
-        )
 
     def on_after_flush(self, app, session):
         request = session.request
@@ -86,17 +73,17 @@ class Extension(LuxExtension):
         )
 
 
-Model = odm.model_base('odmtest')
+dbModel = odm.model_base('odmtest')
 
 
 # ODM Models
-class Person(Model):
+class Person(dbModel):
     id = Column(Integer, primary_key=True)
     username = Column(String(250), unique=True)
     name = Column(String(250))
 
 
-class Task(Model):
+class Task(dbModel):
     id = Column(Integer, primary_key=True)
     subject = Column(String(250))
     done = Column(Boolean, default=False)
@@ -114,7 +101,7 @@ class Task(Model):
         return relationship('Person', backref='tasks')
 
 
-class Content(Model):
+class Content(dbModel):
     id = Column(Integer, primary_key=True)
     group = Column(String(30), nullable=False)
     name = Column(String(60), nullable=False)
@@ -124,31 +111,32 @@ class Content(Model):
         return '%s/%s' % (self.group, self.name)
 
 
-class TaskForm(forms.Form):
-    model = 'tasks'
-    subject = forms.CharField()
-    done = forms.BooleanField(default=False)
-    assigned = RelationshipField('people', required=False)
-    enum_field = forms.ChoiceField(options=TestEnum, default='opt1')
-    desc = forms.CharField(required=False)
+class TaskSchema(Schema):
+    assigned = fields.Nested('PersonSchema')
+
+    class Meta:
+        model = 'tasks'
 
 
-class PersonForm(forms.Form):
-    model = 'people'
-    username = forms.CharField(validator=UniqueField())
-    name = forms.CharField(required=True)
+class PersonSchema(Schema):
+    username = fields.String(validator=UniqueField)
+    name = fields.String(required=True)
 
 
-class CRUDTask(CRUD):
-    model = RestModel('task', 'task', 'task',
-                      fields=[RestField('assigned',
-                                        model='people',
-                                        field='assigned_id')])
+class CRUDTask(RestRouter):
+    model = Model(
+        'tasks',
+        model_schema=TaskSchema
+    )
 
 
-class CRUDPerson(CRUD):
-    model = RestModel('person', 'person', 'person', url='people')
+class CRUDPerson(RestRouter):
+    model = Model(
+        'people',
+        model_schema=PersonSchema,
+        db_name='person'
+    )
 
 
-class CRUDContent(CRUD):
-    model = RestModel('content', id_field='path')
+class CRUDContent(RestRouter):
+    model = Model('content', id_field='path')
