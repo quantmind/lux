@@ -5,7 +5,7 @@ import marshmallow as ma
 from marshmallow import class_registry, post_load, post_dump
 from marshmallow.exceptions import RegistryError
 
-from . import context
+from .context import current_app
 
 
 class ModelSchemaError(Exception):
@@ -67,7 +67,7 @@ class Schema(ma.Schema):
 
     def __init__(self, *args, app=None, **kwargs):
         if self.opts.model:
-            self._declared_fields = get_model_fields(self, app)
+            self._declared_fields = get_model_fields(self)
         self.app = app
         super().__init__(*args, **kwargs)
 
@@ -124,8 +124,8 @@ class schema_registry:
                                 % classname) from None
 
 
-def get_model_fields(schema, app):
-    app = app or context.get('app')
+def get_model_fields(schema):
+    app = current_app()
     if not app:
         raise ModelSchemaError('missing application')
     schema_cls = type(schema)
@@ -149,3 +149,11 @@ def resource_name(schema):
     if name.endswith('Schema'):
         name = name[:-6]
     return name
+
+
+def get_schema_class(name):
+    schema_class = class_registry.get_class(name, True)
+    if schema_class:
+        if isinstance(schema_class, list):
+            schema_class = schema_class[-1]
+        return schema_class

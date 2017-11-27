@@ -44,7 +44,7 @@ class Query(ABC):
         self.session = session
         self.fields = None
         self.filters = {}
-        self.app.fire('on_query', self)
+        self.app.fire_event('on_query', data=self)
 
     @property
     def app(self):

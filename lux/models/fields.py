@@ -17,7 +17,6 @@ from lux.openapi.ext.marshmallow import map_to_openapi_type
 
 from pulsar.utils.slugify import slugify
 
-from .model import app_schemas, app_cache
 from .schema import Schema
 
 
@@ -121,11 +120,6 @@ def password_validate(value):
 
 def slug_validator(separator, value):
     return slugify(value, separator=separator) == value
-
-
-@app_cache
-def app_nested_schemas(app):
-    return {}
 
 
 Schema.TYPE_MAPPING[datetime] = DateTime

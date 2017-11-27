@@ -25,7 +25,8 @@ def app_token(request):
 
 
 class ApiClient:
-    """A python client for interacting with REST APIs"""
+    """A client for interacting with REST APIs
+    """
 
     def __init__(self, app):
         self.app = app
@@ -44,7 +45,7 @@ class ApiClient:
             return http
 
     def __call__(self, request=None):
-        return ApiClientRequest(request, self)
+        return HttpRequest(request, self)
 
     def request(self, request, method, url,
                 token=None, jwt=False, headers=None, auth_error=None, **kw):
@@ -79,7 +80,21 @@ class ApiClient:
         return response
 
 
-class HttpRequestMixin:
+class HttpRequest:
+    __slots__ = ('_request', '_client', '_path')
+
+    def __init__(self, request, client, path=None):
+        self._request = request
+        self._client = client
+        self._path = path
+
+    @property
+    def app(self):
+        return self._client.app
+
+    def __repr__(self):
+        return self._path or ''
+    __str__ = __repr__
 
     def delete(self, path=None, **kw):
         return self.request('DELETE', path=path, **kw)
@@ -115,42 +130,10 @@ class HttpRequestMixin:
         return self.request('GET', path=path, headers=headers, **kw)
 
     def request(self, method, path=None, **kw):
-        raise NotImplementedError
-
-
-class ApiClientRequest(HttpRequestMixin):
-    __slots__ = ('_request', '_client', '_path')
-
-    def __init__(self, request, client, path=None):
-        self._request = request
-        self._client = client
-        self._path = path
-
-    def __getattr__(self, name):
-        return self._get(name)
-
-    def __getitem__(self, name):
-        return self._get(name)
-
-    @property
-    def app(self):
-        return self._client.app
-
-    def __repr__(self):
-        return self._path or ''
-    __str__ = __repr__
-
-    def request(self, method, path=None, **kw):
-        if path:
-            return self._get(path).request(method, **kw)
-        return self._client.request(self._request, method, self._path, **kw)
-
-    def _get(self, name):
-        path = name
         if self._path:
-            s = '' if name.startswith('/') else '/'
-            path = "%s%s%s" % (self._path, s, name)
-        return self.__class__(self._request, self._client, path)
+            s = '' if path.startswith('/') else '/'
+            path = "%s%s%s" % (self._path, s, path)
+        return self._client.request(self._request, method, path, **kw)
 
 
 @app_attribute

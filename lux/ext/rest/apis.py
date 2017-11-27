@@ -41,6 +41,10 @@ class Apis(list, models.Component):
         return cls().init_app(app).extend(urls)
 
     def routes(self):
+        """Build the API routes
+
+        This method generates routes only when it is a server side API
+        """
         #
         # Create paginator
         dotted_path = self.config['PAGINATION']
@@ -195,13 +199,13 @@ class Api(models.Component):
 
     def router(self):
         """Return the base router of this API.
-        
+
         If the base router is not available it first builds the paths and
         subsequently returns it
         """
         if isinstance(self._router, list):
-            # base router
             with self.ctx():
+                # base router
                 root = RestRoot(self.url.path)
                 for router in self._router:
                     root.add_child(self._prepare_router(router))
@@ -227,5 +231,6 @@ class Api(models.Component):
                 [method.upper() for method in path.operations]
             )
         for child in router.routes:
+            child.__doc__ = router.__doc__
             self._prepare_router(child)
         return router

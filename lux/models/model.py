@@ -8,8 +8,8 @@ from pulsar.api import UnprocessableEntity, MethodNotAllowed
 
 from lux.utils.crypt import as_hex
 
-from .component import Component, app_cache
-from .schema import resource_name
+from .component import Component
+from .schema import resource_name, get_schema_class
 from ..utils.data import compact_dict
 
 
@@ -110,28 +110,22 @@ class Model(ABC, Component):
 
     # SCHEMA METHODS
 
-    def get_schema(self, schema, only=None):
-        if isclass(schema):
-            if only:
-                return schema(app=self.app, only=only)
-            schemas = app_schemas(self.app)
-            name = schema.__name__
-            if name not in schemas:
-                schemas[name] = schema(app=self.app)
-            return schemas[name]
-        elif only:
-            return type(schema)(app=self.app, only=only)
-        return schema
+    def get_schema(self, schema, **kw):
+        if not isclass(schema):
+            schema = type(schema)
+        with self.app.ctx():
+            schema = get_schema_class(schema.__name__)
+            return schema(**kw)
 
     def all_schemas(self):
         if self.model_schema:
-            yield self.get_schema(self.model_schema)
+            yield self.model_schema
         if self.create_schema:
-            yield self.get_schema(self.create_schema)
+            yield self.create_schema
         if self.update_schema:
-            yield self.get_schema(self.update_schema)
+            yield self.update_schema
         if self.query_schema:
-            yield self.get_schema(self.query_schema)
+            yield self.query_schema
 
     def field(self, name, schema=None):
         schema = self.get_schema(schema or self.model_schema)
@@ -168,14 +162,15 @@ class Model(ABC, Component):
             data = schema.dump(model).data
         return request.json_response(data, 201)
 
-    def get_list_response(self, request, *filters, **params):
+    def get_list_response(self, request, schema=None, query_schema=None,
+                          *filters, **params):
         """Get a HTTP response for a list of model data
         """
         params.update(request.url_data)
         with self.session(request) as session:
             query = self.query(session, *filters, **params)
             only = query.fields or None
-            schema = self.get_schema(self.model_schema, only=only)
+            schema = self.get_schema(schema or self.model_schema, only=only)
             data = schema.dump(query.all(), many=True).data
         return request.json_response(data)
 
@@ -328,8 +323,3 @@ class Model(ABC, Component):
                     compact_dict(field=field, code=message, resource=resource)
                 )
         return UnprocessableEntity(error_list)
-
-
-@app_cache
-def app_schemas(app):
-    return {}

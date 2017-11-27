@@ -4,10 +4,7 @@ from .rest import RestRouter
 from .route import route
 
 
-default_plugins = [
-    'lux.openapi.ext.lux',
-    'lux.openapi.ext.marshmallow'
-]
+default_plugins = ['lux.openapi.ext.lux']
 
 
 class APISchema(Schema):

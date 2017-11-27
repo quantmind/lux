@@ -12,10 +12,12 @@ this extension adds middleware for serving static files from
 In addition, a :setting:`HTML_FAVICON` location can also be specified.
 '''
 import os
+import re
 import hashlib
 from urllib.parse import urlparse
 
 from pulsar.apps import wsgi
+from pulsar.api import HttpRedirect
 from pulsar.utils.httpurl import remove_double_slash, is_absolute_uri
 
 from lux.core import LuxExtension, Parameter, RedirectRouter
@@ -38,11 +40,11 @@ class Extension(LuxExtension):
                   'Adds tag of type ``image/x-icon`` in the head section of'
                   ' the Html document')]
 
-    def middleware(self, app):
+    def routes(self, app):
         '''Add two middleware handlers if configured to do so.'''
         middleware = []
         if app.config['CLEAN_URL']:
-            middleware.append(wsgi.clean_path_middleware)
+            app.event('on_request', self.clean_path_middleware)
         path = app.config['MEDIA_URL']
 
         if is_absolute_uri(path):
@@ -61,16 +63,16 @@ class Extension(LuxExtension):
 
         return middleware
 
-    def response_middleware(self, app):
+    def on_response(self, app, data=None):
+        request, response = data
         gzip = app.config['GZIP_MIN_LENGTH']
-        middleware = []
         if gzip:
-            middleware.append(wsgi.GZipMiddleware(gzip))
+            wsgi.GZipMiddleware(gzip)(request.environ, response)
         if app.config['USE_ETAGS']:
-            middleware.append(self.etag)
-        return middleware
+            self.etag(request, response)
 
-    def on_html_document(self, app, request, doc):
+    def on_html_document(self, app, data=None):
+        request, doc = data
         favicon = app.config['HTML_FAVICON']
         if favicon:
             parsed = urlparse(favicon)
@@ -95,3 +97,15 @@ class Extension(LuxExtension):
             else:
                 response['ETag'] = etag
         return response
+
+    def clean_path_middleware(self, app, data=None):
+        request = data
+        path = request.path
+        if '//' in path:
+            url = re.sub("/+", '/', path)
+            if not url.startswith('/'):
+                url = '/%s' % url
+            qs = request.environ['QUERY_STRING']
+            if qs:
+                url = '%s?%s' % (url, qs)
+            raise HttpRedirect(url)

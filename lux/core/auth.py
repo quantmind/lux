@@ -138,9 +138,6 @@ class AuthBackend(Component, PermissionMixin, PasswordMixin, JwtMixin):
     def on_request(self, request):
         request.cache.user = self.anonymous()
 
-    def response(self, environ, response):
-        pass
-
     def authenticate(self, session, **kw):
         raise AuthenticationError
 

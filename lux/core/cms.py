@@ -160,7 +160,10 @@ class CMS(Component):
         for script in cfg['HTML_BODY_SCRIPTS']:
             doc.body.scripts.append(script, async=True)
 
-        app.fire('on_html_document', request, doc, safe=True)
+        try:
+            app.fire('on_html_document', data=(request, doc))
+        except Exception:
+            self.app.logger.exception('Unhandled exception on html document')
         #
         # Add links last
         links = head.links

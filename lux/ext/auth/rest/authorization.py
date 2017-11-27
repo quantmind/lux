@@ -53,7 +53,7 @@ class Authorization(RestRouter):
     description: provide operation for creating new authentication tokens
         and check their validity
     tags:
-        - auth
+        - authentication
     """
     model = Model('authorizations', TokenSchema)
 

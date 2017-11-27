@@ -2,8 +2,6 @@ from pulsar.api import Http404
 from pulsar.apps.wsgi import RouterParam, Router, Route, route
 from pulsar.utils.httpurl import JSON_CONTENT_TYPES, CacheControl
 
-from apispec.ext.marshmallow.swagger import schema2jsonschema
-
 from ..utils.data import unique_tuple
 from .auth import Resource
 from ..utils.data import compact_dict
@@ -112,7 +110,8 @@ class WebFormRouter(HtmlRouter):
     def jsonform(self, request):
         if not self.schema:
             raise Http404
-        schema = schema2jsonschema(self.schema)
+        schema = self.schema
+        # schema = schema2jsonschema(self.schema)
         form = schema.get('properties')
         for name in schema.get('required', ()):
             form[name]['required'] = True
@@ -127,3 +126,7 @@ class WebFormRouter(HtmlRouter):
                             method=method,
                             fields=form)
         return request.json_response(data)
+
+
+def raise404(request):
+    raise Http404

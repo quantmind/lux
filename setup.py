@@ -30,8 +30,6 @@ def requirements(name):
     return install_requires, dependency_links
 
 
-requires, links = requirements('requirements.txt')
-
 meta = dict(
     version=lux.__version__,
     description=lux.__doc__,
@@ -46,8 +44,7 @@ meta = dict(
     include_package_data=True,
     zip_safe=False,
     setup_requires=['pulsar', 'wheel'],
-    install_requires=requires,
-    dependency_links=links,
+    install_requires=requirements('requirements/hard.txt')[0],
     scripts=['bin/luxmake.py'],
     classifiers=[
         'Development Status :: 3 - Alpha',

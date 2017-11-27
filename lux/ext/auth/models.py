@@ -7,7 +7,7 @@ from enum import Enum
 from sqlalchemy.orm import relationship, backref
 import sqlalchemy as db
 
-from odm import declared_attr
+from odm.mapper import declared_attr
 from odm.types import IPAddressType, UUIDType, JSONType
 
 from lux.ext import odm

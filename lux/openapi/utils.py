@@ -10,14 +10,17 @@ def compact(**kwargs):
 # from django.contrib.admindocs.utils
 def trim_docstring(docstring):
     """Uniformly trims leading/trailing whitespace from docstrings.
-    Based on http://www.python.org/peps/pep-0257.html#handling-docstring-indentation
+    Based on
+    http://www.python.org/peps/pep-0257.html#handling-docstring-indentation
     """
     if not docstring or not docstring.strip():
         return ''
     # Convert tabs to spaces and split into lines
     lines = docstring.expandtabs().splitlines()
-    indent = min(len(line) - len(line.lstrip()) for line in lines if line.lstrip())
-    trimmed = [lines[0].lstrip()] + [line[indent:].rstrip() for line in lines[1:]]
+    indent = min(len(line) - len(line.lstrip())
+                 for line in lines if line.lstrip())
+    trimmed = [lines[0].lstrip()] + [
+        line[indent:].rstrip() for line in lines[1:]]
     return "\n".join(trimmed).strip()
 
 
@@ -36,7 +39,8 @@ def dedent(content):
     # unindent the content if needed
     if whitespace_counts:
         whitespace_pattern = '^' + (' ' * min(whitespace_counts))
-        content = re.sub(re.compile(whitespace_pattern, re.MULTILINE), '', content)
+        content = re.sub(
+            re.compile(whitespace_pattern, re.MULTILINE), '', content)
 
     return content.strip()
 

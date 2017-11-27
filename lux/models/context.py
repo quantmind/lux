@@ -1,21 +1,40 @@
-import threading
-
-_ = threading.local()
-_.stack = {}
+from asyncio import Task
 
 
 def set(key, value):
-    stack = _.stack.get(key)
-    if stack is None:
-        stack = []
-        _.stack[key] = stack
-    stack.append(value)
+    task = Task.current_task()
+    try:
+        context = task._context
+    except AttributeError:
+        task._context = context = {}
+    context[key] = value
 
 
 def get(key):
-    stack = _.stack.get(key)
-    return stack[-1] if stack else None
+    task = Task.current_task()
+    try:
+        context = task._context
+    except AttributeError:
+        return
+    return context.get(key)
 
 
 def pop(key):
-    return _.stack.get(key).pop()
+    return Task.current_task()._context.pop(key)
+
+
+def current_app():
+    return get('__app__')
+
+
+def current_request():
+    return get('__request__')
+
+
+def task_factory(loop, coro):
+    task = Task(coro, loop=loop)
+    try:
+        task._context = Task.current_task(loop=loop)._context.copy()
+    except AttributeError:
+        pass
+    return task

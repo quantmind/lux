@@ -29,7 +29,7 @@ class Command(LuxCommand):
             if not get_actor():
                 clear_logger()
             app._started = server()
-            app.on_start(server)
+            app.fire_event('on_start', data=server)
             arbiter().start()
 
         if not start:

@@ -101,7 +101,7 @@ def test_app(test, config_file=None, config_params=True, argv=None, **params):
         app.config['SECRET_KEY'] = generate_secret()
     app.stdout = StringIO()
     app.stderr = StringIO()
-    assert app.wsgi_handler()
+    assert app.request_handler()
     return app
 
 

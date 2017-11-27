@@ -27,6 +27,7 @@ from importlib import import_module
 from pulsar.utils.httpurl import is_succesful
 
 from lux.core import Parameter, LuxExtension
+from lux.models.context import current_request
 
 from .oauth import get_oauths, request_oauths
 from .ogp import OGP
@@ -53,12 +54,14 @@ class Extension(LuxExtension):
                          'Add canonical meta tag to website. '
                          'Can be a function or False')]
 
-    def middleware(self, app):
+    def routes(self, app):
         for auth in get_oauths(app).values():
             if auth.available():
                 return [OAuthRouter('oauth')]
 
-    def on_html_document(self, app, request, doc):
+    def on_html_document(self, app, data=None):
+        doc = data
+        request = current_request()
         if not is_succesful(request.response.status_code):
             return
         canonical = app.config['CANONICAL_URL']

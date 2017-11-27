@@ -41,7 +41,7 @@ class Extension(LuxExtension):
     def on_config(self, app):
         self.require(app, 'lux.ext.rest')
 
-    def middleware(self, app):
+    def routes(self, app):
         url = app.config['HTML_TEMPLATES_URL']
         if app.config['DEFAULT_CONTENT_TYPE'] == 'text/html' and url:
             yield TemplateRouter(url, serve_only=('html', 'txt'))

@@ -174,17 +174,12 @@ class LuxExtension(metaclass=ExtensionType):
     json_router = JsonRouter
     html_router = HtmlRouter
 
-    def middleware(self, app):
+    def routes(self, app):
         '''Called by application ``app`` when creating the middleware.
 
         This method is invoked the first time :attr:`.App.handler` attribute
         is accessed. It must return a list of WSGI middleware or ``None``.
         '''
-        pass
-
-    def response_middleware(self, app):
-        '''Called by application ``app`` when creating the response
-        middleware'''
         pass
 
     def require(self, app, *extensions):
@@ -244,70 +239,6 @@ class LuxExtension(metaclass=ExtensionType):
     def _setup_logger(self, config, opts):
         '''Called by :meth:`setup` method to setup the :attr:`logger`.'''
         self.logger = logging.getLogger(self.meta.name)
-
-
-class EventHandler:
-    __slots__ = ('extension', 'name')
-
-    def __init__(self, extension, name):
-        self.extension = extension
-        self.name = name
-
-    def __repr__(self):
-        return '%s.%s' % (self.extension, self.name)
-    __str__ = __repr__
-
-    def __call__(self, *args, **kwargs):
-        return getattr(self.extension, self.name)(*args, **kwargs)
-
-
-class EventMixin:
-    events = None
-
-    def bind_event(self, name, handler):
-        if self.events is None:
-            self.events = {}
-        events = self.events
-        if name not in events:
-            events[name] = []
-        handlers = events[name]
-        handlers.append(handler)
-
-    def bind_events(self, extension, all_events=None, exclude=None):
-        '''Bind ``all_events`` to an ``extension``.
-
-        :param extension: an class:`.Extension`
-        :param all_events: optional list of event names. If not supplied,
-            the default lux events are used.
-        :param exclude: optional list of event to exclude
-        '''
-        all_events = all_events or ALL_EVENTS
-        exclude = set(exclude or ())
-        for name in all_events:
-            if name in exclude:
-                continue
-            if hasattr(extension, name):
-                self.bind_event(name, EventHandler(extension, name))
-
-    def add_events(self, event_names):
-        """Add additional event names to the event dictionary
-        """
-        for ext in self.extensions.values():
-            self.bind_events(ext, event_names)
-
-    def fire(self, event, *args, safe=False, **kwargs):
-        '''Fire an ``event``.'''
-        handlers = self.events.get(event) if self.events else None
-        if handlers:
-            for handler in handlers:
-                try:
-                    handler(self, *args, **kwargs)
-                except Exception as exc:
-                    if safe:
-                        self.logger.exception('Exception during "%s" event: '
-                                              '%s', event, exc)
-                    else:
-                        raise
 
 
 def app_attribute(func, name=None):

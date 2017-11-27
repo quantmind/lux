@@ -1,29 +1,60 @@
 import re
 
+from lux import openapi
+from lux.models import resource_name, get_schema_class
+
+from marshmallow import Schema
+
 from ..utils import load_yaml_from_docstring
 from ..core import ApiPath, ApiOperation, METHODS
+from .marshmallow import fields2jsonschema, fields2parameters
 
 
 RE_URL = re.compile(r'<(?:[^:<>]+:)?([^<>]+)>')
 
 
-def setup(openapi):
-    helper = LuxOpenApi(openapi)
-    openapi.add_path = helper.add_path
+def setup(spec):
+    spec.schema_helpers.append(OpenApiSchema.create)
+    spec.parameter_helpers.append(OpenApiSchema.create)
+    spec.add_path = AddRouterPath(spec)
 
 
-class LuxOpenApi:
+class AddRouterPath:
 
-    def __init__(self, openapi):
-        self.openapi = openapi
-        self._add_path = openapi.add_path
+    def __init__(self, spec):
+        self.spec = spec
 
-    def add_path(self, router, doc=None, **kwargs):
+    def __call__(self, router, doc=None, **kwargs):
         doc = doc or {}
         doc.update(load_yaml_from_docstring(router.__doc__) or ())
         path = RouterPath(router, doc)
-        path.add_to_spec(self.openapi)
+        path.add_to_spec(self.spec)
         return path
+
+
+class OpenApiSchema(openapi.OpenApiSchema):
+
+    @classmethod
+    def create(cls, schema):
+        if isinstance(schema, Schema):
+            schema = schema.__class__
+        if type(schema) == type(Schema):
+            schema = get_schema_class(schema.__name__)()
+            return cls(resource_name(schema), schema)
+
+    def __init__(self, name, schema):
+        super().__init__(name)
+        self._schema = schema
+
+    def schema(self, spec):
+        return fields2jsonschema(
+            self._schema.fields, self._schema, spec=spec, name=self.name
+        )
+
+    def parameters(self, spec, **kw):
+        return fields2parameters(
+            self._schema.fields, self._schema, spec=spec, name=self.name, **kw
+        )
 
 
 class RouterPath(ApiPath):
@@ -74,6 +105,8 @@ class RouterPath(ApiPath):
                             'Same as get but does not return body'
                         )
                     op.doc = doc
+                else:
+                    continue
 
             self.operations[method] = op.add_to_path(self, spec)
 
@@ -83,4 +116,3 @@ def rule2openapi(path):
     :param str path: Flask path template.
     """
     return RE_URL.sub(r'{\1}', path)
-

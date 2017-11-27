@@ -40,6 +40,13 @@ class OperationInfo:
         elif responses:
             self.responses.update(((r, None) for r in responses))
 
+    @property
+    def schema(self):
+        schema = self.responses[self.default_response]
+        if isinstance(schema, list):
+            schema = schema[0]
+        return schema
+
 
 class OpenApiSchema:
 
@@ -64,7 +71,7 @@ class OpenAPIbase:
         self.parameters = {}
         self.servers = []
         self._name_loc = {}
-        self.tags = set(self.doc.pop('tags', None) or ())
+        self.tags = dict(tag_generator(self.doc.pop('tags', None)))
 
     def add(self, key, value):
         if value:
@@ -122,7 +129,7 @@ class OpenAPI(OpenAPIbase):
         self.schemas = {}
         self.parameters = {}
         self.responses = {}
-        self.tags = set()
+        self.tags = OrderedDict()
         self.plugins = {}
         self.default_content_type = default_content_type or 'application/json'
         self.default_responses = default_responses or {}
@@ -145,7 +152,7 @@ class OpenAPI(OpenAPIbase):
         r = self.responses
         ret = self.doc.copy()
         ret.update(compact(
-            tags=sorted(self.tags),
+            tags=[self.tags[name] for name in sorted(self.tags)],
             components=compact(
                 schemas=OrderedDict(((k, s[k]) for k in sorted(s))),
                 parameters=OrderedDict(((k, p[k]) for k in sorted(p))),
@@ -312,3 +319,10 @@ class ApiOperation(OpenAPIbase):
             )
         else:
             content[content_type] = dict(schema=schema)
+
+
+def tag_generator(tags):
+    for tag in (tags or ()):
+        if isinstance(tag, str):
+            tag = dict(name=tag)
+        yield tag['name'], tag

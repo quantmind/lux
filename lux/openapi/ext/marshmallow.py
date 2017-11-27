@@ -10,55 +10,13 @@ import warnings
 import functools
 import logging
 
-from marshmallow import Schema, fields, missing, class_registry
+from marshmallow import fields, missing
 from marshmallow.orderedset import OrderedSet
 
 from lux import openapi
 
 
 LOGGER = logging.getLogger('openapi.ext.marshmallow')
-
-
-def setup(spec):
-    spec.schema_helpers.append(OpenApiSchema.create)
-    spec.parameter_helpers.append(OpenApiSchema.create)
-
-
-def resource_name(schema):
-    if schema:
-        name = schema.__name__
-        if name and name.endswith('Schema'):
-            name = name[:-6]
-        return name
-
-
-class OpenApiSchema(openapi.OpenApiSchema):
-
-    @classmethod
-    def create(cls, schema):
-        if isinstance(schema, Schema):
-            schema = schema.__class__
-        if type(schema) == type(Schema):
-            name = schema.__name__
-            # pick the latest registered class
-            schema = class_registry.get_class(name, True)
-            if isinstance(schema, list):
-                schema = schema[-1]
-            return cls(resource_name(schema), schema())
-
-    def __init__(self, name, schema):
-        super().__init__(name)
-        self._schema = schema
-
-    def schema(self, spec):
-        return fields2jsonschema(
-            self._schema.fields, self._schema, spec=spec, name=self.name
-        )
-
-    def parameters(self, spec, **kw):
-        return fields2parameters(
-            self._schema.fields, self._schema, spec=spec, name=self.name, **kw
-        )
 
 
 # marshmallow field => (JSON Schema type, format)
@@ -92,7 +50,7 @@ def map_to_openapi_type(*args):
     ``*args`` can be:
 
     - a pair of the form ``(type, format)``
-    - a core marshmallow field type (in which case we reuse that type's mapping)
+    - a core marshmallow field type (reuse that type's mapping)
 
     Examples: ::
 
@@ -152,7 +110,7 @@ def resolve_schema_dict(spec, schema):
 
 
 def field2choices(field):
-    """Return the set of valid choices for a :class:`Field <marshmallow.fields.Field>`,
+    """Return the set of valid choices for a Field
     or ``None`` if no choices are specified.
 
     :param Field field: A marshmallow field.
@@ -191,7 +149,7 @@ def field2range(field):
 
     attributes = {}
     for validator in validators:
-        if not validator.min is None:
+        if validator.min is not None:
             if hasattr(attributes, 'minimum'):
                 attributes['minimum'] = max(
                     attributes['minimum'],
@@ -199,7 +157,7 @@ def field2range(field):
                 )
             else:
                 attributes['minimum'] = validator.min
-        if not validator.max is None:
+        if validator.max is not None:
             if hasattr(attributes, 'maximum'):
                 attributes['maximum'] = min(
                     attributes['maximum'],
@@ -233,7 +191,7 @@ def field2length(field):
     max_attr = 'maxItems' if is_array else 'maxLength'
 
     for validator in validators:
-        if not validator.min is None:
+        if validator.min is not None:
             if hasattr(attributes, min_attr):
                 attributes[min_attr] = max(
                     attributes[min_attr],
@@ -241,7 +199,7 @@ def field2length(field):
                 )
             else:
                 attributes[min_attr] = validator.min
-        if not validator.max is None:
+        if validator.max is not None:
             if hasattr(attributes, max_attr):
                 attributes[max_attr] = min(
                     attributes[max_attr],
@@ -251,7 +209,7 @@ def field2length(field):
                 attributes[max_attr] = validator.max
 
     for validator in validators:
-        if not validator.equal is None:
+        if validator.equal is not None:
             attributes[min_attr] = validator.equal
             attributes[max_attr] = validator.equal
     return attributes
@@ -261,15 +219,14 @@ def field2property(field, spec=None, use_refs=True, name=None):
     """Return the JSON Schema property definition given a marshmallow
     :class:`Field <marshmallow.fields.Field>`.
 
-    Will include field metadata that are valid properties of OpenAPI schema objects
-    (e.g. "description", "enum", "example").
-
-    https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md#schemaObject
+    Will include field metadata that are valid properties of OpenAPI
+    schema objects (e.g. "description", "enum", "example").
 
     :param Field field: A marshmallow field.
     :param APISpec spec: Optional `APISpec` containing refs.
     :param bool use_refs: Use JSONSchema ``refs``.
-    :param str name: The definition name, if applicable, used to construct the $ref value.
+    :param str name: The definition name, if applicable,
+        used to construct the $ref value.
     :rtype: dict, a Property Object
     """
     type_, fmt = _get_json_type_for_field(field)

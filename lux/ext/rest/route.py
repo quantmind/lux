@@ -5,13 +5,12 @@ from pulsar.apps import wsgi
 
 from lux.models import Schema
 from lux.openapi import OperationInfo
-from lux.openapi.ext.marshmallow import resource_name
 from lux.utils.data import compact_dict
 
 
 class route(wsgi.route):
     """Extend pulsar wsgi route decorator for openapi information
-    
+
     It adds the openapi namedtuple to the route parameters dictionary
     """
     def __init__(self, rule=None, body_schema=None, path_schema=None,
@@ -46,11 +45,10 @@ class route(wsgi.route):
             # the callable must accept the schema as second parameter
             @wraps(method)
             def _(router, request):
-                schemas = router.api_spec.schemas
                 return method(router, request, **compact_dict(
-                    body_schema=schemas.get(resource_name(api.body)),
-                    query_schema=schemas.get(resource_name(api.query)),
-                    schema=schemas.get(resource_name(api.body))
+                    body_schema=api.body,
+                    query_schema=api.query,
+                    schema=api.schema
                 ))
 
             return super().__call__(_)

@@ -11,8 +11,7 @@ _ ..pulsar-odm: https://github.com/quantmind/pulsar-odm
 """
 from sqlalchemy.ext.serializer import dumps
 
-from odm import declared_attr
-from odm.mapper import object_session
+from odm.mapper import object_session, declared_attr
 
 from lux.core import Parameter, LuxExtension
 
