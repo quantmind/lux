@@ -15,12 +15,11 @@ from pulsar.utils.httpurl import remove_double_slash
 from pulsar.utils.string import random_string
 from pulsar.utils.websocket import frame_parser
 from pulsar.apps.wsgi import WsgiResponse, wsgi_request
-from pulsar.apps.http import HttpWsgiClient
 from pulsar.utils.system import json as _json
 from pulsar.apps.test import test_timeout, sequential, test_wsgi_request
 from pulsar.apps.greenio import wait
 
-from lux.core import App
+from lux.core import App, app_client
 from lux.models import Component
 from lux.core.commands.generate_secret_key import generate_secret
 
@@ -30,8 +29,7 @@ from .token import app_token
 logger = logging.getLogger('pulsar.test')
 
 
-__all__ = ['TestClient',
-           'TestCase',
+__all__ = ['TestCase',
            'AppTestCase',
            'WebApiTestCase',
            'load_fixtures',
@@ -146,7 +144,7 @@ async def load_fixtures(app, path=None, api_url=None, testuser=None,
     if api_url.endswith('/'):
         api_url = api_url[:-1]
 
-    client = TestClient(app)
+    client = app_client(app, False)
     test = TestCase()
     test_tokens = {}
 
@@ -188,47 +186,6 @@ async def load_fixtures(app, path=None, api_url=None, testuser=None,
                 total += 1
 
     logger.info('Created %s objects', total)
-
-
-class TestClient(HttpWsgiClient, Component):
-    """An utility for simulating lux clients
-    """
-    def __init__(self, app):
-        super().__init__(app)
-        self.init_app(app)
-
-    def run_command(self, command, argv=None, **kwargs):
-        """Run a lux command"""
-        argv = argv or []
-        cmd = self.app.get_command(command)
-        return cmd(argv, **kwargs)
-
-    async def _request(self, method, url=None, headers=None,
-                       content_type=None, token=None, oauth=None,
-                       jwt=None, cookie=None, **kw):
-        url = url or '/'
-        if not urlparse(url).scheme:
-            url = 'http://www.example.com/%s' % (
-                url[1:] if url.startswith('/') else url
-            )
-        heads = []
-        if headers:
-            heads.extend(headers)
-        if content_type:
-            heads.append(('content-type', content_type))
-        if token:
-            heads.append(('Authorization', 'Bearer %s' % token))
-        elif oauth:
-            heads.append(('Authorization', 'OAuth %s' % oauth))
-        elif jwt:
-            heads.append(('Authorization', 'JWT %s' % jwt))
-        if cookie:
-            heads.append(('Cookie', cookie))
-        response = await super()._request(method, url, headers=heads, **kw)
-        response.wsgi_request = wsgi_request(
-            response.server_side.request.environ
-        )
-        return response
 
 
 class TestMixin:
@@ -445,7 +402,7 @@ class AppTestCase(unittest.TestCase, TestMixin):
 
     @classmethod
     def get_client(cls):
-        return TestClient(cls.app)
+        return app_client(cls.app, False)
 
     @classmethod
     def create_test_application(cls):
@@ -573,7 +530,7 @@ class WebApiTestCase(AppTestCase):
         for api in cls.web.apis:
             if api.netloc:
                 cls.web.api.local_apps[api.netloc] = cls.app
-        cls.webclient = TestClient(cls.web)
+        cls.webclient = app_client(cls.web, False)
 
     def check_html_token(self, doc, token):
         value = doc.find('meta', attrs={'name': 'user-token'})

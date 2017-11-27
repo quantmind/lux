@@ -632,7 +632,7 @@ def _build_handler(self):
                 all_routes.append(route)
 
     if not root:
-        root = Router(get=raise404)
+        root = Router('/', get=raise404)
 
     for route in all_routes:
         root.add_route(route)

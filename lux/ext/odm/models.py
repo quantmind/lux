@@ -50,7 +50,7 @@ class Query(models.Query):
         try:
             return query.one()
         except MissingObjectError:
-            raise Http404
+            raise Http404 from None
         except MultipleResultsFound:
             self.logger.error('%s - Multiple result found for "%s". '
                               'Returning the first' %

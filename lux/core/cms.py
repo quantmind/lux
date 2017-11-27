@@ -161,7 +161,7 @@ class CMS(Component):
             doc.body.scripts.append(script, async=True)
 
         try:
-            app.fire('on_html_document', data=(request, doc))
+            app.fire_event('on_html_document', data=(request, doc))
         except Exception:
             self.app.logger.exception('Unhandled exception on html document')
         #

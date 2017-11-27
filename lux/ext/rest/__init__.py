@@ -7,7 +7,6 @@ from pulsar.api import Http404
 
 from lux.core import Parameter, LuxExtension
 
-from .client import ApiClient
 from .apis import Apis, Api
 from .rest import RestRoot, RestRouter
 from .pagination import Pagination, GithubPagination
@@ -21,8 +20,6 @@ __all__ = [
     #
     'Pagination',
     'GithubPagination',
-    #
-    'ApiClient',
     #
     'Pagination',
     'GithubPagination',
@@ -111,13 +108,7 @@ class Extension(LuxExtension):
     ]
 
     def on_config(self, app):
-        app.providers['Api'] = ApiClient
         app.apis = Apis.create(app)
 
     def routes(self, app):
-        # API urls not available - no middleware to add
-        if not app.apis:
-            return
-        # Create the api client and return api routes
-        app.api = app.providers['Api'](app)
-        return app.apis.routes()
+        return app.apis.routes() if app.apis else None

@@ -39,6 +39,10 @@ __all__ = [
 
 class Extension(LuxExtension):
     _config = [
+        # override AUTHENTICATION_BACKEND
+        Parameter('AUTHENTICATION_BACKEND', 'lux.ext.auth:AuthBackend',
+                  'Dotted path to a classe which provides '
+                  'a backend for authentication.'),
         Parameter('GENERAL_MAILING_LIST_TOPIC', 'general',
                   "topic for general mailing list"),
         Parameter('ACCOUNT_ACTIVATION_DAYS', 2,

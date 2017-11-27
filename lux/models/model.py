@@ -144,13 +144,13 @@ class Model(ABC, Component):
             data = schema.dump(instance).data
         return request.json_response(data)
 
-    def create_response(self, request, schema=None):
+    def create_response(self, request, schema=None, body_schema=None):
         """Create a new instance and return a response
         """
         data, files = request.data_and_files()
         with self.session(request) as session:
-            model = self.create_one(session, data, schema)
-            schema = self.get_schema(self.model_schema)
+            model = self.create_one(session, data, body_schema)
+            schema = self.get_schema(schema or self.model_schema)
             data = schema.dump(model).data
         return request.json_response(data, 201)
 

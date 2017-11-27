@@ -63,6 +63,10 @@ class CMS(CMSbase):
     api_context_path = 'context'
     set_priority = True
 
+    @property
+    def api(self):
+        return self.app.api
+
     def middleware(self):
         processed = set()
         yield CMSmap('/sitemap.xml', cms=self)
@@ -87,7 +91,7 @@ class CMS(CMSbase):
             if not page.name:
                 raise Http404
             path = page.urlargs.get('path') or 'index'
-            data = request.api.get(
+            data = self.api.get(
                 '/%s/%s/%s' % (self.api_contents_path, page.name, path),
                 auth_error=Http404
             ).json()
@@ -109,7 +113,7 @@ class CMS(CMSbase):
     def context_data(self, request):
         try:
             params = {'load_only': ['slug', 'body']}
-            return request.api.get(
+            return self.api.get(
                 '/%s/%s' % (self.api_contents_path, self.api_context_path),
                 params=params,
                 auth_error=Http404
@@ -156,7 +160,7 @@ class CMS(CMSbase):
         params = None
         if self.set_priority:
             params = {'priority:gt': 0}
-        data = request.api.get('contents/%s' % group, params=params).json()
+        data = self.api.get('contents/%s' % group, params=params).json()
         return data['result']
 
 

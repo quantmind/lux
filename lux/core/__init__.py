@@ -16,6 +16,7 @@ from .exceptions import raise_http_error, ShellError, http_assert
 from .auth import AuthBackend, Resource, AuthenticationError
 from .channels import LuxChannels
 from .user import UserMixin, User, ServiceUser
+from .client import app_client
 
 
 __all__ = [
@@ -32,6 +33,7 @@ __all__ = [
     'Application',
     'App',
     'AppComponent',
+    'app_client',
     'execute_from_config',
     'extend_config',
     'register_template_engine',
