@@ -81,7 +81,7 @@ class Authorization(RestRouter):
            default_response=201,
            default_response_schema=TokenSchema,
            responses=(400, 401, 403, 422))
-    def post(self, request):
+    def post(self, request, **kw):
         """
         ---
         summary: Create a new user token
@@ -89,7 +89,7 @@ class Authorization(RestRouter):
             signed by the application sending the request
         """
         ensure_service_user(request)
-        return self.model.create_response(request)
+        return self.model.create_response(request, **kw)
 
     @route(default_response=204,
            responses=(401, 403))

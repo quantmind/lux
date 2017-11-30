@@ -16,7 +16,7 @@ from pulsar.utils.log import lazyproperty
 
 from odm.mapper import object_session
 
-from lux.core import app_attribute
+from lux.utils.context import app_attribute
 from lux.utils.crypt import as_hex
 from lux import models
 from lux.models import fields

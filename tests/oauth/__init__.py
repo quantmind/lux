@@ -1,6 +1,7 @@
 from unittest import mock
 
 from lux.utils import test
+from lux.core.client import AppClient, app_client
 from lux.ext.oauth import request_oauths
 
 from example.webalone.config import *  # noqa
@@ -58,7 +59,7 @@ mock_return_values = {
 }
 
 
-class TestClient(test.TestClient):
+class TestClient(AppClient):
 
     def request_start_response(self, method, path, **kwargs):
         kwargs['https'] = True

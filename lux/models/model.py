@@ -110,12 +110,12 @@ class Model(ABC, Component):
 
     # SCHEMA METHODS
 
-    def get_schema(self, schema, **kw):
+    def get_schema(self, schema=None, **kw):
+        schema = schema or self.model_schema
         if not isclass(schema):
             schema = type(schema)
-        with self.app.ctx():
-            schema = get_schema_class(schema.__name__)
-            return schema(**kw)
+        schema = get_schema_class(schema.__name__)
+        return schema(**kw)
 
     def all_schemas(self):
         if self.model_schema:

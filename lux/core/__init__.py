@@ -1,7 +1,7 @@
 from pulsar.apps.wsgi import route
 
 from .commands import ConsoleParser, CommandError, LuxCommand, Setting, option
-from .extension import LuxExtension, Parameter, app_attribute
+from .extension import LuxExtension, Parameter
 from .console import App, execute_from_config
 from .app import Application, extend_config, is_html
 from .routers import (
@@ -27,7 +27,6 @@ __all__ = [
     'Setting',
     'LuxExtension',
     'Parameter',
-    'app_attribute',
     'is_html',
     #
     'Application',

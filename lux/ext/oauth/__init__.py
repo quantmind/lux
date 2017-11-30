@@ -27,7 +27,7 @@ from importlib import import_module
 from pulsar.utils.httpurl import is_succesful
 
 from lux.core import Parameter, LuxExtension
-from lux.models.context import current_request
+from lux.utils.context import current_request
 
 from .oauth import get_oauths, request_oauths
 from .ogp import OGP

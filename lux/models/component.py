@@ -1,4 +1,3 @@
-from functools import wraps
 
 
 class Component:
@@ -22,16 +21,3 @@ class Component:
     def config(self):
         if self.app:
             return self.app.config
-
-
-def app_cache(func, name=None):
-    name = '_cache_%s' % (name or func.__name__)
-
-    @wraps(func)
-    def _(app):
-        app = app.app
-        if not hasattr(app.threads, name):
-            setattr(app.threads, name, func(app))
-        return getattr(app.threads, name)
-
-    return _

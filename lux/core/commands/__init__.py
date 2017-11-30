@@ -1,7 +1,7 @@
 import os
 import argparse
 import logging
-from inspect import isawaitable, cleandoc, getdoc, getfile
+from inspect import cleandoc, getdoc, getfile
 from collections import OrderedDict
 from importlib import import_module
 
@@ -9,9 +9,9 @@ from pulsar.utils.log import lazyproperty
 from pulsar.api import Setting, Application, ImproperlyConfigured
 from pulsar.utils.config import Config, LogLevel, Debug, LogHandlers
 from pulsar.utils.slugify import slugify
+from pulsar.apps.greenio import run_in_greenlet
 
 from lux import __version__
-from lux.utils.async import maybe_green
 from lux.utils.files import skipfile
 
 
@@ -140,18 +140,17 @@ class LuxCommand(ConsoleParser, metaclass=CmdType):
 
         if not self.app.callable.command:
             self.app.callable.command = self.name
-        app = self.pulsar_app(argv)
-        app.cfg.daemon = False
-        app()
-        self.execute(self.run, app.cfg, **params)
-
-    def execute(self, method, *args, **params):
-        # Make sure the wsgi handler is created
-        assert self.app.wsgi_handler()
-        result = maybe_green(self.app, method, *args, **params)
-        if isawaitable(result) and not self.app._loop.is_running():
+        pulsar_app = self.pulsar_app(argv)
+        pulsar_app.cfg.daemon = False
+        pulsar_app()
+        result = run_in_greenlet(self.execute)(pulsar_app.cfg, **params)
+        if not self.app._loop.is_running():
             result = self.app._loop.run_until_complete(result)
         return result
+
+    def execute(self, cfg, **params):
+        assert self.app.request_handler()
+        return self.run(cfg, **params)
 
     def get_version(self):
         """Return the :class:`.LuxCommand` version.

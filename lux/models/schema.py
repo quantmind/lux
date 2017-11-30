@@ -5,7 +5,7 @@ import marshmallow as ma
 from marshmallow import class_registry, post_load, post_dump
 from marshmallow.exceptions import RegistryError
 
-from .context import current_app
+from lux.utils.context import current_app
 
 
 class ModelSchemaError(Exception):
@@ -65,10 +65,9 @@ class Schema(ma.Schema):
     session = None
     TYPE_MAPPING = ma.Schema.TYPE_MAPPING.copy()
 
-    def __init__(self, *args, app=None, **kwargs):
+    def __init__(self, *args, **kwargs):
         if self.opts.model:
             self._declared_fields = get_model_fields(self)
-        self.app = app
         super().__init__(*args, **kwargs)
 
     def load(self, data, *, session=None, **kwargs):

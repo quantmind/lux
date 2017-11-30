@@ -4,10 +4,11 @@ from pulsar.apps.http.wsgi import HttpWsgiClient
 from pulsar.apps.wsgi import wsgi_request
 from pulsar.apps.greenio import GreenHttp
 
-from lux.core import raise_http_error, app_attribute
 from lux.utils.token import encode_json
 from lux.utils.url import initial_slash
-from lux.models.context import current_request
+from lux.utils.context import app_attribute, current_request
+
+from .exceptions import raise_http_error
 
 
 def app_token(request):

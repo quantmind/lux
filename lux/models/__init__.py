@@ -9,7 +9,7 @@ from marshmallow.validate import OneOf
 import inflect
 
 from .schema import Schema, resource_name, get_schema_class
-from .component import Component, app_cache
+from .component import Component
 from .model import ModelContainer, Model
 from .query import Query, Session
 from .unique import UniqueField
@@ -23,7 +23,6 @@ __all__ = [
     'ValidationError',
     'resource_name',
     'get_schema_class',
-    'app_cache',
     #
     'OneOf',
     #

@@ -3,7 +3,6 @@
 import os
 import asyncio
 import logging
-import threading
 from contextlib import contextmanager
 from asyncio import create_subprocess_shell, subprocess, new_event_loop
 
@@ -23,8 +22,8 @@ from pulsar.utils.slugify import slugify
 from lux import __version__
 
 from .commands import ConfigError, ConsoleMixin
-from .extension import LuxExtension, Parameter, ALL_EVENTS, app_attribute
-from .wrappers import LuxContext, ERROR_MESSAGES
+from .extension import LuxExtension, Parameter, ALL_EVENTS
+from .wrappers import ERROR_MESSAGES
 from .templates import render_data, template_engine, Template
 from .cms import CMS
 from .cache import create_cache
@@ -33,7 +32,8 @@ from .channels import LuxChannels
 from .green import Handler
 from .routers import Router, raise404
 
-from ..models import ModelContainer, context
+from ..models import ModelContainer
+from ..utils import context
 
 
 LUX_CORE = os.path.dirname(__file__)
@@ -203,7 +203,7 @@ class Application(ConsoleMixin, LuxExtension, EventHandler):
         self.cfg = callable.cfg
         self.meta.argv = callable.argv
         self.meta.script = callable.script
-        self.threads = threading.local()
+        self.cache = {}
         self.providers = {
             'Http': Http,
             'Channels': LuxChannels.create
@@ -259,6 +259,7 @@ class Application(ConsoleMixin, LuxExtension, EventHandler):
     def request_handler(self):
         if not self._handler:
             self._loop.set_task_factory(context.task_factory)
+            context.set('__app__', self)
             self._handler = _build_handler(self)
             self.event('on_loaded').fire()
         return self._handler
@@ -277,20 +278,13 @@ class Application(ConsoleMixin, LuxExtension, EventHandler):
         environ['default.content_type'] = config['DEFAULT_CONTENT_TYPE']
         cache = request.cache
         cache.app = self
-        context.set('__request__', request)
+        # set request and app in the asyncio task context
+        context.set_request(request)
         self.auth.on_request(request)
         self.fire_event('on_request', data=request)
 
     def session(self, request=None):
         return self.models.session(request)
-
-    @contextmanager
-    def ctx(self):
-        context.set('__app__', self)
-        try:
-            yield context
-        finally:
-            context.pop('__app__')
 
     def require(self, *extensions):
         return super().require(self, *extensions)
@@ -355,34 +349,6 @@ class Application(ConsoleMixin, LuxExtension, EventHandler):
                     return Template(file.read())
         return Template()
 
-    def context(self, request, context=None):
-        """Load the ``context`` dictionary for a ``request``.
-
-        This function is called every time a template is rendered via the
-        :meth:`render_template` method is used and a the wsgi ``request``
-        is passed as key-valued parameter.
-
-        The initial ``context`` is updated with contribution from
-        all :setting:`EXTENSIONS` which expose the ``context`` method.
-        """
-        if (isinstance(context, LuxContext) or
-                request.cache.get('in_application_context')):
-            return context
-        else:
-            request.cache.set('in_application_context', True)
-            try:
-                ctx = LuxContext()
-                ctx.update(self.config)
-                ctx.update(self.cms.context(request, ctx))
-                ctx.update(context or ())
-                for ext in self.extensions.values():
-                    if hasattr(ext, 'context'):
-                        ext.context(request, ctx)
-                return ctx
-            finally:
-                request.cache.set('in_application_context', False)
-            return context
-
     def render_template(self, name, context=None,
                         request=None, engine=None, **kw):
         """Render a template file ``name`` with ``context``
@@ -437,7 +403,7 @@ class Application(ConsoleMixin, LuxExtension, EventHandler):
                 else:
                     yield mod
 
-    @app_attribute
+    @context.app_attribute
     def http(self):
         """Get an http client for a given key
 
@@ -630,6 +596,8 @@ def _build_handler(self):
                 root = route
             else:
                 all_routes.append(route)
+
+    all_routes.extend(self.cms.middleware())
 
     if not root:
         root = Router('/', get=raise404)

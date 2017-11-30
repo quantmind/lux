@@ -6,6 +6,4 @@ class Command(LuxCommand):
     help = "Create a Universal Unique Identifier"
 
     def run(self, options, **params):
-        result = create_uuid().hex
-        self.write(result)
-        return result
+        return create_uuid().hex

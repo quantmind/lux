@@ -6,7 +6,7 @@ from sqlalchemy import MetaData
 from alembic.config import Config
 from alembic import command as alembic_cmd
 
-from lux.core import app_attribute
+from lux.utils.context import app_attribute
 
 
 @app_attribute

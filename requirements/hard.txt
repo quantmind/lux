@@ -4,3 +4,4 @@ greenlet
 jinja2
 pyjwt
 marshmallow
+pulsar

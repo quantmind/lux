@@ -38,7 +38,7 @@ class PermissionCRUD(RestRouter):
             200:
                 description: List of permissions matching filters
         """
-        return self.model.list_response(request, **kw)
+        return self.model.get_list_response(request, **kw)
 
     @route(default_response=201,
            body_schema=PermissionSchema,

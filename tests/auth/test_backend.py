@@ -13,7 +13,6 @@ class TestBackend(test.AppTestCase, AuthUtils):
 
     def test_backend(self):
         self.assertTrue(self.app.auth)
-        self.assertTrue(self.app.auth.backends)
 
     @test.green
     def test_get_user_none(self):

@@ -1,7 +1,6 @@
 import os
 import sys
 import logging
-from functools import wraps
 from copy import copy
 from inspect import getfile, getmodule
 
@@ -239,16 +238,3 @@ class LuxExtension(metaclass=ExtensionType):
     def _setup_logger(self, config, opts):
         '''Called by :meth:`setup` method to setup the :attr:`logger`.'''
         self.logger = logging.getLogger(self.meta.name)
-
-
-def app_attribute(func, name=None):
-    name = '_cache_%s' % (name or func.__name__)
-
-    @wraps(func)
-    def _(app):
-        app = app.app
-        if not hasattr(app.threads, name):
-            setattr(app.threads, name, func(app))
-        return getattr(app.threads, name)
-
-    return _

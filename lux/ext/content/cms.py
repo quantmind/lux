@@ -4,9 +4,10 @@ from pulsar.utils.structures import AttributeDictionary
 from pulsar.apps.wsgi import Route
 from pulsar.api import Http404
 
+from lux.utils.context import app_attribute
 from lux.ext.sitemap import Sitemap, SitemapIndex
 from lux.core import (
-    cached, Template, Page, HtmlRouter, app_attribute, CMS as CMSbase
+    cached, Template, Page, HtmlRouter, CMS as CMSbase
 )
 
 from .contents import get_reader

@@ -11,6 +11,7 @@ from pulsar.utils.importer import module_attribute
 
 from lux import models
 from lux.openapi import OpenAPI
+from lux.utils import context
 
 from .openapi import api_schema, Specification
 from .rest import RestRoot, RestRouter, Rest404
@@ -167,15 +168,6 @@ class Api(models.Component):
         return self.path
     __str__ = __repr__
 
-    @contextmanager
-    def ctx(self):
-        with self.app.ctx() as ctx:
-            ctx.set('api', self)
-            try:
-                yield ctx
-            finally:
-                ctx.pop('api')
-
     @property
     def path(self):
         return self.route.path
@@ -204,14 +196,13 @@ class Api(models.Component):
         subsequently returns it
         """
         if isinstance(self._router, list):
-            with self.ctx():
-                # base router
-                root = RestRoot(self.url.path)
-                for router in self._router:
-                    root.add_child(self._prepare_router(router))
-                self._router = root
-                # build the spec so that all lazy operations are done here
-                json.dumps(self.spec_dict())
+            # base router
+            root = RestRoot(self.url.path)
+            for router in self._router:
+                root.add_child(self._prepare_router(router))
+            self._router = root
+            # build the spec so that all lazy operations are done here
+            json.dumps(self.spec_dict())
         return self._router
 
     def spec_dict(self):

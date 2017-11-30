@@ -15,8 +15,4 @@ class Command(LuxCommand):
     )
 
     def run(self, options, **params):
-        key = generate_secret(options.length, hexadecimal=options.hex)
-        self.write('Secret key:')
-        self.write(key)
-        self.write('-----------------------------------------------------')
-        return key
+        return generate_secret(options.length, hexadecimal=options.hex)
