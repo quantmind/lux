@@ -3,10 +3,9 @@ import uuid
 from abc import ABC, abstractmethod
 from copy import copy
 from inspect import isclass
+from contextlib import contextmanager
 
-from pulsar.api import UnprocessableEntity, MethodNotAllowed
-
-from lux.utils.crypt import as_hex
+from pulsar.api import UnprocessableEntity, MethodNotAllowed, context
 
 from .component import Component
 from .schema import resource_name, get_schema_class
@@ -53,8 +52,11 @@ class ModelContainer(dict, Component):
             name = name.uri
         return super().get(name, default)
 
-    def session(self, request=None):
-        return self[self.default_key].session(request)
+    def begin_session(self, **kw):
+        return self[self.default_key].begin_session(**kw)
+
+    def session(self, **kw):
+        return self[self.default_key].session(**kw)
 
 
 class Model(ABC, Component):
@@ -88,11 +90,6 @@ class Model(ABC, Component):
     __str__ = __repr__
 
     # ABSTRACT METHODS
-
-    @abstractmethod
-    def __call__(self, data, session):
-        pass
-
     @abstractmethod
     def session(self, request=None):
         """Return a session for aggregating a query.
@@ -107,6 +104,38 @@ class Model(ABC, Component):
     def get_query(self, session):
         """Create a new :class:`.Query` from a session
         """
+
+    @abstractmethod
+    def create_instance(self, session, data):
+        pass
+
+    @abstractmethod
+    def update_instance(self, session, instance, data):
+        pass
+
+    # SESSION CONTEXT MANAGER
+
+    @contextmanager
+    def begin_session(self, session=None, commit=False, **kw):
+        if session is None:
+            session = self.session(**kw)
+            close = True
+            commit = True
+            context.stack_push('session', session)
+        else:
+            close = False
+
+        try:
+            yield session
+            if commit:
+                session.commit()
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            if close:
+                session.close()
+                context.stack_pop('session')
 
     # SCHEMA METHODS
 
@@ -137,7 +166,7 @@ class Model(ABC, Component):
     # Model CRUD Responses
 
     def get_one_response(self, request, instance=None, schema=None):
-        with self.session(request) as session:
+        with self.begin_session() as session:
             if instance is None:
                 instance = self.get_one(session, **request.urlargs)
             schema = self.get_schema(schema or self.model_schema)
@@ -148,26 +177,27 @@ class Model(ABC, Component):
         """Create a new instance and return a response
         """
         data, files = request.data_and_files()
-        with self.session(request) as session:
+        with self.begin_session() as session:
             model = self.create_one(session, data, body_schema)
             schema = self.get_schema(schema or self.model_schema)
             data = schema.dump(model).data
         return request.json_response(data, 201)
 
-    def update_one_response(self, request, schema=None):
+    def update_one_response(self, request, schema=None, body_schema=None):
         data, files = request.data_and_files()
-        with self.session(request) as session:
-            model = self.update_one(session, data, schema)
-            schema = self.get_schema(self.model_schema)
-            data = schema.dump(model).data
-        return request.json_response(data, 201)
+        with self.begin_session() as session:
+            instance = self.get_one(session, **request.urlargs)
+            instance = self.update_one(session, instance, data, body_schema)
+            schema = self.get_schema(schema or self.model_schema)
+            data = schema.dump(instance).data
+        return request.json_response(data, 200)
 
     def get_list_response(self, request, schema=None, query_schema=None,
                           *filters, **params):
         """Get a HTTP response for a list of model data
         """
         params.update(request.url_data)
-        with self.session(request) as session:
+        with self.begin_session() as session:
             query = self.query(session, *filters, **params)
             only = query.fields or None
             schema = self.get_schema(schema or self.model_schema, only=only)
@@ -175,10 +205,10 @@ class Model(ABC, Component):
         return request.json_response(data)
 
     def delete_one_response(self, request, instance=None):
-        with self.session(request) as session:
+        with self.begin_session() as session:
             if instance is None:
                 instance = self.get_one(session, **request.urlargs)
-            session.delete(instance)
+            self.delete_instance(session, instance)
         request.response.status_code = 204
         return request.response
 
@@ -196,23 +226,29 @@ class Model(ABC, Component):
         return query.one()
 
     def create_one(self, session, data, schema=None):
+        """Create a new model
+        """
         schema = self.get_schema(schema or self.create_schema)
         if not schema:
             raise MethodNotAllowed
-        model, errors = schema.load(data, session=session)
+        data, errors = schema.load(data)
         if errors:
             raise self.unprocessable_entity(errors, schema)
+        instance = self.create_instance(session, data)
         session.flush()
-        return model
+        return instance
 
-    def update_one(self, session, data, schema=None):
+    def update_one(self, session, instance, data, schema=None):
         schema = self.get_schema(schema or self.update_schema)
         if not schema:
             raise MethodNotAllowed
-        model, errors = schema.load(data, session=session, partial=True)
+        data, errors = schema.load(data, partial=True)
         if errors:
             raise self.unprocessable_entity(errors, schema)
-        return model
+        return self.update_instance(session, instance, data)
+
+    def delete_instance(self, session, instance):
+        session.delete(instance)
 
     def create_uuid(self, id=None):
         if isinstance(id, uuid.UUID):
@@ -243,83 +279,18 @@ class Model(ABC, Component):
             query = query.load_only(*load_only)
         return query.filter(*filters, **params)
 
-    # CRUD API
-    def create_model(self, request, instance=None, data=None, session=None):
-        """Create a model ``instance``"""
-        if instance is None:
-            instance = self.instance()
-        return self.update_model(request, instance, data,
-                                 session=session, flush=True)
-
-    def update_model(self, request, instance, data, session=None, flush=False):
-        """Update a model ``instance``"""
-        if data is None:
-            data = {}
-        instance = self.instance(instance)
-        with self.session(request, session=session) as session:
-            session.add(instance.obj)
-            for name, value in data.items():
-                if instance.has(name):
-                    instance.set(name, value)
-            if flush:
-                session.flush()
-        return instance
-
-    def delete_model(self, request, instance, session=None):
-        """Delete a model ``instance``"""
-        instance = self.instance(instance)
-        with self.session(request, session=session) as session:
-            session.delete(instance.obj)
-
-    def set_instance_value(self, instance, name, value):
-        setattr(instance.obj, name, value)
-
-    def get_instance_value(self, instance, name):
-        return as_hex(getattr(instance.obj, name, None))
-
-    def value_from_data(self, name, data, instance=None):
-        if name in data:
-            return data[name]
-        elif instance is not None:
-            return self.get_instance_value(self.instance(instance), name)
-
-    def same_instance(self, instance1, instance2):
-        if instance1 is not None and instance2 is not None:
-            obj1 = self.instance(instance1).obj
-            obj2 = self.instance(instance2).obj
-            return self._same_instance(obj1, obj2)
-        return False
-
-    # INTERNALS
-    def _same_instance(self, obj1, obj2):
-        return obj1 == obj2
-
-    def load_only_fields(self, load_only=None):
-        """Generator of field names"""
-        for field in self.fields():
-            if load_only is None or field in load_only:
-                yield field
-
-    def context(self, request, instance, context):
-        """Add context to an instance context
-
-        :param request: WSGI request
-        :param instance: an instance of this model
-        :param context: context dictionary
-        :return:
-        """
-
-    def validate_fields(self, request, instance, data):
-        """Validate fields values
-        """
-        pass
-
     def unprocessable_entity(self, errors, schema=None):
         error_list = []
         resource = resource_name(schema)
         for field, messages in errors.items():
+            if isinstance(messages, str):
+                messages = (messages,)
             for message in messages:
                 error_list.append(
                     compact_dict(field=field, code=message, resource=resource)
                 )
         return UnprocessableEntity(error_list)
+
+    def field_errors(self, fields, message=None):
+        message = message or 'not available'
+        return dict(((name, message) for name in fields))

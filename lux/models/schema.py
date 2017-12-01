@@ -1,53 +1,12 @@
-from collections import MutableMapping
-from inspect import currentframe
-
 import marshmallow as ma
-from marshmallow import class_registry, post_load, post_dump
+from marshmallow import class_registry, post_dump
 from marshmallow.exceptions import RegistryError
 
-from lux.utils.context import current_app
+from lux.utils.context import current_app, app_attribute
 
 
 class ModelSchemaError(Exception):
     pass
-
-
-class SessionData(MutableMapping):
-    __slots__ = ('data', 'session')
-
-    def __init__(self, data, session):
-        self.data = data
-        self.session = session
-
-    def __repr__(self):
-        return repr(self.data)
-
-    def __getitem__(self, key):
-        return self.data[key]
-
-    def __delitem__(self, key):
-        del self.data[key]
-
-    def __setitem__(self, key, value):
-        self.data[key] = value
-
-    def __len__(self):
-        return len(self.data)
-
-    def __iter__(self):
-        return self.data.__iter__()
-
-    @property
-    def request(self):
-        return self.session.request
-
-    @property
-    def config(self):
-        return self.session.request.config
-
-    @classmethod
-    def object_session(cls, obj):
-        return obj.session
 
 
 class SchemaOpts(ma.SchemaOpts):
@@ -61,43 +20,20 @@ class SchemaOpts(ma.SchemaOpts):
 
 class Schema(ma.Schema):
     OPTIONS_CLASS = SchemaOpts
-    model = SessionData
-    session = None
     TYPE_MAPPING = ma.Schema.TYPE_MAPPING.copy()
+    model = None
 
     def __init__(self, *args, **kwargs):
         if self.opts.model:
             self._declared_fields = get_model_fields(self)
         super().__init__(*args, **kwargs)
 
-    def load(self, data, *, session=None, **kwargs):
-        return super().load(data, **kwargs)
-
-    @property
-    def session(self):
-        frame = currentframe().f_back
-        while frame:
-            if 'session' in frame.f_locals:
-                return frame.f_locals['session']
-            frame = frame.f_back
-
-    @post_load
-    def _pl(self, data):
-        data = self.model(data, self.session)
-        return self.post_load(data) or data
-
-    def post_load(self, data):
-        pass
-
     @post_dump
     def _pd(self, data):
         for key, value in tuple(data.items()):
             if value is None:
                 data.pop(key)
-        return self.post_dump(data) or data
-
-    def post_dump(self, data):
-        pass
+        return data
 
     def rule(self):
         return '/'.join(('<%s>' % field for field in self.fields))
@@ -125,20 +61,35 @@ class schema_registry:
 
 def get_model_fields(schema):
     app = current_app()
-    if not app:
-        raise ModelSchemaError('missing application')
     schema_cls = type(schema)
+    schema_fields = model_schema_fields(app)
+    schema_name = schema_cls.__name__
+    fields = schema_fields.get(schema_name)
     opts = schema_cls.opts
     model = app.models.get(opts.model)
-    if not model:
-        raise ModelSchemaError('application has no model "%s". Available: %s'
-                               % (opts.model, ', '.join(app.models)))
+    if fields is None:
+        opts = schema_cls.opts
+        model = app.models.get(opts.model)
+        if not model:
+            raise ModelSchemaError(
+                'application has no model "%s". Available: %s'
+                % (opts.model, ', '.join(app.models))
+            )
+        base_fields = schema_cls._declared_fields.copy()
+        fields = model.fields_map(
+            include_fk=opts.include_fk,
+            fields=opts.fields,
+            exclude=opts.exclude,
+            base_fields=base_fields
+        )
+        schema_fields[schema_name] = fields
     schema.model = model
-    base_fields = schema_cls._declared_fields.copy()
-    return model.fields_map(
-        include_fk=opts.include_fk, fields=opts.fields, exclude=opts.exclude,
-        base_fields=base_fields
-    )
+    return fields
+
+
+@app_attribute
+def model_schema_fields(app):
+    return {}
 
 
 def resource_name(schema):

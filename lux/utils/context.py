@@ -1,5 +1,5 @@
 from functools import wraps
-from asyncio import Task
+from pulsar.api import context
 
 
 def app_attribute(func, name=None):
@@ -19,45 +19,18 @@ def app_attribute(func, name=None):
     return _
 
 
-def set(key, value):
-    task = Task.current_task()
-    try:
-        context = task._context
-    except AttributeError:
-        task._context = context = {}
-    context[key] = value
-
-
-def get(key):
-    task = Task.current_task()
-    try:
-        context = task._context
-    except AttributeError:
-        return
-    return context.get(key)
-
-
-def pop(key):
-    return Task.current_task()._context.pop(key)
-
-
 def current_app():
-    return get('__app__')
+    return context.get('__app__')
+
+
+def set_app(app):
+    context.set('__app__', app)
 
 
 def current_request():
-    return get('__request__')
+    return context.get('__request__')
 
 
 def set_request(request):
-    set('__request__', request)
-    set('__app__', request.app)
-
-
-def task_factory(loop, coro):
-    task = Task(coro, loop=loop)
-    try:
-        task._context = Task.current_task(loop=loop)._context.copy()
-    except AttributeError:
-        pass
-    return task
+    context.set('__request__', request)
+    context.set('__app__', request.app)

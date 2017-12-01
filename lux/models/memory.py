@@ -18,8 +18,13 @@ OPERATORS = {
 
 class Model(model.Model):
 
-    def session(self, request):
-        return Session(self, request)
+    def update_instance(self, session, instance, data):
+        instance.update(data)
+        session.add(instance)
+        return instance
+
+    def session(self, **kw):
+        return Session(self, **kw)
 
     def get_query(self, session):
         return Query(self, session)

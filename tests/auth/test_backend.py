@@ -17,7 +17,7 @@ class TestBackend(test.AppTestCase, AuthUtils):
     @test.green
     def test_get_user_none(self):
         auth = self.app.auth
-        with self.app.session() as session:
+        with self.app.models.begin_session() as session:
             self.assertEqual(
                 auth.get_user(session, id=18098098),
                 None
@@ -36,7 +36,7 @@ class TestBackend(test.AppTestCase, AuthUtils):
 
     @test.green
     def test_create_superuser(self):
-        with self.app.session() as session:
+        with self.app.models.begin_session() as session:
             user = self.app.auth.create_superuser(
                 session,
                 username='foo',
@@ -44,10 +44,10 @@ class TestBackend(test.AppTestCase, AuthUtils):
                 password='pluto',
                 first_name='Foo'
             )
-        self.assertTrue(user.id)
-        self.assertEqual(user.first_name, 'Foo')
-        self.assertTrue(user.is_superuser())
-        self.assertTrue(user.is_active())
+            self.assertTrue(user.id)
+            self.assertEqual(user.first_name, 'Foo')
+            self.assertTrue(user.superuser)
+            self.assertTrue(user.active)
 
     @test.green
     def test_permissions(self):

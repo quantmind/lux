@@ -11,7 +11,7 @@ from lux import __version__
 from .routers import JsonRouter, HtmlRouter
 
 
-__all__ = ['LuxExtension', 'Parameter', 'app_attribute']
+__all__ = ['LuxExtension', 'Parameter']
 
 
 # All events are fired with app as first positional argument

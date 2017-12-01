@@ -6,7 +6,6 @@ import logging
 import pickle
 from asyncio import get_event_loop
 from collections import OrderedDict
-from urllib.parse import urlparse
 from unittest import mock
 from io import StringIO
 
@@ -14,14 +13,14 @@ from pulsar.api import as_coroutine
 from pulsar.utils.httpurl import remove_double_slash
 from pulsar.utils.string import random_string
 from pulsar.utils.websocket import frame_parser
-from pulsar.apps.wsgi import WsgiResponse, wsgi_request
+from pulsar.apps.wsgi import WsgiResponse
 from pulsar.utils.system import json as _json
 from pulsar.apps.test import test_timeout, sequential, test_wsgi_request
-from pulsar.apps.greenio import wait
+from pulsar.apps.greenio import wait, run_in_greenlet
 
-from lux.core import App, app_client
-from lux.models import Component
+from lux.core import App, AppClient
 from lux.core.commands.generate_secret_key import generate_secret
+from lux.utils import context
 
 from .token import app_token
 
@@ -63,18 +62,10 @@ def green(test_fun):
     This decorator should not be used for functions returning an
     awaitable.
     """
-    def _(*args, **kwargs):
-        assert len(args) >= 1, ("green decorator should be applied to test "
-                                "functions only")
-        try:
-            pool = args[0].app.green_pool
-        except AttributeError:
-            pool = None
-        if pool:
-            return pool.submit(test_fun, *args, **kwargs)
-        else:
-            loop = get_event_loop()
-            return loop.run_in_executor(None, test_fun, *args, **kwargs)
+    @run_in_greenlet
+    def _(test):
+        context.set_app(getattr(test, 'app', None))
+        return test_fun(test)
 
     return _
 
@@ -144,7 +135,7 @@ async def load_fixtures(app, path=None, api_url=None, testuser=None,
     if api_url.endswith('/'):
         api_url = api_url[:-1]
 
-    client = app_client(app, False)
+    client = AppClient.create(app, False)
     test = TestCase()
     test_tokens = {}
 
@@ -366,7 +357,11 @@ class TestCase(unittest.TestCase, TestMixin):
         """Fetch a command."""
         if not app:
             app = self.application(**params)
-        return self.get_command(app, command)
+        return self.app_client(app).get_command(command)
+
+    @classmethod
+    def app_client(cls, app):
+        return AppClient.create(app, False)
 
 
 class AppTestCase(unittest.TestCase, TestMixin):
@@ -402,7 +397,7 @@ class AppTestCase(unittest.TestCase, TestMixin):
 
     @classmethod
     def get_client(cls):
-        return app_client(cls.app, False)
+        return AppClient.create(cls.app, False)
 
     @classmethod
     def create_test_application(cls):
@@ -530,7 +525,7 @@ class WebApiTestCase(AppTestCase):
         for api in cls.web.apis:
             if api.netloc:
                 cls.web.api.local_apps[api.netloc] = cls.app
-        cls.webclient = app_client(cls.web, False)
+        cls.webclient = AppClient.create(cls.web, False)
 
     def check_html_token(self, doc, token):
         value = doc.find('meta', attrs={'name': 'user-token'})

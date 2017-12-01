@@ -87,10 +87,10 @@ class AuthBackend(AuthBackendBase):
         data.setdefault('active', True)
         return users.create_one(session, data, FullUserSchema)
 
-    def create_superuser(self, request, **params):
+    def create_superuser(self, session, **params):
         params['superuser'] = True
         params['active'] = True
-        return self.create_user(request, **params)
+        return self.create_user(session, **params)
 
     def create_token(self, request, user, **kwargs):
         """Create the token

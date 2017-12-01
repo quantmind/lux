@@ -1,7 +1,9 @@
 include MANIFEST.in
 include README.rst
+include Makefile
 graft requirements
 graft tests
 graft lux
+graft bin
 graft example
 global-exclude *.pyc

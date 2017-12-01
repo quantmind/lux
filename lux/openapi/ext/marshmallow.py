@@ -263,16 +263,19 @@ def field2property(field, spec=None, use_refs=True, name=None):
         # marshmallow>=2.7.0 compat
         field.metadata.pop('many', None)
 
-        is_unbound_self_referencing = not getattr(field, 'parent', None) and field.nested == 'self'
-        if (use_refs and 'ref' in field.metadata) or is_unbound_self_referencing:
+        is_unbound_self_ref = (
+            not getattr(field, 'parent', None) and field.nested == 'self'
+        )
+        if (use_refs and 'ref' in field.metadata) or is_unbound_self_ref:
             if 'ref' in field.metadata:
                 ref_name = field.metadata['ref']
             else:
                 if not name:
-                    raise ValueError('Must pass `name` argument for self-referencing Nested fields.')
-                # We need to use the `name` argument when the field is self-referencing and
-                # unbound (doesn't have `parent` set) because we can't access field.schema
-                ref_name =  '#/definitions/{name}'.format(name=name)
+                    raise ValueError(
+                        'Must pass `name` argument for self-referencing '
+                        'Nested fields.'
+                    )
+                ref_name = '#/definitions/{name}'.format(name=name)
             ref_schema = {'$ref': ref_name}
             if field.many:
                 ret['type'] = 'array'
@@ -289,9 +292,12 @@ def field2property(field, spec=None, use_refs=True, name=None):
             else:
                 ret.update(schema_dict)
         else:
-            ret.update(schema2jsonschema(field.schema))
+            raise NotImplemented
+            # ret.update(schema2jsonschema(field.schema))
     elif isinstance(field, fields.List):
-        ret['items'] = field2property(field.container, spec=spec, use_refs=use_refs)
+        ret['items'] = field2property(
+            field.container, spec=spec, use_refs=use_refs
+        )
 
     # Dasherize metadata that starts with x_
     metadata = {
@@ -299,7 +305,8 @@ def field2property(field, spec=None, use_refs=True, name=None):
         for key, value in field.metadata.items()
     }
     for key, value in metadata.items():
-        if key in openapi.VALID_PROPERTIES or key.startswith(openapi.VALID_PREFIX):
+        if (key in openapi.VALID_PROPERTIES or
+                key.startswith(openapi.VALID_PREFIX)):
             ret[key] = value
     # Avoid validation error with "Additional properties not allowed"
     # Property "ref" is not valid in this context
@@ -344,7 +351,7 @@ def fields2parameters(fields, schema=None, spec=None, use_refs=True,
 def fields2jsonschema(fields, schema=None, spec=None,
                       use_refs=True, name=None):
     """Return the JSON Schema Object for a given marshmallow
-    
+
     :param fields: a list of marshmallow Fields object
     :param schema: A marshmallow Schema instance or a class object
     :rtype: dict, a JSON Schema Object
@@ -353,10 +360,11 @@ def fields2jsonschema(fields, schema=None, spec=None,
     if getattr(Meta, 'fields', None) or getattr(Meta, 'additional', None):
         declared_fields = set(schema._declared_fields.keys())
         if (set(getattr(Meta, 'fields', set())) > declared_fields
-            or
-            set(getattr(Meta, 'additional', set())) > declared_fields):
+                or
+                set(getattr(Meta, 'additional', set())) > declared_fields):
             warnings.warn(
-                "Only explicitly-declared fields will be included in the Schema Object. "
+                "Only explicitly-declared fields will be included in "
+                "the Schema Object. "
                 "Fields defined in Meta.fields or Meta.additional are ignored."
             )
 

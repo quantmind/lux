@@ -3,14 +3,13 @@
 import os
 import asyncio
 import logging
-from contextlib import contextmanager
 from asyncio import create_subprocess_shell, subprocess, new_event_loop
 
 from inspect import isclass
 from collections import OrderedDict
 from importlib import import_module
 
-from pulsar.api import ImproperlyConfigured, Config, EventHandler
+from pulsar.api import ImproperlyConfigured, Config, EventHandler, context
 from pulsar.utils.log import lazyproperty
 from pulsar.utils.importer import module_attribute
 from pulsar.apps.greenio import GreenHttp
@@ -33,7 +32,7 @@ from .green import Handler
 from .routers import Router, raise404
 
 from ..models import ModelContainer
-from ..utils import context
+from ..utils.context import app_attribute, set_app, set_request
 
 
 LUX_CORE = os.path.dirname(__file__)
@@ -72,7 +71,6 @@ class Application(ConsoleMixin, LuxExtension, EventHandler):
     channels = None
     debug = False
     logger = None
-    admin = None
     _handler = None
     cms = None
     """CMS handler"""
@@ -258,8 +256,8 @@ class Application(ConsoleMixin, LuxExtension, EventHandler):
 
     def request_handler(self):
         if not self._handler:
-            self._loop.set_task_factory(context.task_factory)
-            context.set('__app__', self)
+            context.setup()
+            set_app(self)
             self._handler = _build_handler(self)
             self.event('on_loaded').fire()
         return self._handler
@@ -279,12 +277,9 @@ class Application(ConsoleMixin, LuxExtension, EventHandler):
         cache = request.cache
         cache.app = self
         # set request and app in the asyncio task context
-        context.set_request(request)
+        set_request(request)
         self.auth.on_request(request)
         self.fire_event('on_request', data=request)
-
-    def session(self, request=None):
-        return self.models.session(request)
 
     def require(self, *extensions):
         return super().require(self, *extensions)
@@ -403,7 +398,7 @@ class Application(ConsoleMixin, LuxExtension, EventHandler):
                 else:
                     yield mod
 
-    @context.app_attribute
+    @app_attribute
     def http(self):
         """Get an http client for a given key
 

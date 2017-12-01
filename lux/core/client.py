@@ -1,4 +1,3 @@
-from pulsar.api import Http401, PermissionDenied
 from pulsar.utils.websocket import SUPPORTED_VERSIONS, websocket_key
 from pulsar.apps.http.wsgi import HttpWsgiClient
 from pulsar.apps.wsgi import wsgi_request
@@ -7,8 +6,6 @@ from pulsar.apps.greenio import GreenHttp
 from lux.utils.token import encode_json
 from lux.utils.url import initial_slash
 from lux.utils.context import app_attribute, current_request
-
-from .exceptions import raise_http_error
 
 
 def app_token(request):
@@ -25,17 +22,17 @@ def app_token(request):
     )
 
 
-def app_client(app, green=True):
-    # make sure request handler is setup
-    app.request_handler()
-    http = AppClient(app)
-    http.headers['user-agent'] = app.config['APP_NAME']
-    return GreenHttp(http) if app.green_pool and green else http
-
-
 class AppClient(HttpWsgiClient):
-    """A client for interacting with a REST APIs
+    """A client for interacting with a lux application
     """
+    @classmethod
+    def create(cls, app, green=True):
+        # make sure request handler is setup
+        app.request_handler()
+        http = cls(app)
+        http.headers['user-agent'] = app.config['APP_NAME']
+        return GreenHttp(http) if app.green_pool and green else http
+
     async def request(self, method, url, token=None, jwt=False, oauth=None,
                       headers=None, auth_error=None, **kw):
         wsgi_request = current_request()
@@ -63,13 +60,7 @@ class AppClient(HttpWsgiClient):
         response = await super().request(
             method, url, headers=headers, **kw
         )
-        try:
-            raise_http_error(response, method, url)
-        except (Http401, PermissionDenied) as exc:
-            self.app.logger.error(str(exc))
-            if auth_error:
-                raise auth_error from None
-            raise
+        self.on_response(response)
         return response
 
     def wsget(self, path=None, headers=None, **kw):
@@ -84,14 +75,23 @@ class AppClient(HttpWsgiClient):
         ))
         return self.request('GET', path=path, headers=headers, **kw)
 
+    def get_command(self, command):
+        """Get an application command
+        """
+        return self.wsgi_callable.get_command(command)
+
     def run_command(self, command, argv=None, **kwargs):
-        """Run a lux command"""
+        """Run an application command
+        """
         argv = argv or []
-        cmd = self.wsgi_callable.get_command(command)
+        cmd = self.get_command(command)
         return cmd(argv, **kwargs)
 
     def wsgi_request(self, response):
         return wsgi_request(response.server_side.request.environ)
+
+    def on_response(self, response):
+        pass
 
 
 @app_attribute

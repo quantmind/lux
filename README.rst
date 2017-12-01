@@ -7,7 +7,7 @@
 
 
 :Badges: |license|  |pyversions| |status| |pypiversion|
-:CI: |master-build| |coverage-master|
+:CI: |circleci| |coverage|
 :Documentation: https://github.com/quantmind/lux/tree/master/docs/readme.md
 :Downloads: https://pypi.python.org/pypi/lux
 :Source: https://github.com/quantmind/lux
@@ -24,10 +24,10 @@
   :target: https://pypi.python.org/pypi/v
 .. |downloads| image:: https://img.shields.io/pypi/dd/lux.svg
   :target: https://pypi.python.org/pypi/lux
-.. |master-build| image:: https://img.shields.io/travis/quantmind/lux/master.svg
-  :target: http://travis-ci.org/quantmind/lux
-.. |coverage-master| image:: https://img.shields.io/coveralls/quantmind/lux/master.svg
-  :target: https://coveralls.io/r/quantmind/lux?branch=master
+.. |circleci| image:: https://circleci.com/gh/quantmind/lux.svg?style=svg
+    :target: https://circleci.com/gh/quantmind/lux
+.. |coverage| image:: https://codecov.io/gh/quantmind/lux/branch/master/graph/badge.svg
+  :target: https://codecov.io/gh/quantmind/lux
 .. |appveyor| image:: https://ci.appveyor.com/api/projects/status/u0x9r57svde3595d/branch/master?svg=true
     :target: https://ci.appveyor.com/project/lsbardel/lux
 

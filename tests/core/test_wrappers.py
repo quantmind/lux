@@ -6,12 +6,12 @@ class TestWrappers(test.TestCase):
 
     async def test_is_secure(self):
         app = self.application()
-        client = test.TestClient(app)
+        client = self.app_client(app)
         request = await client.get('/')
         self.assertFalse(request.is_secure)
 
     async def test_logger(self):
         app = self.application()
-        client = test.TestClient(app)
+        client = self.app_client(app)
         request = await client.get('/')
         self.assertNotEqual(app.logger, request.logger)

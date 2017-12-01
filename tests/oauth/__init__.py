@@ -1,7 +1,7 @@
 from unittest import mock
 
 from lux.utils import test
-from lux.core.client import AppClient, app_client
+from lux.core.client import AppClient
 from lux.ext.oauth import request_oauths
 
 from example.webalone.config import *  # noqa

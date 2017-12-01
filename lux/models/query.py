@@ -34,6 +34,17 @@ class Session(ABC, Component):
     def flush(self):
         pass
 
+    @abstractmethod
+    def commit(self):
+        pass
+
+    @abstractmethod
+    def close(self):
+        pass
+
+    def rollback(self):
+        pass
+
 
 class Query(ABC):
     """Interface for a Query

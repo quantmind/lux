@@ -1,6 +1,5 @@
 import logging
 import json
-from contextlib import contextmanager
 from collections import OrderedDict
 from urllib.parse import urlparse
 
@@ -11,7 +10,6 @@ from pulsar.utils.importer import module_attribute
 
 from lux import models
 from lux.openapi import OpenAPI
-from lux.utils import context
 
 from .openapi import api_schema, Specification
 from .rest import RestRoot, RestRouter, Rest404

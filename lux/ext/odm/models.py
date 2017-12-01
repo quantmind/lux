@@ -5,7 +5,7 @@ import sqlalchemy as sa
 from sqlalchemy import desc, String
 from sqlalchemy.orm import class_mapper, load_only
 from sqlalchemy.sql.expression import func, cast
-from sqlalchemy.exc import DataError, StatementError
+from sqlalchemy.exc import DataError, StatementError, IntegrityError
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from sqlalchemy.dialects import postgresql
 
@@ -192,6 +192,7 @@ class Model(models.Model):
     '''
     property2field = property2field
     object_session = object_session
+    IntegrityError = IntegrityError
     primary_keys = None
 
     @property
@@ -216,29 +217,33 @@ class Model(models.Model):
     def primary_keys(self):
         return get_primary_keys(self.db_model)
 
-    def __call__(self, data, session):
+    def create_instance(self, session, data):
         """Create a new model instance from data and add to session
 
         Check that model does not exist already
         """
         db_model = self.db_model
         filters = {pk.key: data.get(pk.key) for pk in self.primary_keys}
-        instance = None
         if None not in filters.values():
             try:
-                instance = self.get_one(session, **filters)
+                self.get_one(session, **filters)
             except Http404:
                 pass
-        if instance is not None:
-            for key, value in data.items():
-                setattr(instance, key, value)
-        else:
-            instance = db_model(**data)
+            else:
+                raise self.unprocessable_entity(self.field_errors(filters))
+        instance = db_model(**data)
         session.add(instance)
         return instance
 
-    def session(self, request=None):
-        return self.app.odm().begin(request=request)
+    def update_instance(self, session, instance, data):
+        for key, value in data.items():
+            setattr(instance, key, value)
+        session.add(instance)
+        return instance
+
+    def session(self, **kw):
+        kw.setdefault('expire_on_commit', False)
+        return self.app.odm().session(**kw)
 
     def get_query(self, session):
         return Query(self, session)

@@ -24,7 +24,7 @@ class AuthUtils:
 
     @test.green
     def _new_credentials(self, username=None, superuser=False, active=True):
-        with self.app.session() as session:
+        with self.app.models.begin_session() as session:
             username = username or test.randomname()
             password = username
             email = '%s@test.com' % username
@@ -33,8 +33,8 @@ class AuthUtils:
                 session, username=username, email=email,
                 password=password, first_name=username,
                 active=active, superuser=superuser)
-        self.assertTrue(user.id)
-        self.assertEqual(user.first_name, username)
-        self.assertEqual(user.is_superuser(), superuser)
-        self.assertEqual(user.is_active(), active)
+            self.assertTrue(user.id)
+            self.assertEqual(user.first_name, username)
+            self.assertEqual(user.is_superuser(), superuser)
+            self.assertEqual(user.is_active(), active)
         return {'username': username, 'password': password}

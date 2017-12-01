@@ -25,7 +25,7 @@ class ChannelsTests(test.TestCase):
 
     async def test_server_channel(self):
         app = self.application()
-        client = test.TestClient(app)
+        client = self.app_client(app)
         request = await client.get('/')
         self.assertEqual(request.response.status_code, 404)
         self.assertTrue(app.channels)
@@ -33,7 +33,7 @@ class ChannelsTests(test.TestCase):
 
     async def test_reload(self):
         app = self.application()
-        client = test.TestClient(app)
+        client = self.app_client(app)
         await client.get('/')
         # reload the app
         clear_local = app.callable.clear_local
