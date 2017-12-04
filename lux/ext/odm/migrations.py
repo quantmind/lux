@@ -9,6 +9,15 @@ from alembic import command as alembic_cmd
 from lux.utils.context import app_attribute
 
 
+TEMPLATE_PATH = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)), 'commands', 'template'
+)
+
+
+def lux_template_directory():
+    return TEMPLATE_PATH
+
+
 @app_attribute
 def migrations(app):
     """Alembic handler"""
@@ -75,10 +84,11 @@ class Alembic:
         """
         app = self.app
         cfg = Config()
-        cfg.get_template_directory = self._lux_template_directory
+        cfg.get_template_directory = lux_template_directory
+        migrations = os.path.join(app.meta.path, 'migrations')
 
-        cfg.set_main_option('script_location',
-                            os.path.join(app.meta.path, 'migrations'))
+        cfg.set_main_option('script_location', migrations)
+        cfg.config_file_name = os.path.join(migrations, 'alembic.ini')
         odm = app.odm()
         databases = []
         # set section for each found database
@@ -115,7 +125,3 @@ class Alembic:
                         cfg.set_section_option(section, key, value)
 
         return cfg
-
-    def _lux_template_directory(self):
-        return os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                            'template')

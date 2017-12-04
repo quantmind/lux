@@ -30,7 +30,8 @@ class Command(LuxCommand):
     )
 
     def run(self, options, interactive=False):
-        api = self.app.api()
+        auth = self.app.auth
+        users = self.app.models['users']
         username = options.username
         password = options.password
         email = options.email
@@ -43,15 +44,17 @@ class Command(LuxCommand):
                 except KeyboardInterrupt:
                     self.write_err('\nOperation cancelled.')
                     return
-            else:
-                password2 = password
+                if password != password2:
+                    self.write_err('passwords did not match')
+                    continue
             try:
-                api.post('/registrations', json=dict(
-                    username=username,
-                    email=email,
-                    password=password,
-                    password_repeat=password2
-                ))
+                with users.begin_session() as session:
+                    auth.create_superuser(
+                        session,
+                        username=username,
+                        email=email,
+                        password=password
+                    )
             except UnprocessableEntity as exc:
                 message = json.loads(exc.args[0])['errors']
                 if not interactive:

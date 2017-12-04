@@ -3,7 +3,7 @@
 * Marshmallow Schemas
 * SqlAlchemy models
 """
-from marshmallow import ValidationError
+from marshmallow import ValidationError, post_dump, post_load
 from marshmallow.validate import OneOf
 
 import inflect
@@ -24,6 +24,8 @@ __all__ = [
     'resource_name',
     'get_schema_class',
     #
+    'post_dump',
+    'post_load',
     'OneOf',
     #
     'inflect',

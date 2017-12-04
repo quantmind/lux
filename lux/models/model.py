@@ -235,7 +235,11 @@ class Model(ABC, Component):
         if errors:
             raise self.unprocessable_entity(errors, schema)
         instance = self.create_instance(session, data)
-        session.flush()
+        try:
+            session.flush()
+        except Exception:
+            self.logger.exception('Could not create new entry')
+            raise self.unprocessable_entity() from None
         return instance
 
     def update_one(self, session, instance, data, schema=None):
@@ -279,16 +283,19 @@ class Model(ABC, Component):
             query = query.load_only(*load_only)
         return query.filter(*filters, **params)
 
-    def unprocessable_entity(self, errors, schema=None):
+    def unprocessable_entity(self, errors=None, schema=None):
         error_list = []
         resource = resource_name(schema)
-        for field, messages in errors.items():
-            if isinstance(messages, str):
-                messages = (messages,)
-            for message in messages:
-                error_list.append(
-                    compact_dict(field=field, code=message, resource=resource)
-                )
+        if errors:
+            for field, messages in errors.items():
+                if isinstance(messages, str):
+                    messages = (messages,)
+                for message in messages:
+                    error_list.append(
+                        compact_dict(
+                            field=field, code=message, resource=resource
+                        )
+                    )
         return UnprocessableEntity(error_list)
 
     def field_errors(self, fields, message=None):

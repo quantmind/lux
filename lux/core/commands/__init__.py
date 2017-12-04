@@ -15,6 +15,9 @@ from lux import __version__
 from lux.utils.files import skipfile
 
 
+SEP = '='*50
+
+
 class ConfigError(Exception):
 
     def __init__(self, config_file):
@@ -35,7 +38,8 @@ def service_parser(services, description, help=True):
 
 
 class CmdType(type):
-
+    """Collects subcommands from methos starting with `command_`
+    """
     def __new__(cls, name, bases, attrs):
         commands = {}
         for key, value in attrs.items():
@@ -100,7 +104,7 @@ class LuxApp(Application):
         return False
 
 
-class LuxCommand(ConsoleParser, metaclass=CmdType):
+class LuxBaseCommand(ConsoleParser, metaclass=CmdType):
     '''Signature class for lux commands.
 
     A :class:`.LuxCommand` is never initialised directly, instead,
@@ -132,26 +136,6 @@ class LuxCommand(ConsoleParser, metaclass=CmdType):
         self.name = name
         self.app = app
 
-    def __call__(self, argv, **params):
-        if self.commands:
-            if not argv or argv[0] not in self.commands:
-                return self.write('\n'.join(self.get_usage()))
-            return self.command(self.commands[argv[0]], argv[1:], **params)
-
-        if not self.app.callable.command:
-            self.app.callable.command = self.name
-        pulsar_app = self.pulsar_app(argv)
-        pulsar_app.cfg.daemon = False
-        pulsar_app()
-        result = run_in_greenlet(self.execute)(pulsar_app.cfg, **params)
-        if not self.app._loop.is_running():
-            result = self.app._loop.run_until_complete(result)
-        return result
-
-    def execute(self, cfg, **params):
-        assert self.app.request_handler()
-        return self.run(cfg, **params)
-
     def get_version(self):
         """Return the :class:`.LuxCommand` version.
 
@@ -162,13 +146,6 @@ class LuxCommand(ConsoleParser, metaclass=CmdType):
     @property
     def config_module(self):
         return self.app.config_module
-
-    def run(self, argv, **params):
-        '''Run this :class:`.LuxCommand`.
-
-        This is the only method which needs implementing by subclasses.
-        '''
-        raise NotImplementedError
 
     @property
     def logger(self):
@@ -185,7 +162,9 @@ class LuxCommand(ConsoleParser, metaclass=CmdType):
     def get_usage(self):
         usage = [
             '',
+            SEP,
             '%s - %s' % (self.name, self.help or 'no description'),
+            SEP,
             '',
             'List of available commands',
             '--------------------------'
@@ -233,6 +212,40 @@ class LuxCommand(ConsoleParser, metaclass=CmdType):
                            debug=app.debug,
                            config=config or app.config_module,
                            **kw)
+
+
+class LuxCommand(LuxBaseCommand):
+
+    def __call__(self, argv, **params):
+        if self.commands:
+            if not argv or argv[0] not in self.commands:
+                return self.write('\n'.join(self.get_usage()))
+            return self.command(self.commands[argv[0]], argv[1:], **params)
+
+        if not self.app.callable.command:
+            self.app.callable.command = self.name
+        pulsar_app = self.pulsar_app(argv)
+        pulsar_app.cfg.daemon = False
+        pulsar_app()
+        return self.execute(self.run, pulsar_app.cfg, **params)
+
+    def execute(self, command, *args, **params):
+        result = self._execute(command, *args, **params)
+        if not self.app._loop.is_running():
+            result = self.app._loop.run_until_complete(result)
+        return result
+
+    @run_in_greenlet
+    def _execute(self, command, *args, **params):
+        assert self.app.request_handler()
+        return command(*args, **params)
+
+    def run(self, argv, **params):
+        '''Run this :class:`.LuxCommand`.
+
+        This is the only method which needs implementing by subclasses.
+        '''
+        raise NotImplementedError
 
 
 class ConsoleMixin(ConsoleParser):
@@ -283,9 +296,9 @@ class ConsoleMixin(ConsoleParser):
             description = self.config['DESCRIPTION'] or 'Lux toolkit'
         usage = ['',
                  '',
-                 '----------------------------------------------',
+                 SEP,
                  description,
-                 '----------------------------------------------',
+                 SEP,
                  '',
                  "Type '%s <command> --help' for help on a specific command." %
                  (self.meta.script or ''),

@@ -34,17 +34,17 @@ class UserCRUD(RestRouter):
            default_response=201,
            default_response_schema=UserSchema,
            responses=(400, 401, 403))
-    def post(self, request, body_schema):
+    def post(self, request, **kw):
         """
         ---
         summary: Create a new user
         """
-        return self.model.create_response(request, body_schema)
+        return self.model.create_response(request, **kw)
 
     @route(UserPathSchema,
            default_response_schema=UserSchema,
            responses=(401, 403))
-    def get_user(self, request):
+    def get_user(self, request, **kw):
         """
         ---
         summary: Get a user by its id or username
@@ -52,7 +52,7 @@ class UserCRUD(RestRouter):
             200:
                 description: The user matching the id or username
         """
-        return self.model.get_model_response(request)
+        return self.model.get_model_response(request, **kw)
 
     @route(UserPathSchema,
            body_schema=UserUpdateSchema,

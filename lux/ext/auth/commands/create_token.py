@@ -17,7 +17,7 @@ class Command(LuxCommand):
             interactive = True
         users = self.app.models['users']
         tokens = self.app.models['tokens']
-        with users.session() as session:
+        with users.begin_session() as session:
             if interactive:  # pragma    nocover
                 def_username = get_def_username(session)
                 input_msg = 'Username'

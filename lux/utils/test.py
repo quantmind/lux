@@ -329,13 +329,6 @@ class TestMixin:
             meta = bs.find('meta', property='og:image')
             self.assertEqual(meta['content'], image)
 
-    def get_command(self, app, command):
-        cmd = app.get_command(command)
-        self.assertTrue(cmd.logger)
-        self.assertEqual(cmd.name, command)
-        self.assertTrue(cmd.help)
-        return cmd
-
 
 class TestCase(unittest.TestCase, TestMixin):
     """TestCase class for lux tests.
@@ -352,12 +345,6 @@ class TestCase(unittest.TestCase, TestMixin):
             self.apps = []
         self.apps.append(app)
         return app
-
-    def fetch_command(self, command, app=None, **params):
-        """Fetch a command."""
-        if not app:
-            app = self.application(**params)
-        return self.app_client(app).get_command(command)
 
     @classmethod
     def app_client(cls, app):
@@ -387,13 +374,14 @@ class AppTestCase(unittest.TestCase, TestMixin):
             await cls.setupdb()
         # admin JWT token for admin operations on Token auth backends
         cls.admin_jwt = await as_coroutine(cls.create_admin_jwt())
-        await as_coroutine(cls.populatedb())
-        await as_coroutine(cls.beforeAll())
+        await cls.populatedb()
+        await cls.beforeAll()
 
     @classmethod
-    def tearDownClass(cls):
+    async def tearDownClass(cls):
         if cls.odm:
-            return cls.dropdb()
+            await cls.dropdb()
+        await cls.afterAll()
 
     @classmethod
     def get_client(cls):
@@ -449,7 +437,7 @@ class AppTestCase(unittest.TestCase, TestMixin):
         cls.odm().database_drop(database=cls.dbname)
 
     @classmethod
-    def populatedb(cls):
+    async def populatedb(cls):
         return load_fixtures(cls.app,
                              path=cls.fixtures_path,
                              api_url=cls.api_url(),
@@ -470,8 +458,12 @@ class AppTestCase(unittest.TestCase, TestMixin):
         return TestApp(app)
 
     @classmethod
-    def beforeAll(cls):
+    async def beforeAll(cls):
         """Can be used to add logic before all tests"""
+
+    @classmethod
+    async def afterAll(cls):
+        """Can be used to add logic after all tests"""
 
     @classmethod
     async def user_token(cls, credentials, **kw):
@@ -492,13 +484,6 @@ class AppTestCase(unittest.TestCase, TestMixin):
         user = response.wsgi_request.cache.user
         test.assertTrue(user.is_anonymous())
         return data['id']
-
-    def fetch_command(self, command, new=False):
-        """Fetch a command."""
-        app = self.app
-        if new:
-            app = self.clone_app()
-        return self.get_command(app, command)
 
     def create_superuser(self, username, email, password):
         """A shortcut for the create_superuser command

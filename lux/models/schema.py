@@ -1,6 +1,5 @@
 import marshmallow as ma
 from marshmallow import class_registry, post_dump
-from marshmallow.exceptions import RegistryError
 
 from lux.utils.context import current_app, app_attribute
 
@@ -21,7 +20,6 @@ class SchemaOpts(ma.SchemaOpts):
 class Schema(ma.Schema):
     OPTIONS_CLASS = SchemaOpts
     TYPE_MAPPING = ma.Schema.TYPE_MAPPING.copy()
-    model = None
 
     def __init__(self, *args, **kwargs):
         if self.opts.model:
@@ -39,27 +37,11 @@ class Schema(ma.Schema):
         return '/'.join(('<%s>' % field for field in self.fields))
 
 
-class schema_registry:
-
-    def __init__(self, registry):
-        self.registry = registry
-
-    def __enter__(self):
-        self._get_class = class_registry.get_class
-        class_registry.get_class = self.get_class
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        class_registry.get_class = self._get_class
-
-    def get_class(self, classname, all=False):
-        try:
-            return self.registry[classname]
-        except KeyError:
-            raise RegistryError('Class with name {0!r} was not found.'
-                                % classname) from None
-
-
 def get_model_fields(schema):
+    """Load model fields associated with a REST model
+
+    cached in the application
+    """
     app = current_app()
     schema_cls = type(schema)
     schema_fields = model_schema_fields(app)
