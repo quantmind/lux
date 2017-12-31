@@ -1,7 +1,5 @@
 from pulsar.apps import rpc
 
-from lux.forms import get_form_class
-
 
 def get_model(wsrequest):
     """Get a Rest model from a websocket rpc request

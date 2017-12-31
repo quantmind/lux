@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from pulsar.api import Http404
 
 from lux.core import JsonRouter
@@ -28,7 +29,9 @@ class RestRoot(JsonRouter):
         return routes
 
     def get(self, request):
-        return request.json_response(self.apis(request))
+        apis = self.apis(request)
+        data = OrderedDict(((name, apis[name]) for name in sorted(apis)))
+        return request.json_response(data)
 
 
 class Rest404(JsonRouter):

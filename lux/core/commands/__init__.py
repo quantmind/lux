@@ -13,6 +13,7 @@ from pulsar.apps.greenio import run_in_greenlet
 
 from lux import __version__
 from lux.utils.files import skipfile
+from ..client import AppClient
 
 
 SEP = '='*50
@@ -150,6 +151,9 @@ class LuxBaseCommand(ConsoleParser, metaclass=CmdType):
     @property
     def logger(self):
         return logging.getLogger('lux.%s' % self.name)
+
+    def client(self, green=True):
+        return AppClient.create(self.app, green=green)
 
     def write(self, stream=''):
         '''Write ``stream`` to the :attr:`stdout`.'''

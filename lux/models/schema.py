@@ -14,7 +14,8 @@ class SchemaOpts(ma.SchemaOpts):
         super().__init__(meta, *args, **kwargs)
         self.model = getattr(meta, 'model', None)
         self.model_converter = getattr(meta, 'model_converter', None)
-        self.include_fk = getattr(meta, 'include_fk', False)
+        self.include_fk = getattr(meta, 'include_fk', True)
+        self.include_related = getattr(meta, 'include_related', False)
 
 
 class Schema(ma.Schema):
@@ -60,6 +61,7 @@ def get_model_fields(schema):
         base_fields = schema_cls._declared_fields.copy()
         fields = model.fields_map(
             include_fk=opts.include_fk,
+            include_related=opts.include_related,
             fields=opts.fields,
             exclude=opts.exclude,
             base_fields=base_fields

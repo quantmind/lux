@@ -22,7 +22,6 @@ from .migrations import migrations
 
 
 __all__ = ['model_base',
-           'ModelSchema',
            'declared_attr',
            'Model',
            'Related',

@@ -2,5 +2,6 @@ unidecode
 sphinx
 redis
 coverage
+codecov
 flake8
 pyslink

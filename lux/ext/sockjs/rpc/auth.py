@@ -1,4 +1,5 @@
-"""Websocket RPC for Authentication"""
+"""Websocket RPC for Authentication
+"""
 from pulsar.api import PermissionDenied, BadRequest, Http401
 from pulsar.apps import rpc
 

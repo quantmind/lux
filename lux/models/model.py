@@ -176,7 +176,7 @@ class Model(ABC, Component):
     def create_response(self, request, schema=None, body_schema=None):
         """Create a new instance and return a response
         """
-        data, files = request.data_and_files()
+        data, files = self.data_and_files(request)
         with self.begin_session() as session:
             model = self.create_one(session, data, body_schema)
             schema = self.get_schema(schema or self.model_schema)
@@ -184,7 +184,7 @@ class Model(ABC, Component):
         return request.json_response(data, 201)
 
     def update_one_response(self, request, schema=None, body_schema=None):
-        data, files = request.data_and_files()
+        data, files = self.data_and_files(request)
         with self.begin_session() as session:
             instance = self.get_one(session, **request.urlargs)
             instance = self.update_one(session, instance, data, body_schema)
@@ -212,7 +212,7 @@ class Model(ABC, Component):
         request.response.status_code = 204
         return request.response
 
-    # CRUD Methods
+    # Model CRUD Operations
 
     def get_list(self, session, *filters, **kwargs):
         """Get a list of instances from positional and keyed-valued filters
@@ -220,7 +220,16 @@ class Model(ABC, Component):
         query = self.query(session, *filters, **kwargs)
         return query.all()
 
-    # Model CRUD Operations
+    def paginate(self, session, limit=50, query=None):
+        if query is None:
+            query = self.query(session)
+        while True:
+            data = query.limit(limit).all()
+            for obj in data:
+                yield obj
+            if len(data) < limit:
+                break
+
     def get_one(self, session, *filters, **kwargs):
         query = self.query(session, *filters, **kwargs)
         return query.one()
@@ -260,6 +269,9 @@ class Model(ABC, Component):
         return uuid.uuid4()
 
     # QUERY API
+    def data_and_files(self, request):
+        return request.data_and_files()
+
     def query(self, session, *filters, check_permission=None, load_only=None,
               query=None, **params):
         """Get a :class:`.Query` object

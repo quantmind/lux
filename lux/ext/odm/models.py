@@ -3,13 +3,11 @@ from functools import partial
 
 import sqlalchemy as sa
 from sqlalchemy import desc, String
-from sqlalchemy.orm import class_mapper, load_only
+from sqlalchemy.orm import class_mapper, load_only, RelationshipProperty
 from sqlalchemy.sql.expression import func, cast
 from sqlalchemy.exc import DataError, StatementError, IntegrityError
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from sqlalchemy.dialects import postgresql
-
-from marshmallow_sqlalchemy import ModelConverter
 
 from pulsar.api import Http404
 from pulsar.utils.log import lazyproperty
@@ -21,6 +19,7 @@ from lux.utils.crypt import as_hex
 from lux import models
 from lux.models import fields
 
+from .convert import ModelConverter
 from .fields import get_primary_keys
 
 
@@ -303,7 +302,8 @@ class Model(models.Model):
         return db_columns
 
     def fields_map(self, include_fk=False, fields=None,
-                   exclude=None, base_fields=None, dict_cls=dict):
+                   exclude=None, base_fields=None,
+                   include_related=False, dict_cls=dict):
         '''Override fields map function and returns a mapping of
         field names with schema fields objects
         '''
@@ -312,7 +312,8 @@ class Model(models.Model):
         db_columns = self._db_columns()
 
         for column in self.db_model.__mapper__.iterate_properties:
-            if _should_exclude_field(column, fields=fields, exclude=exclude):
+            if _should_exclude_field(column, fields=fields, exclude=exclude,
+                                     include_related=include_related):
                 continue
             if hasattr(column, 'columns'):
                 if not include_fk:
@@ -360,10 +361,13 @@ def column_info(name, col):
     return info
 
 
-def _should_exclude_field(column, fields=None, exclude=None):
+def _should_exclude_field(column, fields=None, exclude=None,
+                          include_related=None):
     if fields and column.key not in fields:
         return True
     if exclude and column.key in exclude:
+        return True
+    if isinstance(column, RelationshipProperty) and not include_related:
         return True
     return False
 
