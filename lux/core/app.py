@@ -281,6 +281,11 @@ class Application(ConsoleMixin, LuxExtension, EventHandler):
         self.auth.on_request(request)
         self.fire_event('on_request', data=request)
 
+    def form_data(self, request):
+        data, files = request.data_and_files()
+        self.fire_event('on_form', data=(request, data, files))
+        return data, files
+
     def require(self, *extensions):
         return super().require(self, *extensions)
 

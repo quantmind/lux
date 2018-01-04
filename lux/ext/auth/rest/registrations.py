@@ -36,15 +36,11 @@ class PasswordSchema(Schema):
     """Schema for checking a password is input correctly
     """
     password = fields.Password(required=True, minLength=5, maxLength=128)
-    password_repeat = fields.Password(
-        required=True,
-        label='Confirm password',
-        data_check_repeat='password'
-    )
+    password_repeat = fields.Password(required=True)
 
     def post_load(self, data):
         password = data['password']
-        password_repeat = data.pop('password_repeat')
+        password_repeat = data.pop('password_repeat', None)
         if password != password_repeat:
             raise ValidationError('Passwords did not match')
 
@@ -53,19 +49,18 @@ class UserCreateSchema(PasswordSchema):
     username = fields.Slug(required=True, minLength=2, maxLength=30)
     email = fields.Email(required=True)
 
-    def post_load(self, data):
-        super().post_load(data)
-        session = self.model.object_session(data)
-        user = self.app.auth.create_user(session, **data)
-        # send_email_confirmation(request, reg)
-        return user
-
 
 class RegistrationModel(Model):
 
     @property
     def type(self):
         return self.metadata.get('type', 1)
+
+    def create_instance(self, session, data):
+        data['active'] = False
+        user = self.app.auth.create_user(session, **data)
+        # send_email_confirmation(request, reg)
+        return user
 
     def update_model(self, request, instance, data, session=None, **kw):
         if not instance.id:

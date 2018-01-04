@@ -5,13 +5,13 @@ from pulsar.api import PermissionDenied
 import jwt
 
 from lux.core import Parameter, LuxExtension, is_html
+from lux.utils.date import to_timestamp, date_from_now, iso8601
 
-from .browser import SessionBackend
-from .views import Login, Logout, SignUp, ForgotPassword, Token, ActionsRouter
+from .browser import SessionBackend, exclude_urls
+from .store import session_store
 
 
-__all__ = ['SessionBackend',
-           'ActionsRouter']
+__all__ = ['SessionBackend']
 
 
 CSRF_SET = frozenset(('GET', 'HEAD', 'OPTIONS'))
@@ -70,21 +70,51 @@ class Extension(LuxExtension):
                   True)
     ]
 
-    def middleware(self, app):
-        if is_html(app):
-            cfg = app.config
-            if cfg['LOGIN_URL']:
-                yield Login(cfg['LOGIN_URL'])
-                if cfg['LOGOUT_URL']:
-                    yield Logout(cfg['LOGOUT_URL'])
-                if cfg['HTML_AUTH_TOKEN_URL']:
-                    yield Token(cfg['HTML_AUTH_TOKEN_URL'])
+    def on_request(self, app, data=None):
+        request = data
+        path = request.path[1:]
+        for url in exclude_urls(request.app):
+            if url.match(path):
+                request.cache.skip_session_backend = True
+                return
 
-                if cfg['REGISTER_URL']:
-                    yield SignUp(cfg['REGISTER_URL'])
+        key = request.config['SESSION_COOKIE_NAME']
+        session_key = request.cookies.get(key)
+        store = session_store(app)
+        session = None
+        if session_key:
+            session = store.get(session_key.value)
+        if (session and (
+                session.expiry is None or session.expiry < time.time())):
+            store.delete(session.id)
+            session = None
+        if not session:
+            session = store.create()
+        request.cache.set('session', session)
+        token = session.token
+        if token:
+            try:
+                user = request.api.user.get(token=session.token).json()
+            except NotAuthorised:
+                request.app.auth.logout(request)
+                raise HttpRedirect(request.config['LOGIN_URL']) from None
+            except Exception:
+                request.app.auth.logout(request)
+                raise
+            request.cache.user = User(user)
 
-                if cfg['RESET_PASSWORD_URL']:
-                    yield ForgotPassword(cfg['RESET_PASSWORD_URL'])
+    def on_response(self, app, data=None):
+        request, response = data
+        session = request.cache.get('session')
+        if session:
+            if response.can_set_cookies():
+                key = request.config['SESSION_COOKIE_NAME']
+                session_key = request.cookies.get(key)
+                id = session.id
+                if not session_key or session_key.value != id:
+                    response.set_cookie(key, value=str(id), httponly=True,
+                                        expires=session.expiry)
+            session_store(app).save(session)
 
     def on_jwt(self, app, request, payload):
         cfg = app.config
@@ -95,27 +125,26 @@ class Extension(LuxExtension):
             payload['password_reset_url'] = request.absolute_uri(
                 cfg['RESET_PASSWORD_URL'])
 
-    def on_form(self, app, form):
+    def on_form(self, app, data=None):
         """Handle CSRF on form
         """
-        request = form.request
-        if request.cache.skip_session_backend:
+        request, data, _ = data
+        if request.cache.get('skip_session_backend'):
             return
         param = app.config['CSRF_PARAM']
-        if (param and form.is_bound and
-                request.method not in CSRF_SET):
-            token = form.rawdata.get(param)
+        if param and request.method not in CSRF_SET:
+            token = data.pop(param, None)
             self.validate_csrf_token(request, token)
 
-    def on_html_document(self, app, request, doc):
-        if request.method in CSRF_SET:
-            cfg = app.config
-            param = cfg['CSRF_PARAM']
-            if param:
-                csrf_token = self.csrf_token(request)
-                if csrf_token:
-                    doc.head.add_meta(name="csrf-param", content=param)
-                    doc.head.add_meta(name="csrf-token", content=csrf_token)
+    def on_html_document(self, app, data):
+        request, doc = data
+        cfg = request.config
+        param = cfg['CSRF_PARAM']
+        if param:
+            csrf_token = self.csrf_token(request)
+            if csrf_token:
+                doc.head.add_meta(name="csrf-param", content=param)
+                doc.head.add_meta(name="csrf-token", content=csrf_token)
 
     def context(self, request, context):
         """Add user to the Html template context"""

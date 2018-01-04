@@ -1,5 +1,5 @@
 import marshmallow as ma
-from marshmallow import class_registry, post_dump
+from marshmallow import class_registry, post_dump, post_load
 
 from lux.utils.context import current_app, app_attribute
 
@@ -27,11 +27,18 @@ class Schema(ma.Schema):
             self._declared_fields = get_model_fields(self)
         super().__init__(*args, **kwargs)
 
+    @post_load
+    def _load(self, data):
+        return self.post_load(data)
+
     @post_dump
     def _pd(self, data):
         for key, value in tuple(data.items()):
             if value is None:
                 data.pop(key)
+        return data
+
+    def post_load(self, data):
         return data
 
     def rule(self):

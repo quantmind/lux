@@ -18,10 +18,11 @@ def validate_username(session, username):
     module_attribute(session.config['CHECK_USERNAME'])(session, username)
 
 
-class FullUserSchema(Schema):
+class CreateUserSchema(Schema):
 
     class Meta:
         model = URI
+        exclude = ('id',)
 
 
 class UserSchema(Schema):
@@ -75,6 +76,7 @@ class UserModel(Model):
     def create_one(self, session, data, schema=None):
         validate_username(session, data.get('username'))
         data['password'] = session.auth.password(data.get('password'))
+        # self.app.fire_event('on_form', ())
         return super().create_one(session, data, schema)
 
 

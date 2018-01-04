@@ -1,10 +1,11 @@
-from pulsar.api import Http401, BadRequest
+from pulsar.api import Http401, BadRequest, UnprocessableEntity
 
 from lux.models import Schema, fields, ValidationError
 from lux.utils.date import date_from_now
 from lux.ext.rest import RestRouter, route
 from lux.ext.odm import Model
 
+from ..backend import AuthenticationError
 from .tokens import TokenSchema
 from . import ensure_service_user
 
@@ -25,7 +26,7 @@ class LoginSchema(Schema):
 
 
 class AuthorizeSchema(LoginSchema):
-    expiry = fields.DateTime()
+    expiry = fields.Int()
     user_agent = fields.String()
     ip_address = fields.String()
 
@@ -46,6 +47,28 @@ class AuthorizeSchema(LoginSchema):
         return tokens.create_one(session, data, tokens.model_schema)
 
 
+class AuthorizationModel(Model):
+
+    def data_and_files(self, request):
+        data, files = super().data_and_files(request)
+        maxexp = request.config['MAX_TOKEN_SESSION_EXPIRY']
+        data['expiry'] = min(data.get('expiry') or maxexp, maxexp)
+        data['user_agent'] = request.get('HTTP_USER_AGENT')
+        return data, files
+
+    def create_instance(self, session, data):
+        try:
+            data['user'] = session.auth.authenticate(
+                session,
+                username=data.pop('username'),
+                password=data.pop('password')
+            )
+        except AuthenticationError as exc:
+            raise UnprocessableEntity(str(exc)) from None
+        if not data['user']:
+            raise ValidationError('Invalid username or password')
+
+
 class Authorization(RestRouter):
     """
     ---
@@ -55,7 +78,7 @@ class Authorization(RestRouter):
     tags:
         - authentication
     """
-    model = Model('authorizations', TokenSchema)
+    model = AuthorizationModel('authorizations', TokenSchema, db_name='token')
 
     @route()
     def head(self, request):

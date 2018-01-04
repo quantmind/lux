@@ -107,11 +107,18 @@ class Model(ABC, Component):
 
     @abstractmethod
     def create_instance(self, session, data):
-        pass
+        """Create a new model instance with validated data
+        """
 
     @abstractmethod
     def update_instance(self, session, instance, data):
-        pass
+        """Update a model instance with validated data
+        """
+
+    @abstractmethod
+    def fields(self):
+        """All fields in the model
+        """
 
     # SESSION CONTEXT MANAGER
 
@@ -243,6 +250,7 @@ class Model(ABC, Component):
         data, errors = schema.load(data)
         if errors:
             raise self.unprocessable_entity(errors, schema)
+        self.app.fire_event('on_create', data=(self, data))
         instance = self.create_instance(session, data)
         try:
             session.flush()
@@ -270,7 +278,7 @@ class Model(ABC, Component):
 
     # QUERY API
     def data_and_files(self, request):
-        return request.data_and_files()
+        return request.app.form_data(request)
 
     def query(self, session, *filters, check_permission=None, load_only=None,
               query=None, **params):

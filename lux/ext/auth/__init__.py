@@ -57,7 +57,9 @@ class Extension(LuxExtension):
                   'A string or bytes used for encrypting data. Must be unique '
                   'to the application and long and random enough'),
         Parameter('CHECK_USERNAME', 'lux.ext.auth:check_username',
-                  'Dotted path to username validation function')
+                  'Dotted path to username validation function'),
+        Parameter('MAX_TOKEN_SESSION_EXPIRY', 60*60*24*14,
+                  'Maximum length of session token expiry in seconds')
     ]
 
     def on_config(self, app):

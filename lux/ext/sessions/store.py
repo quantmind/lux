@@ -1,8 +1,12 @@
+import time
+
 from pulsar.api import ImproperlyConfigured
 from pulsar.utils.structures import AttributeDictionary
 
-from lux.core import create_cache, app_attribute
+from lux.core import create_cache
+from lux.utils.context import app_attribute
 from lux.utils.crypt import create_token
+from lux.utils.date import to_timestamp
 
 
 class SessionMixin:
@@ -83,9 +87,15 @@ class SessionStore:
         key = self.session_key(app_name=app_name)
         return self.store.clear(key)
 
-    def create(self, id=None, **kw):
+    def create(self, id=None, token=None, expiry=None, **kw):
         id = id or create_token()
-        return Session(id=id, **kw)
+        if token:
+            expiry = to_timestamp(token.get('expiry'))
+            token = token['id']
+        if not expiry:
+            seconds = self.store.config['SESSION_EXPIRY']
+            expiry = time.time() + seconds
+        return Session(id=id, token=token, expiry=expiry, **kw)
 
     def save(self, session):
         self.set(session.id, session.todict())

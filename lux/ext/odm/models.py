@@ -216,6 +216,9 @@ class Model(models.Model):
     def primary_keys(self):
         return get_primary_keys(self.db_model)
 
+    def fields(self):
+        return self.db_columns()
+
     def create_instance(self, session, data):
         """Create a new model instance from data and add to session
 
@@ -307,13 +310,14 @@ class Model(models.Model):
         '''Override fields map function and returns a mapping of
         field names with schema fields objects
         '''
-        result = dict_cls()
-        base_fields = base_fields or {}
+        result = dict_cls(base_fields or ())
         db_columns = self._db_columns()
 
         for column in self.db_model.__mapper__.iterate_properties:
-            if _should_exclude_field(column, fields=fields, exclude=exclude,
-                                     include_related=include_related):
+            field = result.get(column.key)
+            if not field and _should_exclude_field(
+                    column, fields=fields, exclude=exclude,
+                    include_related=include_related):
                 continue
             if hasattr(column, 'columns'):
                 if not include_fk:
@@ -324,13 +328,12 @@ class Model(models.Model):
                             break
                     else:
                         continue
-            field = base_fields.get(column.key) or db_columns.get(column.key)
             if not field:
-                field = self.property2field(column)
-                if field:
-                    db_columns[column.key] = field
-
-            if field:
+                field = db_columns.get(column.key)
+                if not field:
+                    field = self.property2field(column)
+                    if field:
+                        db_columns[column.key] = field
                 result[column.key] = field
         return result
 

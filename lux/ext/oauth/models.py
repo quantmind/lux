@@ -2,7 +2,7 @@ from sqlalchemy.orm import relationship, backref
 from sqlalchemy import Column, String, ForeignKey, DateTime
 
 from odm.types import JSONType, UUIDType
-from odm import declared_attr
+from odm.mapper import declared_attr
 
 import lux.ext.auth.models as auth
 

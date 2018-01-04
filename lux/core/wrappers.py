@@ -40,7 +40,11 @@ class WsgiRequest(wsgi.WsgiRequest):
     def config(self):
         """The :attr:`.Application.config` dictionary
         """
-        return self.cache.app.config
+        config = self.cache.get('config')
+        if config is None:
+            config = self.cache.app.config
+            self.cache.set('config', config)
+        return config
 
     @property
     def http(self):

@@ -10,7 +10,7 @@ from lux.utils.crypt import create_uuid
 from lux.utils.auth import normalise_email
 from lux.utils.data import compact_dict
 
-from .rest.user import FullUserSchema
+from .rest.user import CreateUserSchema
 
 
 class AuthBackend(AuthBackendBase):
@@ -85,7 +85,7 @@ class AuthBackend(AuthBackendBase):
     def create_user(self, session, **data):
         users = session.models['users']
         data.setdefault('active', True)
-        return users.create_one(session, data, FullUserSchema)
+        return users.create_one(session, data, CreateUserSchema)
 
     def create_superuser(self, session, **params):
         params['superuser'] = True

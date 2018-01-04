@@ -9,7 +9,8 @@ from pulsar.api import (
 from pulsar.apps.wsgi import Route
 
 from lux.utils.date import to_timestamp, date_from_now, iso8601
-from lux.core import app_attribute, User
+from lux.utils.context import app_attribute
+from lux.core import User
 
 from .store import session_store
 
@@ -127,7 +128,7 @@ class SessionBackend:
                 if not session_key or session_key.value != id:
                     response.set_cookie(key, value=str(id), httponly=True,
                                         expires=session.expiry)
-            return session_store(request).save(session)
+            session_store(request).save(session)
         return response
 
     # INTERNALS
