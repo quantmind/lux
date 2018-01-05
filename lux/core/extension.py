@@ -22,8 +22,21 @@ ALL_EVENTS = (
     'on_request',  # New client request. Extra args: request
     'on_html_document',  # Html doc built. Extra args: request, html
     'on_form',      # form data, data = (request, data, files)
-    'on_create',    # create new model, data = (model, data)
     'on_close',  # Close the application - cleanup
+    #
+    # CRUD events
+    'on_create',    # data to create a new model,
+                    # data = (model, data)
+    'on_created',   # a new model has been created,
+                    # data = (model, instance)
+    'on_update',    # data to create a new model,
+                    # data = (model, data)
+    'on_updated',   # a new model has been created,
+                    # data = (model, instance)
+    'on_delete',    # a model instance is about to be deleted
+                    # data = (model, instance)
+    'on_deleted',   # a model instance has been deleted,
+                    # data = (model, instance)
 )
 
 

@@ -242,16 +242,17 @@ class Model(ABC, Component):
         return query.one()
 
     def create_one(self, session, data, schema=None):
-        """Create a new model
+        """Create a new model from data and optional schema
         """
         schema = self.get_schema(schema or self.create_schema)
         if not schema:
             raise MethodNotAllowed
+        self.app.fire_event('on_create', data=(self, data))
         data, errors = schema.load(data)
         if errors:
             raise self.unprocessable_entity(errors, schema)
-        self.app.fire_event('on_create', data=(self, data))
         instance = self.create_instance(session, data)
+        self.app.fire_event('on_created', data=(self, instance))
         try:
             session.flush()
         except Exception:
@@ -263,13 +264,18 @@ class Model(ABC, Component):
         schema = self.get_schema(schema or self.update_schema)
         if not schema:
             raise MethodNotAllowed
+        self.app.fire_event('on_update', data=(self, data))
         data, errors = schema.load(data, partial=True)
         if errors:
             raise self.unprocessable_entity(errors, schema)
-        return self.update_instance(session, instance, data)
+        instance = self.update_instance(session, instance, data)
+        self.app.fire_event('on_updated', data=(self, instance))
+        return instance
 
     def delete_instance(self, session, instance):
+        self.app.fire_event('on_delete', data=(self, instance))
         session.delete(instance)
+        self.app.fire_event('on_deleted', data=(self, instance))
 
     def create_uuid(self, id=None):
         if isinstance(id, uuid.UUID):
