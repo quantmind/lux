@@ -90,11 +90,12 @@ class Model(ABC, Component):
     __str__ = __repr__
 
     # ABSTRACT METHODS
+    
     @abstractmethod
     def session(self, request=None):
         """Return a session for aggregating a query.
 
-        This method must return a context manager with the following methods:
+        This method must return object with the following methods:
 
         * ``add(model)``: add a model to the session
         * ``delete(model)`: delete a model
@@ -283,6 +284,7 @@ class Model(ABC, Component):
         return uuid.uuid4()
 
     # QUERY API
+    
     def data_and_files(self, request):
         return request.app.form_data(request)
 
